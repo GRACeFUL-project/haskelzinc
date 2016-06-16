@@ -1,4 +1,4 @@
-== REQUIREMENTS ==
+# REQUIREMENTS
  * GHC 7.10.3
  * MiniZinc 2.0
  * To use choco solver, also required:
@@ -8,12 +8,11 @@
      - choco_parser [https://oss.sonatype.org/content/repositories/releases/org/choco-solver/choco-parsers/3.3.3/]
      - ANTLR >4.5.2 java runtime binaries [http://www.antlr.org/download.html]
 
-== INSTALLATION ==
+# INSTALLATION
 
-  This library is available in hackage. Either download the source code and compile with runhaskell
-  or install the package with cabal.
+  This library will be soon available in hackage.
 
-== USAGE ==
+## USAGE
 
   1. Create a directory called "HZconf" in the directory of your Haskell code that calls testModel or iTestModel.
   2. In HZconf create a text file "conf.txt".
