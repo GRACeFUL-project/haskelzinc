@@ -3,9 +3,10 @@
  * MiniZinc 2.0
  * To use choco solver, also required:
    - JDK 8+
-   - choco_solver (with dependencies) [http://choco-solver.org/Download?q=releases]
-   - choco_parser [https://oss.sonatype.org/content/repositories/releases/org/choco-solver/choco-parsers/3.3.3/]
-   - antlr java libraries
+   - THe following jar files can be also found in the choco/ directory of this repo
+     - choco_solver (with dependencies) [http://choco-solver.org/Download?q=releases]
+     - choco_parser [https://oss.sonatype.org/content/repositories/releases/org/choco-solver/choco-parsers/3.3.3/]
+     - ANTLR >4.5.2 java runtime binaries [http://www.antlr.org/download.html]
 
 == INSTALLATION ==
 
