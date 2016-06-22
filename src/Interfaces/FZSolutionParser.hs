@@ -67,7 +67,7 @@ makePairs :: [String] -> Solution
 makePairs []      = []
 makePairs ("Unsatisfiable":ls) = [("Unsatisfiable", "Unsatisfiable")]
 makePairs (l:ls)  = let (name, value) = fmap tail $ break ((==) '=') l
-                    in (init name, value) : makePairs ls
+                    in (name, value) : makePairs ls
 
 usefull :: [String] -> [String]
 usefull []                 = []
