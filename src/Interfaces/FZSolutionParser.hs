@@ -66,7 +66,8 @@ groupString cls = let dw = dropWhile (/= "----------") cls
 makePairs :: [String] -> Solution
 makePairs []      = []
 makePairs ("Unsatisfiable":ls) = [("Unsatisfiable", "Unsatisfiable")]
-makePairs (l:ls)  = let (name, value) = break ((==) '=') l
+makePairs (l:ls)  = let (name, valueWithEqual) = break ((==) '=') l
+                        value = tail valueWithEqual
                     in (init name, value) : makePairs ls
 
 usefull :: [String] -> [String]

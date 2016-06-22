@@ -46,11 +46,7 @@ iTestModel m = do
   mode <- getLine
   testModel m path dpath solver mode
 
--- #ifdef unix
 fzn_name = "fzn-gecode"
--- #else
---fzn_name = "flatzinc"
--- #endif
 
 -- | Runs a model and parses its solution(s).
 testModel :: MZModel -- ^ The model
