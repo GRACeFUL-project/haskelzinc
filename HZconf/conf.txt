@@ -1,4 +1,4 @@
-MINIZINC_DIR = C:\Program Files (x86)\MiniZinc IDE (bundled)
+MINIZINC_DIR = /usr/bin
 CHOCO_SOLVER=choco\choco-solver-3.3.3-with-dependencies.jar
 CHOCO_PARSER=choco\choco-parsers-3.3.3-with-dependencies.jar
 ANTLR=choco\antlr-runtime-4.5.3.jar

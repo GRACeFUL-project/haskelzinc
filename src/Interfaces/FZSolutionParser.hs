@@ -17,7 +17,8 @@ This parser is built using the "Text.Parsec" module.
 -}
 
 module Interfaces.FZSolutionParser (
-  getSolution
+  getSolution,
+  Solutions
 ) where
 
 import Data.Char
@@ -37,15 +38,16 @@ import Text.Parsec.String (Parser)
 -}
 
 type Solution = [(String,String)]
+type Solutions = [M.Map String MValue]
 
 -- | Given the path of the file where the solution(s) have been printed, this function reads the file,
 -- parses the solution(s) and prints them.
 
-getSolution :: FilePath -> IO ()
+getSolution :: FilePath -> IO [M.Map String MValue]
 getSolution path = do
   output <- readFile path
   let sol = map parse $ getPairs output
-  print sol
+  return sol
 
 getPairs :: String -> [Solution]
 getPairs = groupBySolution . usefull . (map clean) . lines
