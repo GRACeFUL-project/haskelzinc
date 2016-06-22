@@ -8,9 +8,21 @@
      - choco_parser [https://oss.sonatype.org/content/repositories/releases/org/choco-solver/choco-parsers/3.3.3/]
      - ANTLR >4.5.2 java runtime binaries [http://www.antlr.org/download.html]
 
+One part:
+
+```shell
+sudo apt-get install minizinc
+```
+
 # Installation
 
   This library will be soon available in hackage.
+
+```shell
+cabal sandbox init
+cabal update
+cabal install
+```
 
 # Use
 
@@ -24,3 +36,13 @@
 
      Example:
        MINIZINC_DIR = path/to/dir
+
+
+```shell
+cabal exec ghci test.hs
+```
+
+```Haskell
+m <- testModel australia "model/model.mzn" "" "fd" "0"
+m
+```
