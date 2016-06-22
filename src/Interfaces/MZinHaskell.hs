@@ -58,7 +58,7 @@ testModel :: MZModel -- ^ The model
 testModel m mzn' dtf' s n = do
   dir <- getCurrentDirectory
   let mzn = dir++"/"++mzn'
-  let dtf = dir++"/"++dtf'
+  let dtf = if not (null dtf') then dir++"/"++dtf' else ""
   configuration <- parseConfig
   let mz_dir = case minizinc configuration of
                 ""  -> addTrailingPathSeparator "."
