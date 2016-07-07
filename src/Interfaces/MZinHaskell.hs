@@ -13,28 +13,28 @@ This module integrates constraint solving programming through MiniZinc in Haskel
 {-# LANGUAGE CPP #-}
 
 module Interfaces.MZinHaskell (
-  module Interfaces.MZAST,
-  module Interfaces.FZSolutionParser,
-  module Interfaces.MZPrinter,
+  module AST,
+  module Parse,
+  module Print,
   iTestModel,
   testModel,
   writeData
 ) where
 
-import Interfaces.Auxiliary
 import System.Directory
 import System.Process
 import System.FilePath.Posix
-import Interfaces.MZPrinter
-import Interfaces.FZSolutionParser
-import Interfaces.MZAST hiding (UserD, PrefBop)
+import qualified Interfaces.Auxiliary         as Aux
+import qualified Interfaces.MZPrinter         as Print
+import qualified Interfaces.FZSolutionParser  as Parse
+import qualified Interfaces.MZAST             as AST -- hiding (UserD, PrefBop)
 
 -- | Interactively runs a model and outputs its solution(s). The function first prompts the user
--- for the paths of the file in which the represented MiniZinc model will be printed and the 
--- data file if required. Then asks the user to choose between supported solvers and the desired 
--- number of solutions (only one or all supported for now). Finally, it uses the chosen solver 
+-- for the paths of the file in which the represented MiniZinc model will be printed and the
+-- data file if required. Then asks the user to choose between supported solvers and the desired
+-- number of solutions (only one or all supported for now). Finally, it uses the chosen solver
 -- and parses the solution(s).
-iTestModel :: MZModel -> IO Solutions
+iTestModel :: AST.MZModel -> IO Parse.Solutions
 iTestModel m = do
   putStrLn "Enter MiniZinc model's filepath:"
   path <- getLine
@@ -49,40 +49,40 @@ iTestModel m = do
 fzn_name = "fzn-gecode"
 
 -- | Runs a model and parses its solution(s).
-testModel :: MZModel -- ^ The model
+testModel :: AST.MZModel -- ^ The model
   -> FilePath         -- ^ The path of the file in which the represented MiniZinc model will be printed
   -> FilePath         -- ^ The path of the data file if required, else an empty string
   -> String           -- ^ The chose solver ("fd" for the G12/FD built-in solver or empty string for choco3)
   -> String           -- ^ "0" for all solutions, empty string for the first solution
-  -> IO Solutions
+  -> IO Parse.Solutions
 testModel m mzn' dtf' s n = do
   dir <- getCurrentDirectory
   let mzn = dir++"/"++mzn'
   let dtf = if not (null dtf') then dir++"/"++dtf' else ""
-  configuration <- parseConfig
-  let mz_dir = case minizinc configuration of
+  configuration <- Aux.parseConfig
+  let mz_dir = case Aux.minizinc configuration of
                 ""  -> addTrailingPathSeparator "."
                 str -> addTrailingPathSeparator str
-  let mfzn = spaceFix $ mz_dir ++ "mzn2fzn"
-  let flatzinc = spaceFix $ mz_dir ++ fzn_name
-  writeFile (mzn) (Prelude.show $ printModel m)
+  let mfzn     = Aux.spaceFix $ mz_dir ++ "mzn2fzn"
+  let flatzinc = Aux.spaceFix $ mz_dir ++ fzn_name
+  writeFile mzn (Prelude.show $ Print.printModel m)
   readCreateProcess (shell (mfzn ++" "++ mzn ++ " "++ dtf)) ""
   let (filename, _) = splitExtension mzn
   let opt = case n of
               "0" -> " -a "
               _   -> " "
   res <- case s of
-          "" -> let antlr = antlr_path configuration
-                    chocoParser = chocoparser configuration
-                    chocoSolver = chocosolver configuration
+          "" -> let antlr       = Aux.antlr_path  configuration
+                    chocoParser = Aux.chocoparser configuration
+                    chocoSolver = Aux.chocosolver configuration
                 in readCreateProcess (shell $ "java -cp ." ++ [searchPathSeparator] ++ chocoSolver ++ [searchPathSeparator] ++ chocoParser ++ [searchPathSeparator] ++ antlr ++ " org.chocosolver.parser.flatzinc.ChocoFZN" ++ opt ++ filename ++ ".fzn> " ++ filename ++ ".fzn.results.txt") ""
           _  -> readCreateProcess (shell $ flatzinc ++ opt ++ filename ++ ".fzn > " ++ filename ++ ".fzn.results.txt") ""
-  getSolution $ filename ++ ".fzn.results.txt"
+  Parse.getSolution $ filename ++ ".fzn.results.txt"
 
 -- | Writes the model's data file. The 'MZModel' of the argument must contain
 -- only 'Assignment' items.
-writeData :: MZModel -> IO ()
+writeData :: AST.MZModel -> IO ()
 writeData m = do
   putStrLn "Enter MiniZinc datafile's filepath:"
   datapath <- getLine
-  writeFile datapath (Prelude.show $ printModel m)
+  writeFile datapath (Prelude.show $ Print.printModel m)

@@ -10,7 +10,7 @@ Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
 This module parses the solutions outputed by the specified FlatZinc solver. It supports multiple solutions.
-The parser might fail if there is a show item in the represented MiniZinc model which alters the default 
+The parser might fail if there is a show item in the represented MiniZinc model which alters the default
 format of the solutions' output.
 
 This parser is built using the "Text.Parsec" module.
@@ -30,7 +30,7 @@ import qualified Text.Parsec as P
 import qualified Text.Parsec.Char as C
 import qualified Text.Parsec.Combinator as C1
 import Text.Parsec.String (Parser)
-  
+
 {-
   First part of code gets a list of string pairs, representing the solution of a model.
   In each pair, the first component is the variable's name and the second component
@@ -50,7 +50,7 @@ getSolution path = do
   return sol
 
 getPairs :: String -> [Solution]
-getPairs = groupBySolution . usefull . (map clean) . lines
+getPairs = groupBySolution . usefull . map clean . lines
 
 groupBySolution :: [String] -> [Solution]
 groupBySolution = map makePairs . groupString
@@ -59,14 +59,15 @@ groupString :: [String] -> [[String]]
 groupString [] = []
 groupString ["=====UNSATISFIABLE====="] = [["Unsatisfiable"]]
 groupString cls = let dw = dropWhile (/= "----------") cls
-                  in if dw == []
-                     then (takeWhile (/= "----------") cls) : []
-                     else (takeWhile (/= "----------") cls) : (groupString $ tail dw)
+                  in takeWhile (/= "----------") cls :
+                     if null dw
+                     then []
+                     else groupString $ tail dw
 
 makePairs :: [String] -> Solution
 makePairs []      = []
 makePairs ("Unsatisfiable":ls) = [("Unsatisfiable", "Unsatisfiable")]
-makePairs (l:ls)  = let (name, value) = fmap tail $ break ((==) '=') l
+makePairs (l:ls)  = let (name, value) = fmap tail $ break ('=' ==) l
                     in (name, value) : makePairs ls
 
 usefull :: [String] -> [String]
@@ -74,7 +75,7 @@ usefull []                 = []
 usefull ("":ls)            = usefull ls
 usefull (('%':rs):ls)      = usefull ls
 usefull ("==========":ls)  = usefull ls
-usefull (l:ls)             = l:(usefull ls)
+usefull (l:ls)             = l : usefull ls
 
 clean :: String -> String
 clean = filter (not . (`elem` [' ', ';']))
@@ -102,7 +103,7 @@ varName = manyTill anyChar (char '=')
 
 digit :: Parser Char
 digit = C.digit
-  
+
 anyChar :: Parser Char
 anyChar = C.anyChar
 
@@ -130,9 +131,9 @@ many1 = C1.many1
 digitValue :: Parser Int
 digitValue = do
   d <- digit
-  return $ ord(d) - ord('0')
+  return $ ord d - ord '0'
 
-ascendDecimal = do
+ascendDecimal =
   return $ \x y -> x*10 + y
 
 opposite = do
@@ -156,11 +157,11 @@ float = do
   ipart <- many1 digit
   char '.'
   dpart <- many1 digit
-  let a = read (ipart ++ "." ++ dpart) :: Float in 
+  let a = read (ipart ++ "." ++ dpart) :: Float in
     return a
 
 set :: Parser a -> Parser [a]
-set p = between (char '{') (char '}') (sepBy p (string ","))    
+set p = between (char '{') (char '}') (sepBy p (string ","))
 
 intM :: Parser MValue
 intM = MInt <$> int
@@ -172,10 +173,10 @@ floatM :: Parser MValue
 floatM = MFloat <$> float
 
 stringM :: Parser MValue
-stringM = MString <$> (P.many anyChar)
+stringM = MString <$> P.many anyChar
 
 setM :: Parser MValue -> Parser MValue
-setM p = MSet <$> S.fromDistinctAscList <$> (set p)
+setM p = MSet . S.fromDistinctAscList <$> set p
 
 indexRange :: Parser Int
 indexRange = do
@@ -183,7 +184,7 @@ indexRange = do
   string ".."
   b <- int
   return (b - a + 1)
-  
+
 arraySizes :: Parser [Int]
 arraySizes = sepEndBy1 indexRange (string ",")
 
@@ -191,19 +192,19 @@ extract :: Parser MValue -> Parser [MValue]
 extract p = between (char '[') (char ']') (sepBy p (string ","))
 
 fixDims :: [Int] -> [MValue] -> MValue
-fixDims [] _ = MError "Array dimensions error: fixDims applied on empty list"
-fixDims [d] ms = MArray $ ms
-fixDims ds ms = fixDims (init ds) (fix1Dim (last ds) ms)
+fixDims []  _  = MError "Array dimensions error: fixDims applied on empty list"
+fixDims [d] ms = MArray ms
+fixDims ds  ms = fixDims (init ds) (fix1Dim (last ds) ms)
 
 fix1Dim :: Int -> [MValue] -> [MValue]
 fix1Dim _ [] = []
-fix1Dim d ms = MArray (take d ms) : (fix1Dim d (drop d ms))
+fix1Dim d ms = MArray (take d ms) : fix1Dim d (drop d ms)
 
 array :: Parser MValue -> Parser MValue
 array p = do
   string "array"
   manyTill anyChar (char '(')
-  ls <- arraySizes 
+  ls <- arraySizes
   es <- extract p
   string ")"
   return (fixDims ls es)
@@ -212,15 +213,15 @@ scalar :: Parser MValue
 scalar = P.try floatM <|> intM <|> boolM <|> stringM
 
 parser :: Parser MValue
-parser = P.try floatM <|> intM <|> boolM <|> (setM scalar) <|> (array scalar) <|> stringM
+parser = P.try floatM <|> intM <|> boolM <|> setM scalar <|> array scalar <|> stringM
 
 parse :: Solution -> M.Map String MValue
 parse [] = M.empty
-parse (l:ls) = 
+parse (l:ls) =
   if fst l == "Unsatisfiable"
   then M.insert "Unsatisfiable" (MError "Unsatisfiable") M.empty
   else let value = runParser parser (snd l) in
-         case value of 
+         case value of
            Right v -> M.insert (fst l) v (parse ls)
            Left _  -> M.insert (fst l) (MError "General parse error") (parse ls)
 
