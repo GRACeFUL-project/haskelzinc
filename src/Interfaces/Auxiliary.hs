@@ -12,6 +12,7 @@ module Interfaces.Auxiliary(
 ) where
 
 
+import System.Directory
 import System.Process
 import System.FilePath.Posix
 import Data.List
@@ -97,7 +98,8 @@ confFile = makePath ["HZconf", "conf.txt"]
 -- /Definitions
 
 parseConfig = do
-  contents <- readFile confFile
+  dir <- getCurrentDirectory
+  contents <- readFile $ dir++"/"++confFile
   return $ configure (lines contents)
 
 parserLine :: Parser (String, String)

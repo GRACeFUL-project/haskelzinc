@@ -36,7 +36,7 @@ printModel = foldl1 ($+$) . map printItem
 printItem :: Item -> Doc
 printItem  Empty                    = text ""
 printItem (Comment str)             = text "%" <+> text str
-printItem (Include file)            = text "include" <+> text file
+printItem (Include file)            = text "include" <+> text ("\"" ++ file ++ "\";")
 printItem (Declare (_, vt@(Array _ _)) name me) = case me of
                                                     Nothing -> printVarType vt <> colon <+> text name <> semi
                                                     Just e  -> printVarType vt <> colon <+> text name <+> equals <+> printExpr e <> semi
