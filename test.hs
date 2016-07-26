@@ -2,22 +2,22 @@ import Interfaces.MZinHaskell
 import System.Environment
 
 -- Here are some test models and MiniZinc expressions
-  {- 
+  {-
       === INSTRUCTIONS ===
     Below are provided some models in the Haskell abstract syntax tree
     for MiniZinc, together with their data files (for the models that
     need one). The command for running a model is
       > testModel <model_name>
     Then, follow the script's instructions.
-    If the model needs to be given a data file, then you have to first 
+    If the model needs to be given a data file, then you have to first
     run the command
       > writeData <name_of_data>
-    The script will ask you for the path where it will have to save the 
+    The script will ask you for the path where it will have to save the
     produced .dzn file.
   -}
 
 unsatisfiable =[
-  Declare (Dec, (Range (IConst 1) (IConst 3))) "k" Nothing,
+  Declare (Dec, Range (IConst 1) (IConst 3)) "k" Nothing,
   Constraint $ Bi Gt (Var "k") (IConst 3),
   Solve Satisfy
   ]
@@ -33,7 +33,7 @@ planning = [
   Declare (Par, Array [AOS "Resources"] (Par, String)) "rname" Nothing,
   Declare (Dec, Array [AOS "Products", AOS "Resources"] (Par, Int)) "consumption" Nothing,
   Constraint (Call mz_assert [Call mz_forall [ArrayComp (Bi Gte (ArrayElem "consumption" [Var "p", Var "r"]) (IConst 0)) ([(["r"], Var "Resources"), (["p"], Var "Products")], Nothing)], SConst "Error: Negative consumption"]),
-  Declare (Par, Int) "mproducts" (Just (Call mz_max [ArrayComp (Call mz_min [ArrayComp (Bi IDiv (ArrayElem "capacity" [Var "r"]) (ArrayElem "consumption" [Var "p", Var "r"])) ([(["r"], Var "Resources")], (Just (Bi Gt (ArrayElem "consumption" [Var "p", Var "r"]) (IConst 0))))]) ([(["p"], Var "Products")], Nothing)])),
+  Declare (Par, Int) "mproducts" (Just (Call mz_max [ArrayComp (Call mz_min [ArrayComp (Bi IDiv (ArrayElem "capacity" [Var "r"]) (ArrayElem "consumption" [Var "p", Var "r"])) ([(["r"], Var "Resources")], Just (Bi Gt (ArrayElem "consumption" [Var "p", Var "r"]) (IConst 0)))]) ([(["p"], Var "Products")], Nothing)])),
   Declare (Dec, Array [AOS "Products"] (Dec, Range (IConst 0) (Var "mproducts"))) "produce" Nothing,
   Declare (Dec, Array [AOS "Resources"] (Dec, Range (IConst 0) (Call mz_max [Var "capacity"]))) "used" Nothing,
   Constraint (Call mz_forall [ArrayComp (Bi And (Bi Eq (ArrayElem "used" [Var "r"]) (Call mz_sum [ArrayComp (Bi Times (ArrayElem "consumption" [Var "p", Var "r"]) (ArrayElem "produce" [Var "p"])) ([(["p"],Var "Products")], Nothing)])) (Bi Lte (ArrayElem "used" [Var "r"]) (ArrayElem "capacity" [Var "r"]))) ([(["r"], Var "Resources")], Nothing)]),
@@ -132,7 +132,7 @@ cakes = [
   Output (ArrayLit [
     SConst "no. of banana cakes = ", Call mz_show [Var "b"], SConst "\n", SConst "no. of chocolate cakes = ", Call mz_show [Var "c"], SConst "\n"
   ])]
-    
+
 cakedata = [
   Assign "flour" (IConst 4000),
   Assign "banana" (IConst 6),
