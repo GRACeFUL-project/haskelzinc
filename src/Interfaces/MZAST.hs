@@ -397,6 +397,9 @@ mz_pow = userD "pow"
 mz_product :: Func
 mz_product = userD "product"
 
+mz_regular :: Func
+mz_regular = userD "regular"
+
 mz_round :: Func
 mz_round = userD "round"
 
