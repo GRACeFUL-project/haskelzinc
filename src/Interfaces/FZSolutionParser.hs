@@ -17,7 +17,9 @@ This parser is built using the "Text.Parsec" module.
 -}
 
 module Interfaces.FZSolutionParser (
-  getSolution
+  getSolution,
+  Solution,
+  MValue
 ) where
 
 import Data.Char
