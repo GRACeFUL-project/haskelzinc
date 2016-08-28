@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, DeriveGeneric, DeriveAnyClass #-}
 
 {-|
 Module      : FZSolutionParser
@@ -18,72 +18,24 @@ This parser is built using the "Text.Parsec" module.
 
 module Interfaces.FZSolutionParser (
   getSolution,
-  Solution,
-  MValue
+  printSolution,
+  getSolutionFromFile,
+  printSolutionFromFile,
+  Solution
 ) where
 
 import Data.Char
 import Control.Applicative
-import Control.Monad
-import qualified Data.Map.Strict as M
 import qualified Data.Set as S
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Char as C
 import qualified Text.Parsec.Combinator as C1
 import Text.Parsec.String (Parser)
-  
-{-
-  First part of code gets a list of string pairs, representing the solution of a model.
-  In each pair, the first component is the variable's name and the second component
-  represents its value.
--}
+-- Next two modules for testing only
+import GHC.Generics
+import Control.DeepSeq
 
-type Solution = [(String,String)]
-
--- | Given the path of the file where the solution(s) have been printed, this function reads the file,
--- parses the solution(s) and prints them.
-
-getSolution :: FilePath -> IO ()
-getSolution path = do
-  output <- readFile path
-  let sol = map parse $ getPairs output
-  print sol
-
-getPairs :: String -> [Solution]
-getPairs = groupBySolution . usefull . (map clean) . lines
-
-groupBySolution :: [String] -> [Solution]
-groupBySolution = map makePairs . groupString
-
-groupString :: [String] -> [[String]]
-groupString [] = []
-groupString ["=====UNSATISFIABLE====="] = [["Unsatisfiable"]]
-groupString cls = let dw = dropWhile (/= "----------") cls
-                  in if dw == []
-                     then (takeWhile (/= "----------") cls) : []
-                     else (takeWhile (/= "----------") cls) : (groupString $ tail dw)
-
-makePairs :: [String] -> Solution
-makePairs []      = []
-makePairs ("Unsatisfiable":ls) = [("Unsatisfiable", "Unsatisfiable")]
-makePairs (l:ls)  = let (name, value) = break ((==) '=') l
-                    in (name, tail value) : makePairs ls
-
-usefull :: [String] -> [String]
-usefull []                 = []
-usefull ("":ls)            = usefull ls
-usefull (('%':rs):ls)      = usefull ls
-usefull ("==========":ls)  = usefull ls
-usefull (l:ls)             = l:(usefull ls)
-
-clean :: String -> String
-clean = filter (not . (`elem` [' ', ';']))
-
-
-
-{-
-  Second part of code defines a parser.
--}
+type Solution = [(String, MValue)]
 
 data MValue = MError String
             | MInt Int
@@ -92,14 +44,31 @@ data MValue = MError String
             | MString String
             | MArray [MValue]
             | MSet (S.Set MValue)
-  deriving Show
+  deriving (Show, Generic, NFData)
 
-runParser :: Parser a -> String -> Either P.ParseError a
-runParser p = P.parse (p <* C1.eof) ""
+-- | Given the path of the file where the solution(s) have been printed, this function reads the file,
+-- parses the solution(s) and returns them.
 
-varName :: Parser String
-varName = manyTill anyChar (char '=')
+getSolutionFromFile :: FilePath -> IO (Either P.ParseError [Solution])
+getSolutionFromFile path = do
+  output <- readFile path
+  return $ runParser trySolutions output
 
+-- | Given the path of the file that constaint the solution(s), this function reads the file,
+-- parses the solution(s) and prints them.
+
+printSolutionFromFile :: FilePath -> IO ()
+printSolutionFromFile path = do
+  output <- readFile path
+  print $ runParser trySolutions output
+
+getSolution :: String -> Either P.ParseError [Solution]
+getSolution = runParser trySolutions
+
+printSolution :: String -> IO ()
+printSolution = print . (runParser trySolutions)
+
+-- Auxiliary definitions
 digit :: Parser Char
 digit = C.digit
   
@@ -112,12 +81,6 @@ char = C.char
 sepBy :: Parser a -> Parser b -> Parser [a]
 sepBy = C1.sepBy
 
-sepEndBy1 :: Parser a -> Parser b -> Parser [a]
-sepEndBy1 = C1.sepEndBy1
-
--- count :: Int -> Parser a -> Parser [a]
--- count = C1.count
-
 between :: Parser a -> Parser b -> Parser c -> Parser c
 between = C1.between
 
@@ -127,26 +90,79 @@ manyTill = C1.manyTill
 many1 :: Parser a -> Parser [a]
 many1 = C1.many1
 
-digitValue :: Parser Int
-digitValue = do
-  d <- digit
-  return $ ord(d) - ord('0')
+eof :: Parser ()
+eof = C1.eof
 
-ascendDecimal = do
-  return $ \x y -> x*10 + y
-
-opposite = do
-  n <- natural
-  return (-n)
-
-natural :: Parser Int
-natural = C1.chainl1 digitValue ascendDecimal
-
-int :: Parser Int
-int = (char '-' >> opposite ) <|> natural
+endOfLine :: Parser Char
+endOfLine = C.endOfLine
 
 string :: String -> Parser String
 string = C.string
+
+parse :: Parser a -> P.SourceName -> String -> Either P.ParseError a
+parse = P.parse
+
+try :: Parser a -> Parser a
+try = P.try
+-----------------------
+
+runParser :: Parser a -> String -> Either P.ParseError a
+runParser p = parse (p <* eof) ""
+
+trySolutions :: Parser [Solution]
+trySolutions = (try solutions <|> (unsat >> return [[]])) <* manyTill C1.anyToken eof
+
+unsat :: Parser String
+unsat = string "=====UNSATISFIABLE====="
+
+solutions :: Parser [Solution]
+solutions = manyTill solution (string "==========")
+
+solution :: Parser Solution
+solution = fmap clearSolution maybeSolution <* (string "----------" >> endOfLine)
+
+maybeSolution :: Parser [(Maybe (String, MValue))]
+maybeSolution = many $ (comment >> return Nothing) <|> (Just <$> (assigned >>= return))
+
+clearSolution :: [(Maybe a)] -> [a]
+clearSolution [] = []
+clearSolution (Nothing:ls) = clearSolution ls
+clearSolution ((Just v):ls) = v : clearSolution ls
+
+comment :: Parser String
+comment = char '%' *> (manyTill C1.anyToken endOfLine) *> return ""
+
+assigned :: Parser (String, MValue)
+assigned = do
+  name <- varName
+  value <- valueParser
+  char ';'
+  endOfLine
+  return (name, value)
+
+varName :: Parser String
+varName = manyTill (C.noneOf "-=%") ((C.space >> char '=' >> C.space) <|> char '=')
+
+valueParser :: Parser MValue
+valueParser = try floatM <|> intM <|> boolM <|> (setM scalar) <|> (array scalar) <|> stringM
+
+intM :: Parser MValue
+intM = MInt <$> int
+
+boolM :: Parser MValue
+boolM = MBool <$> bool
+
+floatM :: Parser MValue
+floatM = MFloat <$> float
+
+stringM :: Parser MValue
+stringM = MString <$> (many anyChar)
+
+setM :: Parser MValue -> Parser MValue
+setM p = (MSet <$> S.fromDistinctAscList <$> (set p)) <|> setRange
+
+int :: Parser Int
+int = (char '-' >> opposite ) <|> natural
 
 bool :: Parser Bool
 bool = string "true" >> return True <|> (string "false" >> return False)
@@ -160,22 +176,38 @@ float = do
     return a
 
 set :: Parser a -> Parser [a]
-set p = between (char '{') (char '}') (sepBy p (string ","))    
+set p = between (char '{') (char '}') (sepBy p (string ","))
 
-intM :: Parser MValue
-intM = MInt <$> int
+setRange :: Parser MValue
+setRange = MSet <$> S.fromDistinctAscList <$> do
+  v1 <- int
+  string ".."
+  v2 <- int
+  return (map MInt (take (v2 - v1 + 1) (iterate ((+) 1) v1)))
 
-boolM :: Parser MValue
-boolM = MBool <$> bool
+array :: Parser MValue -> Parser MValue
+array p = do
+  string "array"
+  manyTill anyChar (char '(')
+  ls <- arraySizes 
+  es <- extract p
+  string ")"
+  return (fixDims ls es)
 
-floatM :: Parser MValue
-floatM = MFloat <$> float
+natural :: Parser Int
+natural = C1.chainl1 digitValue ascendDecimal
 
-stringM :: Parser MValue
-stringM = MString <$> (P.many anyChar)
+opposite :: Parser Int
+opposite = (0 - ) <$> natural
 
-setM :: Parser MValue -> Parser MValue
-setM p = MSet <$> S.fromDistinctAscList <$> (set p)
+digitValue :: Parser Int
+digitValue = do
+  d <- digit
+  return $ ord(d) - ord('0')
+
+ascendDecimal :: Parser (Int -> Int -> Int)
+ascendDecimal = do
+  return $ \x y -> x*10 + y  
 
 indexRange :: Parser Int
 indexRange = do
@@ -185,7 +217,7 @@ indexRange = do
   return (b - a + 1)
   
 arraySizes :: Parser [Int]
-arraySizes = sepEndBy1 indexRange (string ",")
+arraySizes = C1.sepEndBy1 indexRange (string ",")
 
 extract :: Parser MValue -> Parser [MValue]
 extract p = between (char '[') (char ']') (sepBy p (string ","))
@@ -199,32 +231,10 @@ fix1Dim :: Int -> [MValue] -> [MValue]
 fix1Dim _ [] = []
 fix1Dim d ms = MArray (take d ms) : (fix1Dim d (drop d ms))
 
-array :: Parser MValue -> Parser MValue
-array p = do
-  string "array"
-  manyTill anyChar (char '(')
-  ls <- arraySizes 
-  es <- extract p
-  string ")"
-  return (fixDims ls es)
-
 scalar :: Parser MValue
-scalar = P.try floatM <|> intM <|> boolM <|> stringM
-
-parser :: Parser MValue
-parser = P.try floatM <|> intM <|> boolM <|> (setM scalar) <|> (array scalar) <|> stringM
-
-parse :: Solution -> M.Map String MValue
-parse [] = M.empty
-parse (l:ls) = 
-  if fst l == "Unsatisfiable"
-  then M.insert "Unsatisfiable" (MError "Unsatisfiable") M.empty
-  else let value = runParser parser (snd l) in
-         case value of 
-           Right v -> M.insert (fst l) v (parse ls)
-           Left _  -> M.insert (fst l) (MError "General parse error") (parse ls)
+scalar = try floatM <|> intM <|> boolM <|> stringM
 
 -- for testing purposes
 parseWithLeftOver :: Parser a -> String -> Either P.ParseError (a,String)
-parseWithLeftOver p = P.parse ((,) <$> p <*> leftOver) ""
+parseWithLeftOver p = parse ((,) <$> p <*> leftOver) ""
   where leftOver = manyTill C1.anyToken C1.eof
