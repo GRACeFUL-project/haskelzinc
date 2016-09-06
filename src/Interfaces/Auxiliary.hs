@@ -13,11 +13,7 @@ module Interfaces.Auxiliary(
 
 
 import System.Process
-#ifdef unix
-import System.FilePath.Posix
-#else
-import System.FilePath.Windows
-#endif
+import System.FilePath
 import Data.List
 import Text.Parsec.String (Parser)
 import qualified Text.Parsec as P
