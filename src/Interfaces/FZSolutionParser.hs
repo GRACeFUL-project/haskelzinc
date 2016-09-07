@@ -113,7 +113,7 @@ trySolutions :: Parser [Solution]
 trySolutions = (try solutions <|> (unsat >> return [[]])) <* manyTill C1.anyToken eof
 
 unsat :: Parser String
-unsat = string "=====UNSATISFIABLE====="
+unsat = (many comment) >> string "=====UNSATISFIABLE====="
 
 solutions :: Parser [Solution]
 solutions = manyTill solution (string "==========")
