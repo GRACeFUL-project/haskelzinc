@@ -37,7 +37,7 @@ testModelWithData
   -> IO (Either ParseError [Solution])
 testModelWithData model mdata path solver num = 
   let fdata = [Comment "Model\'s data"] ++ mdata ++ [Empty]
-  in testModel (mdata ++ model) path solver num
+  in testModel (fdata ++ model) path solver num
 
 -- | Interactively runs a model and outputs its solution(s). The function first prompts the user
 -- for the paths of the file in which the represented MiniZinc model will be printed and the 
@@ -65,22 +65,21 @@ testModel :: MZModel -- ^ The model
   -> Int             -- ^ The chosen solver ("fd" for the G12/FD built-in solver or empty string for choco3)
   -> Int             -- ^ 0 for all solutions
   -> IO (Either ParseError [Solution])
-testModel m mzn s n = do
+testModel m mpath s n = do
   configuration <- parseConfig
-  let filename = mzn
   let mz_dir = case minizinc configuration of
                 ""  -> addTrailingPathSeparator "."
                 str -> addTrailingPathSeparator str
-  let mfzn = (spaceFix $ mz_dir ++ "mzn2fzn") ++ " -O- - -o " ++ (spaceFix (filename ++ ".fzn"))
+  let mfzn = (spaceFix $ mz_dir ++ "mzn2fzn") ++ " -O- - -o " ++ (spaceFix (mpath ++ ".fzn"))
   let flatzinc = spaceFix $ mz_dir ++ "flatzinc"
   -- Uncomment line below for debugging only
-  -- writeFile (filename ++ ".mzn") (Prelude.show $ printModel m)
+  -- writeFile (mpath ++ ".mzn") (Prelude.show $ printModel m)
   readCreateProcess (shell mfzn) (Prelude.show $ printModel m)
   let opt = case n of
               0 -> " -a "
               _ -> " "
   res <- case s of
-           1 -> readCreateProcess (shell $ flatzinc ++ opt ++ "-b fd " ++ filename ++ ".fzn") ""
+           1 -> readCreateProcess (shell $ flatzinc ++ opt ++ "-b fd " ++ mpath ++ ".fzn") ""
            2 -> let antlr       = antlr_path configuration
                     chocoParser = chocoparser configuration
                     chocoSolver = chocosolver configuration
