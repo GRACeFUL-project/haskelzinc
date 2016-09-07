@@ -10,8 +10,6 @@ Stability   : experimental
 This module integrates constraint solving programming through MiniZinc in Haskell.
 -}
 
-{-# LANGUAGE CPP #-}
-
 module Interfaces.MZinHaskell (
   module Interfaces.MZAST,
   module Interfaces.FZSolutionParser,
@@ -24,22 +22,18 @@ module Interfaces.MZinHaskell (
 
 import Interfaces.Auxiliary
 import System.Process
-#ifdef unix
-import System.FilePath.Posix
-#else
-import System.FilePath.Windows
-#endif
+import System.FilePath
 import Interfaces.MZPrinter
 import Interfaces.FZSolutionParser
 import Text.Parsec.Error
 import Interfaces.MZAST hiding (UserD, PrefBop)
 
 testModelWithData
-  :: MZModel  -- The model
-  -> MZModel  -- The data to be used by the model
-  -> FilePath -- The path of the file in which the FlatZinc translation will be printed
-  -> String   -- ^ The chosen solver ("fd" for the G12/FD built-in solver or empty string for choco3)
-  -> String   -- ^ "0" for all solutions, empty string for the first solution
+  :: MZModel  -- ^ The model
+  -> MZModel  -- ^ The data to be used by the model
+  -> FilePath -- ^ The path of the file in which the FlatZinc translation will be printed
+  -> Int      -- ^ The chosen solver ("fd" for the G12/FD built-in solver or empty string for choco3)
+  -> Int      -- ^ 0 for all solutions
   -> IO (Either ParseError [Solution])
 testModelWithData model mdata path solver num = 
   let fdata = [Comment "Model\'s data"] ++ mdata ++ [Empty]
@@ -52,23 +46,28 @@ testModelWithData model mdata path solver num =
 -- and parses the solution(s).
 iTestModel :: MZModel -> IO (Either ParseError [Solution])
 iTestModel m = do
-  putStrLn "Enter FlatZinc model's filepath:"
-  path <- getLine
-  putStrLn "Type \"fd\" for G12/FD solver or leave empty for choco solver."
-  solver <- getLine
-  putStrLn "Enter 0 to output all solutions."
-  mode <- getLine
-  testModel m path solver mode
+  putStrLn "Enter working directory:"
+  dirpath <- getLine
+  putStr "Enter model\'s name: "
+  name <- getLine
+  putStr "Choose a solver from the list below:\r\n\t1. G12/FD\r\n\t2. choco3\r\n\r\nInteger value associated with the solver: "
+  str_solver <- getLine
+  putStr "Number of solutions to be returned: "
+  str_ns <- getLine
+  let solver = read str_solver
+      ns = read str_ns
+      path = joinPath [dirpath, name]
+  testModel m path solver ns
 
 -- | Runs a model and parses its solution(s).
 testModel :: MZModel -- ^ The model
-  -> FilePath         -- ^ The path of the file in which the FlatZinc translation will be printed
-  -> String           -- ^ The chosen solver ("fd" for the G12/FD built-in solver or empty string for choco3)
-  -> String           -- ^ "0" for all solutions, empty string for the first solution
+  -> FilePath        -- ^ The path of the file in which the FlatZinc translation will be printed (without ".fzn" extension)
+  -> Int             -- ^ The chosen solver ("fd" for the G12/FD built-in solver or empty string for choco3)
+  -> Int             -- ^ 0 for all solutions
   -> IO (Either ParseError [Solution])
 testModel m mzn s n = do
   configuration <- parseConfig
-  let (filename, _) = splitExtension mzn
+  let filename = mzn
   let mz_dir = case minizinc configuration of
                 ""  -> addTrailingPathSeparator "."
                 str -> addTrailingPathSeparator str
@@ -78,14 +77,14 @@ testModel m mzn s n = do
   -- writeFile (filename ++ ".mzn") (Prelude.show $ printModel m)
   readCreateProcess (shell mfzn) (Prelude.show $ printModel m)
   let opt = case n of
-              "0" -> " -a "
-              _   -> " "
+              0 -> " -a "
+              _ -> " "
   res <- case s of
-          "" -> let antlr = antlr_path configuration
+           1 -> readCreateProcess (shell $ flatzinc ++ opt ++ "-b fd " ++ filename ++ ".fzn") ""
+           2 -> let antlr       = antlr_path configuration
                     chocoParser = chocoparser configuration
                     chocoSolver = chocosolver configuration
                 in readCreateProcess (shell $ "java -cp ." ++ [searchPathSeparator] ++ chocoSolver ++ [searchPathSeparator] ++ chocoParser ++ [searchPathSeparator] ++ antlr ++ " org.chocosolver.parser.flatzinc.ChocoFZN" ++ opt ++ filename ++ ".fzn") ""
-          _  -> readCreateProcess (shell $ flatzinc ++ opt ++ "-b fd " ++ filename ++ ".fzn") ""
   return $ getSolution res
 
 -- | Writes the model's data file. The 'MZModel' of the argument must contain
