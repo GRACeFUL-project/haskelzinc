@@ -2,7 +2,6 @@
   There is some configuration needed before one can run
   a model. This script works for Windows. See comments below.
 -}
-{-# LANGUAGE CPP #-}
 
 module Interfaces.Auxiliary(
   Configuration(..),
@@ -13,7 +12,6 @@ module Interfaces.Auxiliary(
 
 import System.Process
 import System.FilePath
-import Data.List
 import Text.Parsec.String (Parser)
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Char as C
@@ -116,13 +114,9 @@ configure ls = mconcat (map (makeConf . (runParser parserLine)) ls)
 
 -- Function only needed for filepaths in Windows
 spaceFix :: String -> String
-#ifdef unix
-spaceFix = id
-#else
 spaceFix str = if elem ' ' str
                then "\"" ++ str ++ "\" "
                else str
-#endif
 
 runParser :: Parser a -> String -> Either P.ParseError a
 runParser p = P.parse (p <* eof) ""

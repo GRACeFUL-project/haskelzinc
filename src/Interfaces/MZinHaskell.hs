@@ -20,13 +20,14 @@ module Interfaces.MZinHaskell (
   writeData
 ) where
 
-import Interfaces.Auxiliary
+import Data.List
 import System.Process
 import System.FilePath
+import Interfaces.Auxiliary
+import Interfaces.MZAST hiding (UserD, PrefBop)
 import Interfaces.MZPrinter
 import Interfaces.FZSolutionParser
 import Text.Parsec.Error
-import Interfaces.MZAST hiding (UserD, PrefBop)
 
 testModelWithData
   :: MZModel  -- ^ The model
@@ -83,7 +84,7 @@ testModel m mpath s n = do
            2 -> let antlr       = antlr_path configuration
                     chocoParser = chocoparser configuration
                     chocoSolver = chocosolver configuration
-                in readCreateProcess (shell $ "java -cp ." ++ [searchPathSeparator] ++ chocoSolver ++ [searchPathSeparator] ++ chocoParser ++ [searchPathSeparator] ++ antlr ++ " org.chocosolver.parser.flatzinc.ChocoFZN" ++ opt ++ filename ++ ".fzn") ""
+                in readCreateProcess (shell $ "java -cp ." ++ (intercalate [searchPathSeparator] [chocoSolver, chocoParser, antlr]) ++ " org.chocosolver.parser.flatzinc.ChocoFZN" ++ opt ++ mpath ++ ".fzn") ""
   return $ getSolution res
 
 -- | Writes the model's data file. The 'MZModel' of the argument must contain
