@@ -7,8 +7,7 @@
 module Interfaces.Auxiliary(
   Configuration(..),
   parseConfig,
-  spaceFix,
-  makePath
+  spaceFix
 ) where
 
 
@@ -92,7 +91,7 @@ emptyConf = Config { minizinc    = ""
                    , antlr_path  = ""
                    }
                 
-confFile = makePath ["HZconf", "conf.txt"]
+confFile = joinPath ["HZconf", "conf.txt"]
 -- /Definitions
 
 parseConfig = do
@@ -124,9 +123,6 @@ spaceFix str = if elem ' ' str
                then "\"" ++ str ++ "\" "
                else str
 #endif
-
-makePath :: [String] -> String
-makePath = intercalate [pathSeparator]
 
 runParser :: Parser a -> String -> Either P.ParseError a
 runParser p = P.parse (p <* eof) ""
