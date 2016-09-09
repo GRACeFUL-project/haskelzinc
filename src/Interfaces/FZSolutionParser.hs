@@ -19,7 +19,8 @@ module Interfaces.FZSolutionParser (
   printSolution,
   getSolutionFromFile,
   printSolutionFromFile,
-  Solution
+  Solution,
+  MValue(..)
 ) where
 
 import Data.Char
@@ -36,6 +37,7 @@ import Text.Parsec.String (Parser)
 -- a decision variable of the constraint model.
 type Solution = [(String, MValue)]
 
+-- | Representation of returned values.
 data MValue = MError String
             | MInt Int
             | MFloat Float
