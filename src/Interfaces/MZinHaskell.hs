@@ -82,9 +82,9 @@ testModel m mpath s n = do
            2 -> let antlr       = antlr_path configuration
                     chocoParser = chocoparser configuration
                     chocoSolver = chocosolver configuration
-                in readCreateProcess (shell $ "java -cp ." ++ (intercalate [searchPathSeparator] [chocoSolver, chocoParser, antlr]) ++ " org.chocosolver.parser.flatzinc.ChocoFZN" ++ opt ++ mpath ++ ".fzn") ""
+                in readCreateProcess (shell $ "java -cp ." ++ (intercalate [searchPathSeparator] [chocoSolver, chocoParser, antlr]) ++ " org.chocosolver.parser.flatzinc.ChocoFZN -a " ++ mpath ++ ".fzn") ""
                 --in readCreateProcess (shell $ "java -cp ." ++ (intercalate [searchPathSeparator] [chocoSolver, chocoParser, antlr]) ++ " org.chocosolver.parser.flatzinc.ChocoFZN -a " ++ mpath ++ ".fzn > " ++ mpath ++ ".fzn.results.txt") ""
-  return $ getSolution res
+  return $ getSolution n res
   --getSolutionFromFile (mpath ++ ".fzn.results.txt") n
 
 -- | Writes the model's data file. The 'MZModel' of the argument must contain
