@@ -1,21 +1,28 @@
-import Interfaces.MZinHaskell
-import System.Environment
-
--- Here are some test models and MiniZinc expressions
   {- 
       === INSTRUCTIONS ===
-    Below are provided some models in the Haskell abstract syntax tree
-    for MiniZinc, together with their data files (for the models that
-    need one). The command for running a model is
-      > testModel <model_name>
+    Below are provided some models in the Haskell abstract syntax tree for MiniZinc,
+    together with their data files (for the models that need one).
+    
+      == Models without a datafile ==
+    The command to interactively run a model is
+      > iTestModel <model_name>
     Then, follow the script's instructions.
+    
+      == Models with datafile ==
     If the model needs to be given a data file, then you have to first 
     run the command
-      > writeData <name_of_data>
-    The script will ask you for the path where it will have to save the 
-    produced .dzn file.
+      > writeData <data_name>
+    The script will ask you for the desired path of the .dzn file.
+    
+    You should use
+      > testModelWithData <model_name> <data_name> <filepath> <solver> <num_of_solutions>
+    to run a model with a data file. This command is not interactive.
   -}
 
+module HaskelzincTests where
+
+import Interfaces.MZinHaskell
+  
 unsatisfiable =[
   Declare (Dec, (Range (IConst 1) (IConst 3))) "k" Nothing,
   Constraint $ Bi Gt (Var "k") (IConst 3),

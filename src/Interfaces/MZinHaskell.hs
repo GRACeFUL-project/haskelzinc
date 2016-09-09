@@ -32,9 +32,9 @@ import Text.Parsec.Error
 testModelWithData
   :: MZModel  -- ^ The model
   -> MZModel  -- ^ The data to be used by the model
-  -> FilePath -- ^ The path of the file in which the FlatZinc translation will be printed
-  -> Int      -- ^ The chosen solver ("fd" for the G12/FD built-in solver or empty string for choco3)
-  -> Int      -- ^ 0 for all solutions
+  -> FilePath -- ^ Path of the file in which the FlatZinc translation will be printed (without ".fzn" extension)
+  -> Int      -- ^ Chosen solver (@1@ for the G12/FD built-in solver or @2@ for choco3)
+  -> Int      -- ^ Number of solutions to be returned
   -> IO (Either ParseError [Solution])
 testModelWithData model mdata path solver num = 
   let fdata = [Comment "Model\'s data"] ++ mdata ++ [Empty]
