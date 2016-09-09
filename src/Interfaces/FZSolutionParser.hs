@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances, DeriveGeneric, DeriveAnyClass #-}
+{-# LANGUAGE FlexibleInstances#-}
 
 {-|
 Module      : FZSolutionParser
@@ -12,8 +12,6 @@ Stability   : experimental
 This module parses the solutions outputed by the specified FlatZinc solver. It supports multiple solutions.
 The parser might fail if there is a show item in the represented MiniZinc model which alters the default 
 format of the solutions' output.
-
-This parser is built using the "Text.Parsec" module.
 -}
 
 module Interfaces.FZSolutionParser (
@@ -29,12 +27,13 @@ import Control.Applicative
 import qualified Data.Set as S
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Char as C
-import qualified Text.Parsec.Combinator as C1
 import Text.Parsec.String (Parser)
 -- Next two modules for testing only
-import GHC.Generics
-import Control.DeepSeq
+--import GHC.Generics
+--import Control.DeepSeq
 
+-- | A Solution consists of a list of pairs. Each pair represents an assignment of a value to
+-- a decision variable of the constraint model.
 type Solution = [(String, MValue)]
 
 data MValue = MError String
@@ -44,29 +43,29 @@ data MValue = MError String
             | MString String
             | MArray [MValue]
             | MSet (S.Set MValue)
-  deriving (Show, Generic, NFData)
+  deriving Show
+  --deriving (Show, Generic, NFData)
 
 -- | Given the path of the file where the solution(s) have been printed, this function reads the file,
 -- parses the solution(s) and returns them.
-
-getSolutionFromFile :: FilePath -> IO (Either P.ParseError [Solution])
-getSolutionFromFile path = do
+getSolutionFromFile :: FilePath -> Int -> IO (Either P.ParseError [Solution])
+getSolutionFromFile path n = do
   output <- readFile path
-  return $ runParser trySolutions output
+  return $ runParser (trySolutions n) output
 
 -- | Given the path of the file that constaint the solution(s), this function reads the file,
 -- parses the solution(s) and prints them.
-
-printSolutionFromFile :: FilePath -> IO ()
-printSolutionFromFile path = do
+printSolutionFromFile :: Int -> FilePath -> IO ()
+printSolutionFromFile n path = do
   output <- readFile path
-  print $ runParser trySolutions output
+  print $ runParser (trySolutions n) output
 
-getSolution :: String -> Either P.ParseError [Solution]
-getSolution = runParser trySolutions
+-- | 
+getSolution :: Int -> String -> Either P.ParseError [Solution]
+getSolution n = runParser (trySolutions n)
 
-printSolution :: String -> IO ()
-printSolution = print . (runParser trySolutions)
+printSolution :: Int -> String -> IO ()
+printSolution n = print . runParser (trySolutions n)
 
 -- Auxiliary definitions
 digit :: Parser Char
@@ -79,19 +78,21 @@ char :: Char -> Parser Char
 char = C.char
 
 sepBy :: Parser a -> Parser b -> Parser [a]
-sepBy = C1.sepBy
+sepBy = P.sepBy
 
 between :: Parser a -> Parser b -> Parser c -> Parser c
-between = C1.between
+between = P.between
 
 manyTill :: Parser a -> Parser b -> Parser [a]
-manyTill = C1.manyTill
+manyTill = P.manyTill
 
 many1 :: Parser a -> Parser [a]
-many1 = C1.many1
+many1 = P.many1
+
+anyToken = P.anyToken
 
 eof :: Parser ()
-eof = C1.eof
+eof = P.eof
 
 endOfLine :: Parser Char
 endOfLine = C.endOfLine
@@ -109,28 +110,24 @@ try = P.try
 runParser :: Parser a -> String -> Either P.ParseError a
 runParser p = parse (p <* eof) ""
 
-trySolutions :: Parser [Solution]
-trySolutions = (try solutions <|> (unsat >> return [[]])) <* manyTill C1.anyToken eof
+trySolutions :: Int -> Parser [Solution]
+trySolutions n = (try (takeSolutions n) <|> (unsat >> return [[]]))
 
 unsat :: Parser String
-unsat = (many comment) >> string "=====UNSATISFIABLE====="
+unsat = many comment *> string "=====UNSATISFIABLE=====" <* endOfLine <* many comment
+
+takeSolutions :: Int -> Parser [Solution]
+takeSolutions n = take n <$> (solutions)
 
 solutions :: Parser [Solution]
-solutions = manyTill solution (string "==========")
+solutions = manyTill solution (string "==========" >> endOfLine)
 
-solution :: Parser Solution
-solution = fmap clearSolution maybeSolution <* (string "----------" >> endOfLine)
+solution :: Parser [(String, MValue)]
+solution = (many $ (P.skipMany comment) *> (assigned >>= return)) 
+                   <* string "----------" <* endOfLine
 
-maybeSolution :: Parser [(Maybe (String, MValue))]
-maybeSolution = many $ (comment >> return Nothing) <|> (Just <$> (assigned >>= return))
-
-clearSolution :: [(Maybe a)] -> [a]
-clearSolution [] = []
-clearSolution (Nothing:ls) = clearSolution ls
-clearSolution ((Just v):ls) = v : clearSolution ls
-
-comment :: Parser String
-comment = char '%' *> (manyTill C1.anyToken endOfLine) *> return ""
+comment :: Parser ()
+comment = char '%' *> (manyTill anyToken endOfLine) *> return ()
 
 assigned :: Parser (String, MValue)
 assigned = do
@@ -195,7 +192,7 @@ array p = do
   return (fixDims ls es)
 
 natural :: Parser Int
-natural = C1.chainl1 digitValue ascendDecimal
+natural = P.chainl1 digitValue ascendDecimal
 
 opposite :: Parser Int
 opposite = (0 - ) <$> natural
@@ -217,7 +214,7 @@ indexRange = do
   return (b - a + 1)
   
 arraySizes :: Parser [Int]
-arraySizes = C1.sepEndBy1 indexRange (string ",")
+arraySizes = P.sepEndBy1 indexRange (string ",")
 
 extract :: Parser MValue -> Parser [MValue]
 extract p = between (char '[') (char ']') (sepBy p (string ","))
@@ -237,4 +234,4 @@ scalar = try floatM <|> intM <|> boolM <|> stringM
 -- for testing purposes
 parseWithLeftOver :: Parser a -> String -> Either P.ParseError (a,String)
 parseWithLeftOver p = parse ((,) <$> p <*> leftOver) ""
-  where leftOver = manyTill C1.anyToken C1.eof
+  where leftOver = manyTill anyToken eof

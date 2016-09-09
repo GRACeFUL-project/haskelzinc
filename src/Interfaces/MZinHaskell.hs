@@ -76,16 +76,16 @@ testModel m mpath s n = do
   -- Uncomment line below for debugging only
   -- writeFile (mpath ++ ".mzn") (Prelude.show $ printModel m)
   readCreateProcess (shell mfzn) (Prelude.show $ printModel m)
-  let opt = case n of
-              0 -> " -a "
-              _ -> " "
   res <- case s of
-           1 -> readCreateProcess (shell $ flatzinc ++ opt ++ "-b fd " ++ mpath ++ ".fzn") ""
+           1 -> readCreateProcess (shell $ flatzinc ++ "-a -b fd " ++ mpath ++ ".fzn") ""
+           --1 -> readCreateProcess (shell $ flatzinc ++ "-a -b fd " ++ mpath ++ ".fzn > " ++ mpath ++ ".fzn.results.txt") ""
            2 -> let antlr       = antlr_path configuration
                     chocoParser = chocoparser configuration
                     chocoSolver = chocosolver configuration
                 in readCreateProcess (shell $ "java -cp ." ++ (intercalate [searchPathSeparator] [chocoSolver, chocoParser, antlr]) ++ " org.chocosolver.parser.flatzinc.ChocoFZN" ++ opt ++ mpath ++ ".fzn") ""
+                --in readCreateProcess (shell $ "java -cp ." ++ (intercalate [searchPathSeparator] [chocoSolver, chocoParser, antlr]) ++ " org.chocosolver.parser.flatzinc.ChocoFZN -a " ++ mpath ++ ".fzn > " ++ mpath ++ ".fzn.results.txt") ""
   return $ getSolution res
+  --getSolutionFromFile (mpath ++ ".fzn.results.txt") n
 
 -- | Writes the model's data file. The 'MZModel' of the argument must contain
 -- only 'Assignment' items.
