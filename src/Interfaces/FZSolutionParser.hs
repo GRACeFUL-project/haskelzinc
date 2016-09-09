@@ -46,24 +46,29 @@ data MValue = MError String
   deriving Show
   --deriving (Show, Generic, NFData)
 
--- | Given the path of the file where the solution(s) have been printed, this function reads the file,
--- parses the solution(s) and returns them.
+-- | Returns either a parse error or a list of solutions of the constraint model, parsed from 
+-- the file where they are printed. The length of the list is specified by the second argument 
+-- of the function.
 getSolutionFromFile :: FilePath -> Int -> IO (Either P.ParseError [Solution])
 getSolutionFromFile path n = do
   output <- readFile path
   return $ runParser (trySolutions n) output
 
--- | Given the path of the file that constaint the solution(s), this function reads the file,
--- parses the solution(s) and prints them.
+-- | Prints either a parse error or a list of solutions of the constraint model parsed from 
+-- a file where they are printed. The length of the list is sepcified by the second argument 
+-- of the function.
 printSolutionFromFile :: Int -> FilePath -> IO ()
 printSolutionFromFile n path = do
   output <- readFile path
   print $ runParser (trySolutions n) output
 
--- | 
+-- | Same as @getSolutionFromFile@ but parses the string argument of the function instead
+-- of the contents of a file.
 getSolution :: Int -> String -> Either P.ParseError [Solution]
 getSolution n = runParser (trySolutions n)
 
+-- | Same as @printSolutionFromFile@ but parses the string argument of the function instead
+-- of the contents of a file.
 printSolution :: Int -> String -> IO ()
 printSolution n = print . runParser (trySolutions n)
 

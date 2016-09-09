@@ -40,11 +40,11 @@ testModelWithData model mdata path solver num =
   let fdata = [Comment "Model\'s data"] ++ mdata ++ [Empty]
   in testModel (fdata ++ model) path solver num
 
--- | Interactively runs a model and outputs its solution(s). The function first prompts the user
--- for the paths of the file in which the represented MiniZinc model will be printed and the 
--- data file if required. Then asks the user to choose between supported solvers and the desired 
--- number of solutions (only one or all supported for now). Finally, it uses the chosen solver 
--- and parses the solution(s).
+-- | Interactively runs a constraint model and outputs its solution(s). The function first prompts the user
+-- for the working directory: the FlatZinc file will be created in that directory. Then, for a name for the 
+-- constraint model: the created FlatZinc file will be named after this. Also asks the user to choose between 
+-- supported solvers and the desired number of solutions. Returns either a parse error or a list of solutions
+-- of the constraint model. The length of the list is specified by the number of solutions requested.
 iTestModel :: MZModel -> IO (Either ParseError [Solution])
 iTestModel m = do
   putStrLn "Enter working directory:"
@@ -63,8 +63,8 @@ iTestModel m = do
 -- | Runs a model and parses its solution(s).
 testModel :: MZModel -- ^ The model
   -> FilePath        -- ^ The path of the file in which the FlatZinc translation will be printed (without ".fzn" extension)
-  -> Int             -- ^ The chosen solver ("fd" for the G12/FD built-in solver or empty string for choco3)
-  -> Int             -- ^ 0 for all solutions
+  -> Int             -- ^ The chosen solver (@1@ for the G12/FD built-in solver or @2@ for choco3)
+  -> Int             -- ^ The number of solutions to be returned
   -> IO (Either ParseError [Solution])
 testModel m mpath s n = do
   configuration <- parseConfig
@@ -91,6 +91,6 @@ testModel m mpath s n = do
 -- only 'Assignment' items.
 writeData :: MZModel -> IO ()
 writeData m = do
-  putStrLn "Enter MiniZinc datafile's filepath:"
+  putStrLn "Enter datafile's filepath:"
   datapath <- getLine
   writeFile datapath (Prelude.show $ printModel m)
