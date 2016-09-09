@@ -96,6 +96,9 @@ manyTill = P.manyTill
 many1 :: Parser a -> Parser [a]
 many1 = P.many1
 
+skipMany :: Parser a -> Parser ()
+skipMany = P.skipMany
+
 anyToken = P.anyToken
 
 eof :: Parser ()
@@ -106,6 +109,9 @@ endOfLine = C.endOfLine
 
 string :: String -> Parser String
 string = C.string
+
+spaces :: Parser ()
+spaces = C.spaces
 
 parse :: Parser a -> P.SourceName -> String -> Either P.ParseError a
 parse = P.parse
@@ -121,7 +127,7 @@ trySolutions :: Int -> Parser [Solution]
 trySolutions n = (try (takeSolutions n) <|> (unsat >> return [[]]))
 
 unsat :: Parser String
-unsat = many comment *> string "=====UNSATISFIABLE=====" <* endOfLine <* many comment
+unsat = skipMany comment *> (string "=====UNSATISFIABLE=====") <* endOfLine -- <* many comment
 
 takeSolutions :: Int -> Parser [Solution]
 takeSolutions n = take n <$> (solutions)
@@ -130,11 +136,11 @@ solutions :: Parser [Solution]
 solutions = manyTill solution (string "==========" >> endOfLine)
 
 solution :: Parser [(String, MValue)]
-solution = (many $ (P.skipMany comment) *> (assigned >>= return)) 
+solution = (many $ (skipMany comment) *> (assigned >>= return)) 
                    <* string "----------" <* endOfLine
 
-comment :: Parser ()
-comment = char '%' *> (manyTill anyToken endOfLine) *> return ()
+comment :: Parser String
+comment = char '%' *> (manyTill anyToken endOfLine) *> return ""
 
 assigned :: Parser (String, MValue)
 assigned = do
@@ -180,7 +186,7 @@ float = do
     return a
 
 set :: Parser a -> Parser [a]
-set p = between (char '{') (char '}') (sepBy p (string ","))
+set p = between (char '{') (char '}') (sepBy p (string "," >> spaces))
 
 setRange :: Parser MValue
 setRange = MSet <$> S.fromDistinctAscList <$> do
@@ -221,10 +227,10 @@ indexRange = do
   return (b - a + 1)
   
 arraySizes :: Parser [Int]
-arraySizes = P.sepEndBy1 indexRange (string ",")
+arraySizes = P.sepEndBy1 indexRange (string "," >> spaces)
 
 extract :: Parser MValue -> Parser [MValue]
-extract p = between (char '[') (char ']') (sepBy p (string ","))
+extract p = between (char '[') (char ']') (sepBy p (string "," >> spaces))
 
 fixDims :: [Int] -> [MValue] -> MValue
 fixDims [] _ = MError "Array dimensions error: fixDims applied on empty list"
