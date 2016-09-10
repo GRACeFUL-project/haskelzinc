@@ -32,8 +32,11 @@ Compatible with Windows and Unix systems.
   2. Fill in the corresponding paths by adding the equal sign (=) and the correct path.
     
     MINIZINC_DIR: the directory where mzn2fzn and flatzinc executables are
+
     CHOCO_PARSER: the path of the choco parser java library
+
     CHOCO_SOLVER: the path of the choco solver java libaray
+
     ANTLR: the path of the antlr java libaray
 
 Example:
