@@ -8,15 +8,14 @@
       > iTestModel <model_name>
     Then, follow the script's instructions.
     
-      == Models with datafile ==
-    If the model needs to be given a data file, then you have to first 
-    run the command
-      > writeData <data_name>
-    The script will ask you for the desired path of the .dzn file.
-    
+      == Models with datafile ==    
     You should use
       > testModelWithData <model_name> <data_name> <filepath> <solver> <num_of_solutions>
-    to run a model with a data file. This command is not interactive.
+    to run a model with data. This command is not interactive.
+    
+    To write the model's data into a .dzn file, use 
+      > writeData <data_name>
+    The script will ask you for the desired path of the file.
   -}
 
 module HaskelzincTests where
@@ -44,8 +43,8 @@ planning = [
   Declare (Dec, Array [AOS "Products"] (Dec, Range (IConst 0) (Var "mproducts"))) "produce" Nothing,
   Declare (Dec, Array [AOS "Resources"] (Dec, Range (IConst 0) (Call mz_max [Var "capacity"]))) "used" Nothing,
   Constraint (Call mz_forall [ArrayComp (Bi And (Bi Eq (ArrayElem "used" [Var "r"]) (Call mz_sum [ArrayComp (Bi Times (ArrayElem "consumption" [Var "p", Var "r"]) (ArrayElem "produce" [Var "p"])) ([(["p"],Var "Products")], Nothing)])) (Bi Lte (ArrayElem "used" [Var "r"]) (ArrayElem "capacity" [Var "r"]))) ([(["r"], Var "Resources")], Nothing)]),
-  Solve $ Maximize (Call mz_sum [ArrayComp (Bi Times (ArrayElem "profit" [Var "p"]) (ArrayElem "produce" [Var "p"])) ([(["p"],Var "Products")], Nothing)]),
-  Output (Bi Concat (ArrayComp (Bi Concat (Bi Concat (Bi Concat (Call mz_show [ArrayElem "pname" [Var "p"]]) (SConst " = ")) (Call mz_show [ArrayElem "produce" [Var "p"]])) (SConst "\n")) ([(["p"], Var "Products")], Nothing)) (ArrayComp (Bi Concat (Bi Concat (Bi Concat (Call mz_show [ArrayElem "rname" [Var "r"]]) (SConst " = ")) (Call mz_show [ArrayElem "used" [Var "r"]])) (SConst "\n")) ([(["r"], Var "Resources")], Nothing)))]
+  Solve $ Maximize (Call mz_sum [ArrayComp (Bi Times (ArrayElem "profit" [Var "p"]) (ArrayElem "produce" [Var "p"])) ([(["p"],Var "Products")], Nothing)])
+  ]
 
 planningData = [
   Assign "nproducts" (IConst 2),
