@@ -127,7 +127,7 @@ trySolutions :: Int -> Parser [Solution]
 trySolutions n = (try (takeSolutions n) <|> (unsat >> return [[]]))
 
 unsat :: Parser String
-unsat = skipMany comment *> (string "=====UNSATISFIABLE=====") <* endOfLine -- <* many comment
+unsat = skipMany comment *> (string "=====UNSATISFIABLE=====") <* endOfLine <* many comment
 
 takeSolutions :: Int -> Parser [Solution]
 takeSolutions n = take n <$> (solutions)
