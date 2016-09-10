@@ -82,8 +82,8 @@ testModel m mpath s n = do
   -- writeFile (mpath ++ ".mzn") (Prelude.show $ printModel m)
   readCreateProcess (shell mfzn) (Prelude.show $ printModel m)
   res <- case s of
-           1 -> readCreateProcess (shell $ flatzinc ++ "-a -b fd " ++ mpath ++ ".fzn") ""
-           --1 -> readCreateProcess (shell $ flatzinc ++ "-a -b fd " ++ mpath ++ ".fzn > " ++ mpath ++ ".fzn.results.txt") ""
+           1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn") ""
+           --1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn > " ++ mpath ++ ".fzn.results.txt") ""
            2 -> let antlr       = antlr_path configuration
                     chocoParser = chocoparser configuration
                     chocoSolver = chocosolver configuration

@@ -121,7 +121,7 @@ configure ls = mconcat (map (makeConf . (runParser parserLine)) ls)
 -- | Wraps a path in quotes if it contains spaces.
 spaceFix :: String -> String
 spaceFix str = if elem ' ' str
-               then "\"" ++ str ++ "\" "
+               then "\"" ++ str ++ "\""
                else str
 
 runParser :: Parser a -> String -> Either P.ParseError a
