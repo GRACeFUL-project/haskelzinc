@@ -1,26 +1,44 @@
+# Description
+
+This package was created in the context of the [GRACeFUL project](https://www.graceful-project.eu/).
+
+The haskelzinc library defines an interface to the MiniZinc 2.0 constraint proramming language. It provides 
+* a Haskell abstract syntax tree for the MiniZinc language, with which one can represent MiniZinc models in Haskell
+* a pretty printer to print the representation of a MiniZinc model in MiniZinc
+* a parser that returns a representation of the solutions obtained by running the MiniZinc model
+
+An additional module gives the possibility to directly get the solutions of a MiniZinc finite domain model. Option for interactive interface is provided, as well as choice between two solvers: the G12/FD built-in solver of FlatZinc and choco3.
+
 # Requirements
  * GHC 7.10.3
  * MiniZinc 2.0
- * To use choco solver, also required:
+## Optional
+To use choco solver, also required:
    - JDK 8+
-   - THe following jar files can be also found in the choco/ directory of this repo
+   - The following jar files (can be also found in the choco/ directory of this repo)
      - choco_solver (with dependencies) [http://choco-solver.org/Download?q=releases]
      - choco_parser [https://oss.sonatype.org/content/repositories/releases/org/choco-solver/choco-parsers/3.3.3/]
      - ANTLR >4.5.2 java runtime binaries [http://www.antlr.org/download.html]
 
+Compatible with Windows and Unix systems.
+
 # Installation
 
-  This library will be soon available in hackage.
+  This library is [available](https://hackage.haskell.org/package/haskelzinc) on hackage. Use `cabal install`.
 
-# Use
+# Configuration
 
-  1. Create a directory called "HZconf" in the directory of your Haskell code that calls testModel or iTestModel.
-  2. In HZconf create a text file "conf.txt".
-  3. Write the corresponding paths by adding the equal sign (=) and the correct path.
-     MINIZINC_DIR: the directory where mzn2fzn and flatzinc executables are
-     CHOCO_PARSER: the path of the choco parser java library
-     CHOCO_SOLVER: the path of the choco solver java libaray
-     ANTLR: the path of the antlr java libaray
+  1. Create a file `HZconf/conf.txt` in the same directory level where you want to run your code.
+  2. Fill in the corresponding paths by adding the equal sign (=) and the correct path.
+    
+    MINIZINC_DIR: the directory where mzn2fzn and flatzinc executables are
+    CHOCO_PARSER: the path of the choco parser java library
+    CHOCO_SOLVER: the path of the choco solver java libaray
+    ANTLR: the path of the antlr java libaray
 
-     Example:
+Example:
        MINIZINC_DIR = path/to/dir
+
+# Not yet supported
+ * MiniZinc annotations
+ * Set constraints with the choco solver
