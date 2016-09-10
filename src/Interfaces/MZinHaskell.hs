@@ -23,12 +23,13 @@ module Interfaces.MZinHaskell (
 import Data.List
 import System.Process
 import System.FilePath
-import Interfaces.Auxiliary
+import Interfaces.MZAuxiliary
 import Interfaces.MZAST hiding (UserD, PrefBop)
 import Interfaces.MZPrinter
 import Interfaces.FZSolutionParser
 import Text.Parsec.Error
 
+-- | Same as `testModel` but accepts one more argument for the data of the model.
 testModelWithData
   :: MZModel  -- ^ The model
   -> MZModel  -- ^ The data to be used by the model
@@ -40,11 +41,15 @@ testModelWithData model mdata path solver num =
   let fdata = [Comment "Model\'s data"] ++ mdata ++ [Empty]
   in testModel (fdata ++ model) path solver num
 
--- | Interactively runs a constraint model and outputs its solution(s). The function first prompts the user
--- for the working directory: the FlatZinc file will be created in that directory. Then, for a name for the 
--- constraint model: the created FlatZinc file will be named after this. Also asks the user to choose between 
--- supported solvers and the desired number of solutions. Returns either a parse error or a list of solutions
--- of the constraint model. The length of the list is specified by the number of solutions requested.
+-- | Same as `testModel`, but interactive.
+-- 
+-- Interactively runs a constraint model and outputs its solution(s). The 
+-- function first prompts the user for the working directory: the FlatZinc file 
+-- will be created in that directory. Then, for a name for the constraint model: 
+-- the created FlatZinc file will be named after this. Also asks the user to 
+-- choose between supported solvers and the desired number of solutions. Returns 
+-- either a parse error or a list of solutions of the constraint model. The length 
+-- of the list is specified by the number of solutions requested.
 iTestModel :: MZModel -> IO (Either ParseError [Solution])
 iTestModel m = do
   putStrLn "Enter working directory:"
@@ -88,7 +93,7 @@ testModel m mpath s n = do
   --getSolutionFromFile (mpath ++ ".fzn.results.txt") n
 
 -- | Writes the model's data file. The 'MZModel' of the argument must contain
--- only 'Assignment' items.
+-- only `Assignment` items.
 writeData :: MZModel -> IO ()
 writeData m = do
   putStrLn "Enter datafile's filepath:"

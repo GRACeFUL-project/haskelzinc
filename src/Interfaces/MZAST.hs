@@ -8,7 +8,7 @@ Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
 This module provides an interface of the MiniZinc 2.0 language in Haskell through the definition of an abstract syntax tree of the MiniZinc language.
-With the use of this module, one can represent MiniZinc models in Haskell code. The abstract syntac tree is based on 
+With the use of this module, one can represent MiniZinc models in Haskell code. The abstract syntax tree is based on 
 <http://www.minizinc.org/2.0/doc-lib/minizinc-spec.pdf the MiniZinc 2.0 spesification>. 
 
 However, the module does not check semantical correctness of the represented model.
@@ -35,7 +35,7 @@ module Interfaces.MZAST (
   mz_asin, mz_acos, mz_atan, mz_asinh, mz_acosh, mz_atanh,
   -- ** Logical calls
   mz_forall, mz_xorall,
-  -- * String calls
+  -- ** String calls
   mz_show, mz_show_int, mz_show_float, mz_concat, mz_join,
   -- ** Set calls
   mz_card, mz_array_union,
