@@ -28,6 +28,7 @@ import Interfaces.MZAST hiding (UserD, PrefBop)
 import Interfaces.MZPrinter
 import Interfaces.FZSolutionParser
 import Text.Parsec.Error
+import System.Info
 
 -- | Same as `testModel` but accepts one more argument for the data of the model.
 testModelWithData
@@ -81,8 +82,9 @@ testModel m mpath s n = do
   -- Uncomment line below for debugging only
   -- writeFile (mpath ++ ".mzn") (Prelude.show $ printModel m)
   readCreateProcess (shell mfzn) (Prelude.show $ printModel m)
+  let optionsStr = if os == "linux" then " " else " -a -b fd "
   res <- case s of
-           1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn") ""
+           1 -> readCreateProcess (shell $ flatzinc ++ optionsStr ++ mpath ++ ".fzn") ""
            --1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn > " ++ mpath ++ ".fzn.results.txt") ""
            2 -> let antlr       = antlr_path configuration
                     chocoParser = chocoparser configuration
