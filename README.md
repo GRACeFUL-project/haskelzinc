@@ -39,11 +39,3 @@ Example:
 # Not yet supported
  * MiniZinc annotations
  * Set constraints with the choco solver
-
-# Comments for linux users
-The assumed name of the flatzinc executable is `flatzinc`.
-So if you are using `fzn-gecode` you may need to make sure
-there is a symlink from `flatzinc` to `fzn-gecode`.
-Furthermore the code assumes that flatzinc defaults to
-the `-b fd` setting. This will be fixed in an upcoming
-commit.
