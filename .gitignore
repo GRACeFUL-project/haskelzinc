@@ -2,3 +2,4 @@
 *.swp
 dist
 notes.txt
+.cabal-sandbox/
