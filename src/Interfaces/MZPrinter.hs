@@ -186,11 +186,14 @@ printCallable (Callable name args) = text name <> parens (commaSepExpr args)
 -- printCallable (PrefBop op args) = text "`" <> printOp op <> text "`"
 --                                  <> parens (commaSepExpr es)
 
-printAnnotations :: [Callable] -> Doc
+printAnnotations :: [Annotation] -> Doc
 printAnnotations ans = hsep (map printAnnotation ans)
 
-printAnnotation :: Callable -> Doc
-printAnnotation a = colon <> colon <+> printCallable a
+printAnnotation :: Annotation -> Doc
+printAnnotation (Annotation name args) = colon <> colon <+> text name
+                                         <> case args of
+                                              []        -> empty
+                                              otherwise -> parens (commaSepExpr args)
 
 printOp :: Op -> Doc
 printOp (Op op) = text op
