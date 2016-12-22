@@ -76,7 +76,7 @@ module Interfaces.MZBuiltIns (
   -- ** Search annotations
   mz_bool_search, mz_float_search, mz_int_search, mz_seq_search, mz_set_search,
   -- *** Variable selection annotations
-  mz_anti_first_fail, mz_dom_w_deg, mz_first_fail, mz_impact, mz_input_order, mz_largest
+  mz_anti_first_fail, mz_dom_w_deg, mz_first_fail, mz_impact, mz_input_order, mz_largest,
   mz_max_regret, mz_most_constrained, mz_occurrence, mz_smallest,
   -- *** Value choice annotations
   mz_indomain, mz_indomain_interval, mz_indomain_max, mz_indomain_median, mz_indomain_middle,
@@ -84,6 +84,7 @@ module Interfaces.MZBuiltIns (
   mz_indomain_split_random, mz_outdomain_max, mz_outdomain_median, mz_outdomain_min,
   mz_outdomain_random,
   -- *** Exploration strategy annotations
+  mz_complete
 ) where
 
 import Interfaces.MZAST
@@ -178,12 +179,12 @@ mz_sort_by  = Callable "sort_by"
 
 -- Coercion calls
 mz_bool2float = Callable "bool2float"
-mz_bool2int = Callable "bool2int"
-mz_ceil = Callable "ceil"
-mz_floor = Callable "floor"
-mz_int2float = Callable "int2float"
-mz_round = Callable "round"
-mz_set2array = Callable "set2array"
+mz_bool2int   = Callable "bool2int"
+mz_ceil       = Callable "ceil"
+mz_floor      = Callable "floor"
+mz_int2float  = Callable "int2float"
+mz_round      = Callable "round"
+mz_set2array  = Callable "set2array"
 
 -- String calls
 mz_concat    = Callable "concat"
@@ -195,7 +196,7 @@ mz_show2d    = Callable "show2d"
 mz_show3d    = Callable "show3d"
 mz_showJSON  = Callable "showJSON"
 mz_show_float = Callable "show_float"
-mz_show_int = Callable "show_int"
+mz_show_int   = Callable "show_int"
 mz_strig_length = Callable "string_length"
 
 -- Reflection calls
@@ -247,7 +248,7 @@ mz_redundant_constraint         = Callable "redundant_constraint"
 mz_symmetry_breaking_constraint = Callable "symmetry_breaking_constraint"
 
 -- Language information
-mz_mzn_compiler_version = Callable "mzn_compiler_version"
+mz_mzn_compiler_version  = Callable "mzn_compiler_version"
 mz_mzn_version_to_string = Callable "mzn_version_to_string"
 
 -- MiniZinc unary operators
