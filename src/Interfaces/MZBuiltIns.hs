@@ -11,230 +11,320 @@ in recent releases of MiniZinc.
 -}
 
 module Interfaces.MZBuiltIns (
+  opPrec,
+  -- * MiniZinc built-in operators
+  -- ** Comparison operators
+  mz_neq, mz_lt, mz_lte, mz_eq, mz_gt, mz_gte,
+  -- ** Arithmetic operators
+  mz_neg, mz_times, mz_plus, mz_minus, mz_div, mz_idiv, mz_mod,
+  -- ** Logical operators
+  mz_not, mz_rarrow, mz_and, mz_larrow, mz_lrarrow, mz_or, mz_xor,
+  -- ** Set operators
+  mz_range, mz_diff, mz_in, mz_intersect, mz_subset, mz_superset, mz_symdiff, mz_union,
+  -- ** Array operators
+  mz_pp,
+  -- * MiniZinc built-in calls
   -- ** Arithmetic calls
-  mz_abs, mz_sum, mz_max, mz_min, mz_pow, mz_sqrt,
+  mz_abs, mz_arg_max, mz_arg_min, mz_max, mz_min, mz_pow, mz_product, mz_sqrt, mz_sum,
+  -- ** Exponential and logarithmic calls
   mz_exp, mz_ln, mz_log, mz_log10, mz_log2,
-  mz_sin, mz_cos, mz_tan, mz_sinh, mz_cosh, mz_tanh,
-  mz_asin, mz_acos, mz_atan, mz_asinh, mz_acosh, mz_atanh,
+  -- ** Trigonometric calls
+  mz_acos, mz_acosh, mz_asin, mz_asinh, mz_atan, mz_atanh, mz_cos, mz_cosh, mz_sin, mz_sinh, mz_tan,
+  mz_tanh,
   -- ** Logical calls
-  mz_forall, mz_xorall,
-  -- ** String calls
-  mz_show, mz_show_int, mz_show_float, mz_concat, mz_join,
+  mz_clause, mz_exists, mz_forall, mz_iffall, mz_xorall,
   -- ** Set calls
-  mz_card, mz_array_union,
+  mz_card, mz_array_intersect, mz_array_union,
   -- ** Array calls
-  mz_length, mz_index_set, mz_index_set_1of2, mz_index_set_2of2,
-  mz_array1d, mz_array2d, mz_array3d, mz_array4d, mz_array5d, mz_array6d,
-  -- ** Option type calls
-  mz_occurs, mz_absent, mz_deopt,
+  mz_array1d, mz_array2d, mz_array3d, mz_array4d, mz_array5d, mz_array6d, mz_arrayXd, 
+  mz_col, mz_has_element, mz_has_index, mz_index_set, mz_index_set_1of2, mz_index_set_1of3,
+  mz_index_set_1of4, mz_index_set_1of5, mz_index_set_1of6, mz_index_set_2of2, mz_index_set_2of3,
+  mz_index_set_2of4, mz_index_set_2of5, mz_index_set_2of6, mz_index_set_3of3, mz_index_set_3of4,
+  mz_index_set_3of5, mz_index_set_3of6, mz_index_set_4of4, mz_index_set_4of5, mz_index_set_4of6, 
+  mz_index_set_5of5, mz_index_set_5of6, mz_index_set_6of6, mz_index_sets_agree, mz_length,
+  mz_reverse, mz_row,
+  -- ** Array sorting calls
+  mz_arg_sort, mz_sort, mz_sort_by,
   -- ** Coercion calls
-  mz_ceil, mz_floor, mz_round,
-  mz_bool2int, mz_int2float, mz_set2array,
-  -- ** Bound and domain calls
-  mz_lb, mz_ub, mz_lb_array, mz_ub_array, mz_dom, mz_dom_array, mz_dom_size,
-  -- ** Other calls
-  mz_assert, mz_abort, mz_trace, mz_fix, mz_is_fixed
+  mz_bool2float, mz_bool2int, mz_ceil, mz_floor, mz_int2float, mz_round, mz_set2array,
+  -- ** String calls
+  mz_concat, mz_file_path, mz_format, mz_join, mz_show, mz_show2d, mz_show3d, mz_showJSON, 
+  mz_show_float, mz_show_int, mz_strig_length,
+  -- ** Reflection calls
+  mz_dom, mz_dom_array, mz_dom_bounds_array, mz_dom_size, mz_fix, mz_has_bounds, mz_has_ub_set,
+  mz_is_fixed, mz_lb, mz_lb_array, mz_ub, mz_ub_array,
+  -- ** Assertions and debugging calls
+  mz_abort, mz_assert, mz_trace, mz_trace_stdout,
+  -- ** Calls for @Enum@s
+  mz_enum_next, mz_enum_prev, mz_to_enum,
+  -- ** Calls for @Optional@s
+  mz_absent, mz_deopt, mz_occurs,
+  -- ** Random number generator calls
+  mz_bernoulli, mz_binomial, mz_cauchy, mz_chisquared, mz_discrete_distribution, mz_exponential, 
+  mz_fdistribution, mz_gamma, mz_lognormal, mz_normal, mz_poisson, mz_tdistribution, mz_uniform, 
+  mz_weibull,
+  -- ** Special constraints
+  mz_implied_constraint, mz_redundant_constraint, mz_symmetry_breaking_constraint,
+  -- ** Language information
+  mz_mzn_compiler_version, mz_mzn_version_to_string
 ) where
 
 import Interfaces.MZAST
 
-mz_abort :: Func
-mz_abort = userD "abort"
-
-mz_abs :: Func
-mz_abs = userD "abs"
-
-mz_absent :: Func
-mz_absent = userD "absent"
-
-mz_acos :: Func
-mz_acos = userD "acos"
-
-mz_acosh :: Func
-mz_acosh = userD "acosh"
-
-mz_array1d :: Func
-mz_array1d = userD "array1d"
-
-mz_array2d :: Func
-mz_array2d = userD "array2d"
-
-mz_array3d :: Func
-mz_array3d = userD "array3d"
-
-mz_array4d :: Func
-mz_array4d = userD "array4d"
-
-mz_array5d :: Func
-mz_array5d = userD "array5d"
-
-mz_array6d :: Func
-mz_array6d = userD "array6d"
-
-mz_array_intersect :: Func
-mz_array_intersect = userD "array_intersect"
-
-mz_array_union :: Func
-mz_array_union = userD "array_union"
-
-mz_asin :: Func
-mz_asin = userD "asin"
-
-mz_asinh :: Func
-mz_asinh = userD "asinh"
-
-mz_assert :: Func
-mz_assert = userD "assert"
-
-mz_atan :: Func
-mz_atan = userD "atan"
-
-mz_atanh :: Func
-mz_atanh = userD "atanh"
-
-mz_bool2int :: Func
-mz_bool2int = userD "bool2int"
-
-mz_card :: Func
-mz_card = userD "card"
-
-mz_ceil :: Func
-mz_ceil = userD "ceil"
-
-mz_concat :: Func
-mz_concat = userD "concat"
-
-mz_cos :: Func
-mz_cos = userD "cos"
-
-mz_cosh :: Func
-mz_cosh = userD "cosh"
-
-mz_deopt :: Func
-mz_deopt = userD "deopt"
-
-mz_dom :: Func
-mz_dom = userD "dom"
-
-mz_dom_array :: Func
-mz_dom_array = userD "dom_array"
-
-mz_dom_size :: Func
-mz_dom_size = userD "dom_size"
-
-mz_exists :: Func
-mz_exists = userD "exists"
-
-mz_exp :: Func
-mz_exp = userD "exp"
-
-mz_fix :: Func
-mz_fix = userD "fix"
-
-mz_floor :: Func
-mz_floor = userD "floor"
-
-mz_forall :: Func
-mz_forall = userD "forall"
-
-mz_index_set :: Func
-mz_index_set = userD "index_set"
-
-mz_index_set_1of2 :: Func
-mz_index_set_1of2 = userD "index_set_1of2"
-
-mz_index_set_2of2 :: Func
-mz_index_set_2of2 = userD "index_set_2of2"
-
-mz_int2float :: Func
-mz_int2float = userD "int2float"
-
-mz_is_fixed :: Func
-mz_is_fixed = userD "is_fixed"
-
-mz_join :: Func
-mz_join = userD "join"
-
-mz_length :: Func
-mz_length = userD "length"
-
-mz_lb :: Func
-mz_lb = userD "lb"
-
-mz_lb_array :: Func
-mz_lb_array = userD "lb_array"
-
-mz_ln :: Func
-mz_ln = userD "ln"
-
-mz_log :: Func
-mz_log = userD "log"
-
-mz_log10 :: Func
-mz_log10 = userD "log10"
-
-mz_log2 :: Func
-mz_log2 = userD "log2"
-
-mz_max :: Func
-mz_max = userD "max"
-
-mz_min :: Func
-mz_min = userD "min"
-
-mz_occurs :: Func
-mz_occurs = userD "occurs"
-
-mz_pow :: Func
-mz_pow = userD "pow"
-
-mz_product :: Func
-mz_product = userD "product"
-
-mz_regular :: Func
-mz_regular = userD "regular"
-
-mz_round :: Func
-mz_round = userD "round"
-
-mz_set2array :: Func
-mz_set2array = userD "set2array"
-
-mz_show :: Func
-mz_show = userD "show"
-
-mz_show_float :: Func
-mz_show_float = userD "show_float"
-
-mz_show_int :: Func
-mz_show_int = userD "show_int"
-
-mz_sin :: Func
-mz_sin = userD "sin"
-
-mz_sinh :: Func
-mz_sinh = userD "sinh"
-
-mz_sqrt :: Func
-mz_sqrt = userD "sqrt"
-
-mz_sum :: Func
-mz_sum = userD "sum"
-
-mz_tan :: Func
-mz_tan = userD "tan"
-
-mz_tanh :: Func
-mz_tanh = userD "tanh"
-
-mz_trace :: Func
-mz_trace = userD "trace"
-
-mz_ub :: Func
-mz_ub = userD "ub"
-
-mz_ub_array :: Func
-mz_ub_array = userD "ub_array"
-
-mz_xorall :: Func
-mz_xorall = userD "xorall"
+-- MiniZinc calls
+
+-- Arithmetic calls
+mz_abs     = CName "abs"
+mz_arg_max = CName "arg_max"
+mz_arg_min = CName "arg_min"
+mz_max     = CName "max"
+mz_min     = CName "min"
+mz_pow     = CName "pow"
+mz_product = CName "product"
+mz_sqrt    = CName "sqrt"
+mz_sum     = CName "sum"
+
+-- Exponential and logarithmic calls
+mz_exp   = CName "exp"
+mz_ln    = CName "ln"
+mz_log   = CName "log"
+mz_log10 = CName "log10"
+mz_log2  = CName "log2"
+
+-- Trigonometric calls
+mz_acos  = CName "acos"
+mz_acosh = CName "acosh"
+mz_asin  = CName "asin"
+mz_asinh = CName "asinh"
+mz_atan  = CName "atan"
+mz_atanh = CName "atanh"
+mz_cos   = CName "cos"
+mz_cosh  = CName "cosh"
+mz_sin   = CName "sin"
+mz_sinh  = CName "sinh"
+mz_tan   = CName "tan"
+mz_tanh  = CName "tanh"
+
+-- Logical calls
+mz_clause = CName "clause"
+mz_exists = CName "exists"
+mz_forall = CName "forall"
+mz_iffall = CName "iffall"
+mz_xorall = CName "xorall"
+
+-- Set calls
+mz_array_intersect = CName "array_intersect"
+mz_array_union     = CName "array_union"
+mz_card            = CName "card"
+
+-- Array calls
+mz_array1d     = CName "array1d"
+mz_array2d     = CName "array2d"
+mz_array3d     = CName "array3d"
+mz_array4d     = CName "array4d"
+mz_array5d     = CName "array5d"
+mz_array6d     = CName "array6d"
+mz_arrayXd     = CName "arrayXd"
+mz_col         = CName "col"
+mz_has_element = CName "has_element"
+mz_has_index   = CName "has_index"
+mz_index_set   = CName "index_set"
+mz_index_set_1of2 = CName "index_set_1of2"
+mz_index_set_1of3 = CName "index_set_1of3"
+mz_index_set_1of4 = CName "index_set_1of4"
+mz_index_set_1of5 = CName "index_set_1of5"
+mz_index_set_1of6 = CName "index_set_1of6"
+mz_index_set_2of2 = CName "index_set_2of2"
+mz_index_set_2of3 = CName "index_set_2of3"
+mz_index_set_2of4 = CName "index_set_2of4"
+mz_index_set_2of5 = CName "index_set_2of5"
+mz_index_set_2of6 = CName "index_set_2of6"
+mz_index_set_3of3 = CName "index_set_3of3"
+mz_index_set_3of4 = CName "index_set_3of4"
+mz_index_set_3of5 = CName "index_set_3of5"
+mz_index_set_3of6 = CName "index_set_3of6"
+mz_index_set_4of4 = CName "index_set_4of4"
+mz_index_set_4of5 = CName "index_set_4of5"
+mz_index_set_4of6 = CName "index_set_4of6"
+mz_index_set_5of5 = CName "index_set_5of5"
+mz_index_set_5of6 = CName "index_set_5of6"
+mz_index_set_6of6 = CName "index_set_6of6"
+mz_index_sets_agree = CName "index_sets_agree"
+mz_length  = CName "length"
+mz_reverse = CName "reverse"
+mz_row     = CName "row"
+
+-- Array sorting calls
+mz_arg_sort = CName "arg_sort"
+mz_sort     = CName "sort"
+mz_sort_by  = CName "sort_by"
+
+-- Coercion calls
+mz_bool2float = CName "bool2float"
+mz_bool2int = CName "bool2int"
+mz_ceil = CName "ceil"
+mz_floor = CName "floor"
+mz_int2float = CName "int2float"
+mz_round = CName "round"
+mz_set2array = CName "set2array"
+
+-- String calls
+mz_concat    = CName "concat"
+mz_file_path = CName "file_path"
+mz_format    = CName "format"
+mz_join      = CName "join"
+mz_show      = CName "show"
+mz_show2d    = CName "show2d"
+mz_show3d    = CName "show3d"
+mz_showJSON  = CName "showJSON"
+mz_show_float = CName "show_float"
+mz_show_int = CName "show_int"
+mz_strig_length = CName "string_length"
+
+-- Reflection calls
+mz_dom              = CName "dom"
+mz_dom_array        = CName "dom_array"
+mz_dom_bounds_array = CName "dom_bounds_array"
+mz_dom_size         = CName "dom_size"
+mz_fix              = CName "fix"
+mz_has_bounds       = CName "has_bounds"
+mz_has_ub_set       = CName "has_ub_set"
+mz_is_fixed         = CName "is_fixed"
+mz_lb               = CName "lb"
+mz_lb_array         = CName "lb_array"
+mz_ub               = CName "ub"
+mz_ub_array         = CName "ub_array"
+
+-- Assertions and debugging calls
+mz_abort        = CName "abort"
+mz_assert       = CName "assert"
+mz_trace        = CName "trace"
+mz_trace_stdout = CName "trace_stdout"
+
+-- Calls for @Enum@s
+mz_enum_next = CName "enum_next"
+mz_enum_prev = CName "enum_prev"
+mz_to_enum   = CName "to_enum"
+
+-- Calls for Optionals
+
+-- Random number generator calls
+mz_bernoulli      = CName "bernoulli"
+mz_binomial       = CName "binomial"
+mz_cauchy         = CName "cauchy"
+mz_chisquared     = CName "chisquared"
+mz_discrete_distribution = CName "discrete_distribution"
+mz_exponential    = CName "exponential"
+mz_fdistribution  = CName "fdistribution"
+mz_gamma          = CName "gamma"
+mz_lognormal      = CName "lognormal"
+mz_normal         = CName "normal"
+mz_poisson        = CName "poisson"
+mz_tdistribution  = CName "tdistribution"
+mz_uniform        = CName "uniform"
+mz_weibull        = CName "weibull"
+
+-- Special constraints
+mz_implied_constraint           = CName "implied_constraint"
+mz_redundant_constraint         = CName "redundant_constraint"
+mz_symmetry_breaking_constraint = CName "symmetry_breaking_constraint"
+
+-- Language information
+mz_mzn_compiler_version = CName "mzn_compiler_version"
+mz_mzn_version_to_string = CName "mzn_version_to_string"
+
+-- MiniZinc unary operators
+mz_neg = Uop "-"
+mz_not = Uop "not"
+
+-- MiniZinc binary operators
+mz_absent = CName "absent"
+mz_deopt  = CName "deopt"
+mz_occurs = CName "occurs"
+--mz_regular = CName "regular"
+
+-- Comparison operators
+mz_neq = Bop "!="
+mz_lt  = Bop "<"
+mz_lte = Bop "<="
+mz_eq  = Bop "="
+mz_gt  = Bop ">"
+mz_gte = Bop ">="
+
+-- Arithmetic operators
+mz_times = Bop "*"
+mz_plus  = Bop "+"
+mz_minus = Bop "-"
+mz_div   = Bop "/"
+mz_idiv  = Bop "div"
+mz_mod   = Bop "mod"
+
+-- Logical operators
+mz_rarrow  = Bop "->"
+mz_and     = Bop "/\\"
+mz_larrow  = Bop "<-"
+mz_lrarrow = Bop "<->"
+mz_or      = Bop "\\/"
+mz_xor     = Bop "xor"
+
+-- Set operators
+mz_range     = Bop ".."
+mz_diff      = Bop "diff"
+mz_in        = Bop "in"
+mz_intersect = Bop "intersect"
+mz_subset    = Bop "subset"
+mz_superset  = Bop "superset"
+mz_symdiff   = Bop "symdiff"
+mz_union     = Bop "union"
+
+-- Array operators
+mz_pp = Bop "++"
+
+opPrec :: Bop -> Int
+opPrec bop
+  | bop == mz_lrarrow = 7
+  | bop == mz_rarrow  = 7
+  | bop == mz_larrow  = 7
+  | bop == mz_and     = 7
+  | bop == mz_or      = 7
+  | bop == mz_eq      = 8
+  | bop == mz_neq     = 8
+  | bop == mz_times   = 9
+  | bop == mz_mod     = 9
+  | otherwise         = 10
+{-
+prec mz_lrarrow  = 7 
+prec mz_rarrow   = 7
+prec mz_larrow   = 7
+prec mz_and      = 7 
+prec mz_or       = 7
+prec mz_eq      = 8
+prec mz_neq      = 8
+prec mz_times    = 9
+prec mz_mod      = 9
+prec _        = 10
+-}
+-- MiniZinc annotations
+{-
+data AnnName
+  = AName Ident
+  -- General annotations
+  | MZadd_to_output
+  | MZis_defined_var
+  | MZis_reverse-map
+  | MZmaybe_partial
+  | MZoutput_var
+  | MZpromise_total
+  | MZvar_is_introduced
+  | MZdefines_var
+  | MZdoc_comment
+  | MZoutput_array
+  -- Propagation strength annotations
+  | MZbounds
+  | MZdomain
+  -- Search annotations
+  | MZbool_search
+  | MZ_float_search
+  | MZint_search
+  |
+-}

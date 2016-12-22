@@ -15,12 +15,14 @@ module Interfaces.MZPrinter(
   Interfaces.MZAST.MZModel,
   printModel,
   printItem,
-  printNakedExpr
+  printNakedExpr,
+  printExpr
 ) where
 
 import Text.PrettyPrint
 import Data.List
 import Interfaces.MZAST
+import Interfaces.MZBuiltIns
   
 -- | Prints the represented MiniZinc model. Essentially, this function applies 'printItem' on
 -- each element of the specified model.
@@ -115,7 +117,7 @@ printNakedExpr (ArrayLit2D ess)    = brackets (foldl1 ($+$) (map (\x -> text "|"
 printNakedExpr (ArrayComp e ct)    = brackets (printNakedExpr e <+> text "|" <+> printCompTail ct)
 printNakedExpr (ArrayElem v es)    = text v <> brackets (commaSepExpr es)
 printNakedExpr (U op e)            = printUop op <+> (if isAtomic e then printNakedExpr e else parens (printNakedExpr e))
-printNakedExpr (Bi op e1 e2)       = printParensNakedExpr (prec op) e1 <+> printBop op <+> printParensNakedExpr (prec op) e2
+printNakedExpr (Bi op e1 e2)       = printParensNakedExpr (opPrec op) e1 <+> printBop op <+> printParensNakedExpr (opPrec op) e2
 printNakedExpr (Call f es)         = printFunc f <> parens (commaSepExpr es)
 printNakedExpr (ITE [(e1, e2)] e3) = text "if" <+> printNakedExpr e1 <+> text "then" <+> printNakedExpr e2 
                                      $+$ text "else" <+> printNakedExpr e3 <+> text "endif"
@@ -139,37 +141,25 @@ printParensExpr n (Expr e ans)
 -- This function together with prec are used for placing parentheses in expressions
 printParensNakedExpr :: Int -> NakedExpr -> Doc
 printParensNakedExpr n e@(Bi op _ _)
-  | n < prec op  = parens (printNakedExpr e)
+  | n < opPrec op  = parens (printNakedExpr e)
   | otherwise    = printNakedExpr e
 printParensNakedExpr _ e@(U _ ue) = if isAtomic ue then printNakedExpr ue else parens (printNakedExpr ue)
 printParensNakedExpr _ e          = printNakedExpr e
 
-prec :: Bop -> Int
-prec LRarrow  = 7 
-prec Rarrow   = 7
-prec Larrow   = 7
-prec And      = 7 
-prec Or       = 7
-prec Eqq      = 8
-prec Neq      = 8
-prec Times    = 9
-prec Mod      = 9
-prec _        = 10
-
-printVarType :: VarType -> Doc
-printVarType Bool             = text "bool"
-printVarType Float            = text "float"
-printVarType Int              = text "int"
-printVarType String           = text "string"
-printVarType (Set t)          = text "set of" <+> printVarType t
-printVarType (Array ts ti)    = text "array" <> brackets (commaSep printVarType ts) <+> text "of" <+> printTypeInst ti
-printVarType (List ti)        = text "list of" <+> printTypeInst ti
-printVarType (Opt t)          = text "opt" <+> printVarType t
-printVarType (Ann)            = text "ann"
-printVarType (Interval e1 e2) = printNakedExpr e1 <> text ".." <> printNakedExpr e2
-printVarType (Elems es)       = braces $ commaSepExpr es
-printVarType Any              = text "any"
-printVarType (AOS name)       = text name
+printType :: Type -> Doc
+printType Bool             = text "bool"
+printType Float            = text "float"
+printType Int              = text "int"
+printType String           = text "string"
+printType (Set t)          = text "set of" <+> printType t
+printType (Array ts ti)    = text "array" <> brackets (commaSep printType ts) <+> text "of" <+> printTypeInst ti
+printType (List ti)        = text "list of" <+> printTypeInst ti
+printType (Opt t)          = text "opt" <+> printType t
+printType (Ann)            = text "ann"
+printType (Interval e1 e2) = printNakedExpr e1 <> text ".." <> printNakedExpr e2
+printType (Elems es)       = braces $ commaSepExpr es
+printType (AOS name)       = text name
+printType (VarType name)   = text "$" <> text name
 
 printCompTail :: CompTail -> Doc
 printCompTail (gs, Nothing) = commaSep printGenerator gs
@@ -193,39 +183,10 @@ printAnnotation :: Annotation -> Doc
 printAnnotation (AName name es) = colon <> colon <+> text name <> parens (commaSepExpr es)
 
 printBop :: Bop -> Doc
-printBop Gt           = text ">"
-printBop Lt           = text "<"
-printBop Lte          = text "<="
-printBop Gte          = text ">="
-printBop Eq           = equals
-printBop Eqq          = equals <> equals
-printBop Neq          = text "!="
-printBop BPlus        = text "+"
-printBop BMinus       = text "-"
-printBop Times        = text "*"
-printBop Div          = text "/"
-printBop IDiv         = text "div"
-printBop Mod          = text "mod"
-printBop LRarrow      = text "<->"
-printBop Larrow       = text "<-"
-printBop Rarrow       = text "->"
-printBop And          = text "/\\"
-printBop Or           = text "\\/"
-printBop In           = text "in"
-printBop Sub          = text "subset"
-printBop Super        = text "superset"
-printBop Union        = text "union"
-printBop Inters       = text "intersect"
-printBop Diff         = text "diff"
-printBop SDiff        = text "symdiff"
-printBop RangeOp      = text ".."
-printBop Concat       = text "++"
-printBop (AsFunc op)  = quotes $ printBop op
+printBop (Bop b) = text b
 
 printUop :: Uop -> Doc
-printUop Not    = text "not"
-printUop UPlus  = text "+"
-printUop UMinus = text "-"
+printUop (Uop op) = text op
 
 printSolve :: Solve -> Doc
 printSolve Satisfy      = text "satisfy"
@@ -242,11 +203,11 @@ printParam (i, t, n) = printTypeInst (i, t) <> colon <+> text n
 -- Prints the instantiation (var or par) and the type in a variable declaration. If the
 -- type is Array or String, it does not print the inst, since these types are of fixed
 -- inst. Same with @Ann@ type, but for other reasons.
-printTypeInst :: (Inst, VarType) -> Doc
-printTypeInst (_, t@(Array _ _)) = printVarType t
-printTypeInst (_, String)        = printVarType String
-printTypeInst (_, Ann)           = printVarType Ann
-printTypeInst (i, t)             = printInst i <+> printVarType t
+printTypeInst :: (Inst, Type) -> Doc
+printTypeInst (_, t@(Array _ _)) = printType t
+printTypeInst (_, String)        = printType String
+printTypeInst (_, Ann)           = printType Ann
+printTypeInst (i, t)             = printInst i <+> printType t
 
 -- Horizontally concatinates Docs while also putting a comma-space (", ") in between
 commaSepDoc :: [Doc] -> Doc

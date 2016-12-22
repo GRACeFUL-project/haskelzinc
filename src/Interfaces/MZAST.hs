@@ -23,11 +23,10 @@ module Interfaces.MZAST (
   Item(..),
   Expr(..),
   NakedExpr(..),
-  VarType(..),
+  Type(..),
   -- * MiniZinc operators
   Bop(..),
   Uop(..),
-  -- * MiniZinc built-in calls
   userD, prefbop,
   Func(..),
   Annotation(..),
@@ -140,19 +139,19 @@ data NakedExpr
   deriving Eq
 
 -- | The type of a MiniZinc's type representation.
-data VarType
+data Type
   = Bool
   | Int
   | Float
   | String
   -- | @Set t@ translates to @set of t@.
-  | Set VarType
+  | Set Type
   -- | @Array ts ti@ translates to @array [ts] of ti@. 
-  | Array [VarType] TypeInst
+  | Array [Type] TypeInst
   -- | The list type
   | List TypeInst
   -- | Option type
-  | Opt VarType
+  | Opt Type
   -- | Annotation type
   | Ann
   -- | A constrained type using the integer range. @Interval a b@ translates to @a .. b@.
@@ -161,90 +160,32 @@ data VarType
   | Elems [NakedExpr]
   -- | A constrained type using a previously defined set parameter.
   | AOS Ident
-  | Any
+  -- | Type variable
+  | VarType Ident
   deriving Eq
 
 -- | The type of MiniZinc binary operators' representation. Next to each constructor is indicated the operator it represents.
-data Bop 
-  -- Comparison
-  = Gt  -- ^ @>@
-  | Lt  -- ^ @<@
-  | Gte -- ^ @>=@
-  | Lte -- ^ @<=@
-  | Eqq -- ^ @==@
-  | Eq  -- ^ @=@
-  | Neq -- ^ @!=@
-  
-  -- Arithmetic
-  | BPlus   -- ^ @+@
-  | BMinus  -- ^ @-@
-  | Times   -- ^ @*@
-  | Div     -- ^ @/@
-  | IDiv    -- ^ @div@
-  | Mod     -- ^ @mod@
-  
-  -- Logical
-  | LRarrow -- ^ @\<-\>@
-  | Rarrow  -- ^ @->@
-  | Larrow  -- ^ @<-@
-  | And     -- ^ @\/\\@
-  | Or      -- ^ @\\\/@
-  
-  -- Sets
-  | In      -- ^ @in@
-  | Sub     -- ^ @subset@
-  | Super   -- ^ @superset@
-  | Union   -- ^ @union@
-  | Inters  -- ^ @intersect@
-  
-  -- Arrays
-  | Concat  -- ^ @++@
-  
-  -- Misc
-  | Diff    -- ^ @diff@
-  | SDiff   -- ^ @symdiff@
-  | RangeOp -- ^ @..@
-  | AsFunc Bop
-  deriving Eq
+newtype Bop = Bop String
+  deriving (Eq)
 
 -- | Represents MiniZinc unary operators. Next to each constructor is indicated the operator it represents.  
-data Uop 
+newtype Uop = Uop String
+  deriving (Eq)
+{-data Uop 
   = Not     -- ^ @not@
   | UPlus   -- ^ @+@
   | UMinus  -- ^ @-@
- deriving Eq
+ deriving Eq-}
+-- | The type of a MiniZinc's function, test or predicate representation.
 
--- | The type of a MiniZinc's function, test, predicate or   representation.
 data Func
-  = CName Ident
+  = CName Ident  -- ^ Represents a MiniZinc call (function, predicate or test). The @Ident@ argument is the name of the call.
   | PrefBop Bop
   deriving Eq
   
 data Annotation = AName Ident [NakedExpr]
   deriving (Eq)
-{-
-data AnnName
-  = AName Ident
-  -- General annotations
-  | MZadd_to_output
-  | MZis_defined_var
-  | MZis_reverse-map
-  | MZmaybe_partial
-  | MZoutput_var
-  | MZpromise_total
-  | MZvar_is_introduced
-  | MZdefines_var
-  | MZdoc_comment
-  | MZoutput_array
-  -- Propagation strength annotations
-  | MZbounds
-  | MZdomain
-  -- Search annotations
-  | MZbool_search
-  | MZ_float_search
-  | MZint_search
-  |
--}
+
 -- | User defined function, test or predicate in MiniZinc. The argument of this constructor
 -- is the name of the function.
 userD :: Ident -> Func
@@ -271,9 +212,9 @@ type CompTail = ([Generator], Maybe NakedExpr)
 
 type Generator = ([Ident], NakedExpr)
  
-type TypeInst = (Inst, VarType)
+type TypeInst = (Inst, Type)
 
-type Param = (Inst, VarType, Ident)
+type Param = (Inst, Type, Ident)
 
 type Ident = String
 
