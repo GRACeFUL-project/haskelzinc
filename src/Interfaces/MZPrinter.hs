@@ -120,7 +120,7 @@ printNakedExpr (U op e)            =
 printNakedExpr (Bi op e1 e2)       = printParensNakedExpr (opPrec op) e1 
                                      <+> printOp op 
                                      <+> printParensNakedExpr (opPrec op) e2
-printNakedExpr (Call f es)         = printFunc f <> parens (commaSepExpr es)
+printNakedExpr (Call f)            = printCallable f
 printNakedExpr (ITE [(e1, e2)] e3) = text "if" <+> printNakedExpr e1 
                                      <+> text "then" <+> printNakedExpr e2 
                                      $+$ text "else" <+> printNakedExpr e3 <+> text "endif"
@@ -132,7 +132,7 @@ printNakedExpr (Let is e)          = text "let"
                                      <+> braces (nest 4 (vcat (map printItem is))) 
                                      $+$ text "in" 
                                      <+> printNakedExpr e
-printNakedExpr (GenCall f ct e)    = printFunc f <> parens (printCompTail ct)
+printNakedExpr (GenCall name ct e) = text name <> parens (printCompTail ct)
                                      $+$ nest 2 (parens (printNakedExpr e))
 
 -- Only helps for printing if-then-elseif-then-...-else-endif expressions
@@ -181,15 +181,16 @@ printInst :: Inst -> Doc
 printInst Dec = text "var"
 printInst Par = text "par"
 
-printFunc :: Func -> Doc
-printFunc (CName name) = text name
-printFunc (PrefBop op) = text "`" <> printOp op <> text "`"
+printCallable :: Callable -> Doc
+printCallable (Callable name args) = text name <> parens (commaSepExpr args)
+-- printCallable (PrefBop op args) = text "`" <> printOp op <> text "`"
+--                                  <> parens (commaSepExpr es)
 
-printAnnotations :: [Annotation] -> Doc
+printAnnotations :: [Callable] -> Doc
 printAnnotations ans = hsep (map printAnnotation ans)
 
-printAnnotation :: Annotation -> Doc
-printAnnotation (AName name es) = colon <> colon <+> text name <> parens (commaSepExpr es)
+printAnnotation :: Callable -> Doc
+printAnnotation a = colon <> colon <+> printCallable a
 
 printOp :: Op -> Doc
 printOp (Op op) = text op

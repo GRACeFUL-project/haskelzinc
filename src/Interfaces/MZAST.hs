@@ -25,8 +25,8 @@ module Interfaces.MZAST (
   NakedExpr(..),
   Type(..),
   Op(..),
-  Func(..),
-  Annotation(..),
+  Callable(..),
+  --Annotation(..),
   Inst(..),
   Solve(..),
   CompTail,
@@ -55,26 +55,26 @@ data Item
   -- The value @Declare i t name maybe_exp@ represents the declaration a variable named @name@ of type @t@ and inst @i@. 
   -- Use @Just expression@ in place of @maybe_exp@ to represent the value that initializes the declared 
   -- variable. Use @Nothing@ in place of @maybe_exp@ to represent a variable declaration without initialization.
-  | Declare Param [Annotation] (Maybe NakedExpr)
+  | Declare Param [Callable] (Maybe NakedExpr)
   -- | Assignment item. @Assign name exp@ represents the assignment of @exp@ to the variable @name@.
   | Assign Ident NakedExpr
   -- | Constraint item
   | Constraint Expr
   -- | Solve item
-  | Solve [Annotation] Solve
+  | Solve [Callable] Solve
   -- | Output item. The use of this item might cause errors in parsing the solution(s) of the model.
   -- Recommended use for testing purposes only.
   | Output NakedExpr
   -- | User-defined predicate. @Pred name args exp@ represents the MiniZinc definition of a predicate 
   -- called @name@, the parameters of which are the elements of the @args@ list. @exp@ represents the
   -- optional body of the predicate.
-  | Pred Ident [Param] [Annotation] (Maybe NakedExpr)
+  | Pred Ident [Param] [Callable] (Maybe NakedExpr)
   -- | User-defined test. Syntax similar to the @Pred@ constructor.
-  | Test Ident [Param] [Annotation] (Maybe NakedExpr)
+  | Test Ident [Param] [Callable] (Maybe NakedExpr)
   -- | User-defined function. Syntax similar to @Pred@ and @Test@ constructors. The additional @Param@
   -- represents the type and inst of the returning value of the function, along with the name of the 
   -- function.
-  | Function Param [Param] [Annotation] (Maybe NakedExpr)
+  | Function Param [Param] [Callable] (Maybe NakedExpr)
   -- | Represents the declaration of a user defined annotation. The first argument represents the name of the annotation and the second encodes its arguments.
   | AnnotDec Ident [Param]
   -- | Represents an empty line in the MiniZinc model.
@@ -82,7 +82,7 @@ data Item
   deriving Eq
 
 -- Represents a MiniZinc expression (first argument) annotated with the annotations contained in the list of the second argument.
-data Expr = Expr NakedExpr [Annotation]
+data Expr = Expr NakedExpr [Callable]
   deriving (Eq)
 
 -- | The type of a MiniZinc expression's representation.
@@ -122,7 +122,7 @@ data NakedExpr
   -- | @U op exp1@ represents the MiniZinc expression that applies the unary operator @op@ on @exp1@.
   | U Op NakedExpr
   -- | @Call name args@ represents a call to the function or test @name@ on arguments @args@.
-  | Call Func [NakedExpr]
+  | Call Callable
   -- | The if-then-else conditional. If the first argument of the constructor is an empty list, the translation to MiniZinc will fail.
   -- @ITE [(cond, expr1)] expr2@, where the list is a singleton, translates to @if cond then exp1 else exp2 endif@.
   -- If the list contains more than one pairs, then the corresponding @elseif-then@ pairs are inserted before the final @else@ expression.
@@ -132,7 +132,7 @@ data NakedExpr
   -- MiniZinc let expression.
   | Let [Item] NakedExpr
   -- | A generator call expression.
-  | GenCall Func CompTail NakedExpr 
+  | GenCall Ident CompTail NakedExpr 
   deriving Eq
 
 -- | The type of a MiniZinc's type representation.
@@ -165,14 +165,18 @@ data Type
 newtype Op = Op String
   deriving (Eq)
 
--- | Represents the name of a MiniZinc function, test or predicate.
-data Func
-  = CName Ident  -- ^ Name given by the user
-  | PrefBop Op   -- ^ Prefix syntax of given (representation of) MiniZinc operator.
+-- | Represents a call to a MiniZinc function, test, predicate or annotation.
+data Callable = Callable Ident [NakedExpr] -- ^ Name given by the user
+--  | PrefBop Op [NakedExpr]  -- ^ Prefix syntax of given (representation of) MiniZinc operator.
   deriving Eq
-  
+
+prefixOp :: Op -> Ident
+prefixOp (Op name) = "`" ++ name ++ "`"
+{-
+-- | Represents the name of a MiniZinc annotation.  
 data Annotation = AName Ident [NakedExpr]
   deriving (Eq)
+  -}
 
 -- | The type of a MiniZinc instantiation representation.
 data Inst
