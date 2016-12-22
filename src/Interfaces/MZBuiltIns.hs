@@ -69,6 +69,21 @@ module Interfaces.MZBuiltIns (
   mz_mzn_compiler_version, mz_mzn_version_to_string,
   -- * MiniZinc annotations
   -- ** General annotations
+  mz_add_to_output, mz_is_defined_var, mz_is_reverse_map, mz_maybe_partial, mz_output_var,
+  mz_promise_total, mz_var_is_introduced, mz_defines_var, mz_doc_comment, mz_output_array,
+  -- ** Propagation strength annotations
+  mz_bounds, mz_domain,
+  -- ** Search annotations
+  mz_bool_search, mz_float_search, mz_int_search, mz_seq_search, mz_set_search,
+  -- *** Variable selection annotations
+  mz_anti_first_fail, mz_dom_w_deg, mz_first_fail, mz_impact, mz_input_order, mz_largest
+  mz_max_regret, mz_most_constrained, mz_occurrence, mz_smallest,
+  -- *** Value choice annotations
+  mz_indomain, mz_indomain_interval, mz_indomain_max, mz_indomain_median, mz_indomain_middle,
+  mz_indomain_min, mz_indomain_random, mz_indomain_reverse_split, mz_indomain_split,
+  mz_indomain_split_random, mz_outdomain_max, mz_outdomain_median, mz_outdomain_min,
+  mz_outdomain_random,
+  -- *** Exploration strategy annotations
 ) where
 
 import Interfaces.MZAST
@@ -297,26 +312,57 @@ opPrec op
   | otherwise        = 10
 
 -- MiniZinc annotations
-{-
-data AnnName
-  = AName Ident
-  -- General annotations
-  | MZadd_to_output
-  | MZis_defined_var
-  | MZis_reverse-map
-  | MZmaybe_partial
-  | MZoutput_var
-  | MZpromise_total
-  | MZvar_is_introduced
-  | MZdefines_var
-  | MZdoc_comment
-  | MZoutput_array
-  -- Propagation strength annotations
-  | MZbounds
-  | MZdomain
-  -- Search annotations
-  | MZbool_search
-  | MZ_float_search
-  | MZint_search
-  |
--}
+
+-- General annotations
+mz_add_to_output     = Annotation "add_to_output"
+mz_is_defined_var    = Annotation "is_defined_var"
+mz_is_reverse_map    = Annotation "is_reverse_map"
+mz_maybe_partial     = Annotation "maybe_partial"
+mz_output_var        = Annotation "output_var"
+mz_promise_total     = Annotation "promise_total"
+mz_var_is_introduced = Annotation "var_is_introduced"
+mz_defines_var       = Annotation "defines_var"
+mz_doc_comment       = Annotation "doc_comment"
+mz_output_array      = Annotation "output_array"
+
+-- Propagation strength annotations
+mz_bounds = Annotation "bounds"
+mz_domain = Annotation "domain"
+
+-- Search annotations
+mz_bool_search  = Annotation "bool_search"
+mz_float_search = Annotation "float_search"
+mz_int_search   = Annotation "int_search"
+mz_seq_search   = Annotation "seq_search"
+mz_set_search   = Annotation "set_search"
+
+-- Variable selection annotations
+mz_anti_first_fail  = Annotation "anti_first_fail"
+mz_dom_w_deg        = Annotation "dom_w_deg"
+mz_first_fail       = Annotation "first_fail"
+mz_impact           = Annotation "impact"
+mz_input_order      = Annotation "input_order"
+mz_largest          = Annotation "largest"
+mz_max_regret       = Annotation "max_regret"
+mz_most_constrained = Annotation "most_constrained"
+mz_occurrence       = Annotation "occurrence"
+mz_smallest         = Annotation "smallest"
+
+-- Value choice annotations
+mz_indomain               = Annotation "indomain"
+mz_indomain_interval      = Annotation "indomain_interval"
+mz_indomain_max           = Annotation "indomain_max"
+mz_indomain_median        = Annotation "indomain_median"
+mz_indomain_middle        = Annotation "indomain_middle"
+mz_indomain_min           = Annotation "indomain_min"
+mz_indomain_random        = Annotation "indomain_random"
+mz_indomain_reverse_split = Annotation "indomain_reverse_split"
+mz_indomain_split         = Annotation "indomain_split"
+mz_indomain_split_random  = Annotation "indomain_split_random"
+mz_outdomain_max          = Annotation "outdomain_max"
+mz_outdomain_median       = Annotation "outdomain_median"
+mz_outdomain_min          = Annotation "outdomain_min"
+mz_outdomain_random       = Annotation "outdomain_random"
+
+-- Exploration strategy annotations
+mz_complete = Annotation "complete"
