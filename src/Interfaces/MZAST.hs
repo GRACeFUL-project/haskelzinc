@@ -99,8 +99,6 @@ data NakedExpr
   | FConst Float
   -- | MiniZinc string value
   | SConst String
-  -- @Range a b@ represents the set defined by @a .. b@ in MiniZinc.
-  | Range NakedExpr NakedExpr
   -- | @SetLit literals@ translates to a MiniZinc set the elements of which are the represented expressions in
   -- the @literals@ list.
   | SetLit [NakedExpr]
@@ -151,8 +149,8 @@ data Type
   | Opt Type
   -- | Annotation type
   | Ann
-  -- | A constrained type using the integer range. @Interval a b@ translates to @a .. b@.
-  | Interval NakedExpr NakedExpr
+  -- | A constrained type using the integer range. @Range a b@ translates to @a .. b@.
+  | Range NakedExpr NakedExpr
   -- | A constrained type using set literals.
   | Elems [NakedExpr]
   -- | A constrained type using a previously defined set parameter.

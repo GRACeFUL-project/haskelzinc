@@ -103,9 +103,11 @@ printNakedExpr (BConst b)
 printNakedExpr (IConst n)          = int n
 printNakedExpr (FConst x)          = float x
 printNakedExpr (SConst str)        = doubleQuotes $ text (escape str)
+{-
 printNakedExpr (Range e1 e2)       = printParensNakedExpr 0 e1 
                                      <> text ".." 
                                      <> (printParensNakedExpr 0 e2)
+-}
 printNakedExpr (SetLit es)         = braces $ commaSepExpr es
 printNakedExpr (SetComp e ct)      = braces ( printNakedExpr e 
                                               <+> text "|" 
@@ -155,20 +157,22 @@ printParensNakedExpr _ e@(U _ ue) = if isAtomic ue
 printParensNakedExpr _ e          = printNakedExpr e
 
 printType :: Type -> Doc
-printType Bool             = text "bool"
-printType Float            = text "float"
-printType Int              = text "int"
-printType String           = text "string"
-printType (Set t)          = text "set of" <+> printType t
-printType (Array ts ti)    = text "array" <> brackets (commaSep printType ts) 
-                             <+> text "of" <+> printTypeInst ti
-printType (List ti)        = text "list of" <+> printTypeInst ti
-printType (Opt t)          = text "opt" <+> printType t
-printType (Ann)            = text "ann"
-printType (Interval e1 e2) = printNakedExpr e1 <> text ".." <> printNakedExpr e2
-printType (Elems es)       = braces $ commaSepExpr es
-printType (AOS name)       = text name
-printType (VarType name)   = text "$" <> text name
+printType Bool           = text "bool"
+printType Float          = text "float"
+printType Int            = text "int"
+printType String         = text "string"
+printType (Set t)        = text "set of" <+> printType t
+printType (Array ts ti)  = text "array" <> brackets (commaSep printType ts) 
+                           <+> text "of" <+> printTypeInst ti
+printType (List ti)      = text "list of" <+> printTypeInst ti
+printType (Opt t)        = text "opt" <+> printType t
+printType (Ann)          = text "ann"
+printType (Range e1 e2)  = printParensNakedExpr 0 e1 
+                           <> text ".." 
+                           <> printParensNakedExpr 0 e2
+printType (Elems es)     = braces $ commaSepExpr es
+printType (AOS name)     = text name
+printType (VarType name) = text "$" <> text name
 
 printCompTail :: CompTail -> Doc
 printCompTail (gs, Nothing) = commaSep printGenerator gs
