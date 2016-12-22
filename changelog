@@ -1,3 +1,7 @@
+0.3.0.0
+ - Added support for annotations.
+ - Minor corrections in documentation.
+
 0.2.0.0
  - Added support for returning specified number of solutions
  - Interactive interface of iTestModel improved

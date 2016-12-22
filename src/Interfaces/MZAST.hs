@@ -7,9 +7,9 @@ License     : GPL-3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
-This module provides an interface of the MiniZinc 2.0 language in Haskell through the definition of an abstract syntax tree of the MiniZinc language.
+This module provides an interface of the MiniZinc 2.1 language in Haskell through the definition of an abstract syntax tree of the MiniZinc language.
 With the use of this module, one can represent MiniZinc models in Haskell code. The abstract syntax tree is based on 
-<http://www.minizinc.org/2.0/doc-lib/minizinc-spec.pdf the MiniZinc 2.0 spesification>. 
+<http://www.minizinc.org/doc-lib/minizinc-spec.pdf the MiniZinc 2.1 spesification>. 
 
 However, the module does not check semantical correctness of the represented model.
 For example, it does not detect typos in the use of previously declared identifiers.
@@ -22,41 +22,20 @@ module Interfaces.MZAST (
   MZModel,
   Item(..),
   Expr(..),
+  NakedExpr(..),
   VarType(..),
   -- * MiniZinc operators
   Bop(..),
   Uop(..),
   -- * MiniZinc built-in calls
   userD, prefbop,
-  -- ** Arithmetic calls
-  mz_abs, mz_sum, mz_max, mz_min, mz_pow, mz_sqrt,
-  mz_exp, mz_ln, mz_log, mz_log10, mz_log2,
-  mz_sin, mz_cos, mz_tan, mz_sinh, mz_cosh, mz_tanh,
-  mz_asin, mz_acos, mz_atan, mz_asinh, mz_acosh, mz_atanh,
-  -- ** Logical calls
-  mz_forall, mz_xorall,
-  -- ** String calls
-  mz_show, mz_show_int, mz_show_float, mz_concat, mz_join,
-  -- ** Set calls
-  mz_card, mz_array_union,
-  -- ** Array calls
-  mz_length, mz_index_set, mz_index_set_1of2, mz_index_set_2of2,
-  mz_array1d, mz_array2d, mz_array3d, mz_array4d, mz_array5d, mz_array6d,
-  -- ** Option type calls
-  mz_occurs, mz_absent, mz_deopt,
-  -- ** Coercion calls
-  mz_ceil, mz_floor, mz_round,
-  mz_bool2int, mz_int2float, mz_set2array,
-  -- ** Bound and domain calls
-  mz_lb, mz_ub, mz_lb_array, mz_ub_array, mz_dom, mz_dom_array, mz_dom_size,
-  -- ** Other calls
-  mz_assert, mz_abort, mz_trace, mz_fix, mz_is_fixed,
   Func(..),
+  Annotation(..),
   Inst(..),
   Solve(..),
   CompTail,
   Generator,
-  TypeInst,
+  --TypeInst,
   Param,
   Ident,
   Filename
@@ -80,33 +59,38 @@ data Item
   -- The value @Declare i t name maybe_exp@ represents the declaration a variable named @name@ of type @t@ and inst @i@. 
   -- Use @Just expression@ in place of @maybe_exp@ to represent the value that initializes the declared 
   -- variable. Use @Nothing@ in place of @maybe_exp@ to represent a variable declaration without initialization.
-  | Declare TypeInst Ident (Maybe Expr)
+  | Declare Param [Annotation] (Maybe NakedExpr)
   -- | Assignment item. @Assign name exp@ represents the assignment of @exp@ to the variable @name@.
-  | Assign Ident Expr
+  | Assign Ident NakedExpr
   -- | Constraint item
   | Constraint Expr
   -- | Solve item
-  | Solve Solve
+  | Solve [Annotation] Solve
   -- | Output item. The use of this item might cause errors in parsing the solution(s) of the model.
   -- Recommended use for testing purposes only.
-  | Output Expr
+  | Output NakedExpr
   -- | User-defined predicate. @Pred name args exp@ represents the MiniZinc definition of a predicate 
   -- called @name@, the parameters of which are the elements of the @args@ list. @exp@ represents the
   -- optional body of the predicate.
-  | Pred Ident [Param] (Maybe Expr)
+  | Pred Ident [Param] [Annotation] (Maybe NakedExpr)
   -- | User-defined test. Syntax similar to the @Pred@ constructor.
-  | Test Ident [Param] (Maybe Expr)
-  -- | User-defined function. Syntax similar to @Pred@ and @Test@ constructors. The additional @TypeInst@
-  -- represents the type of the returning value of the function and the inst of the function.
-  | Function TypeInst Ident [Param] (Maybe Expr)
-  -- | Annotation item. Use of annotations is not supported yet.
-  | Annotation
+  | Test Ident [Param] [Annotation] (Maybe NakedExpr)
+  -- | User-defined function. Syntax similar to @Pred@ and @Test@ constructors. The additional @Param@
+  -- represents the type and inst of the returning value of the function, along with the name of the 
+  -- function.
+  | Function Param [Param] [Annotation] (Maybe NakedExpr)
+  -- | Represents the declaration of a user defined annotation. The first argument represents the name of the annotation and the second encodes its arguments.
+  | AnnotDec Ident [Param]
   -- | Represents an empty line in the MiniZinc model.
   | Empty        
   deriving Eq
 
+-- Represents a MiniZinc expression (first argument) annotated with the annotations contained in the list of the second argument.
+data Expr = Expr NakedExpr [Annotation]
+  deriving (Eq)
+
 -- | The type of a MiniZinc expression's representation.
-data Expr
+data NakedExpr
   -- | Represents the MiniZinc special variable @_@.
   = AnonVar
   -- | A MiniZinc variable
@@ -119,41 +103,40 @@ data Expr
   | FConst Float
   -- | MiniZinc string value
   | SConst String
-  -- | MiniZinc arrays constructed with the MiniZinc @..@ operator.
-  -- @Interval a b@ translates to @[a .. b]@.
-  | Interval Expr Expr
+  -- @Range a b@ represents the set defined by @a .. b@ in MiniZinc.
+  | Range NakedExpr NakedExpr
   -- | @SetLit literals@ translates to a MiniZinc set the elements of which are the represented expressions in
   -- the @literals@ list.
-  | SetLit [Expr]
+  | SetLit [NakedExpr]
   -- | MiniZinc set comprehension. The first argument of the constructor represents the head
   -- expression of the comprehension, while the second represents the comprehension tail.
-  | SetComp Expr CompTail
+  | SetComp NakedExpr CompTail
   -- | MiniZinc 1-dimensional arrays defined with literals, similar to the @SetLit@ constructor.
-  | ArrayLit [Expr]
+  | ArrayLit [NakedExpr]
   -- | MiniZinc 2-dimensional arrays defined with literals
-  | ArrayLit2D [[Expr]]
+  | ArrayLit2D [[NakedExpr]]
   -- | MiniZinc array comprehension. Syntax similar to @SetComp@ constructor.
-  | ArrayComp Expr CompTail
+  | ArrayComp NakedExpr CompTail
   -- | Represents an array element. In @ArrayElem name is@, the argument @name@ is the identifier of the array and @is@ is
   -- the list of indexes that specify the desired element. The length of @is@ must be equal to the number of 
   -- dimensions of the array.
-  | ArrayElem Ident [Expr]
+  | ArrayElem Ident [NakedExpr]
   -- | @Bi op exp1 exp2@ represents the MiniZinc expression that applies the binary operator @op@ on @exp1@ and @exp2@.
-  | Bi Bop Expr Expr
+  | Bi Bop NakedExpr NakedExpr
   -- | @U op exp1@ represents the MiniZinc expression that applies the unary operator @op@ on @exp1@.
-  | U Uop Expr
+  | U Uop NakedExpr
   -- | @Call name args@ represents a call to the function or test @name@ on arguments @args@.
-  | Call Func [Expr]
+  | Call Func [NakedExpr]
   -- | The if-then-else conditional. If the first argument of the constructor is an empty list, the translation to MiniZinc will fail.
   -- @ITE [(cond, expr1)] expr2@, where the list is a singleton, translates to @if cond then exp1 else exp2 endif@.
   -- If the list contains more than one pairs, then the corresponding @elseif-then@ pairs are inserted before the final @else@ expression.
-  | ITE [(Expr, Expr)] Expr
+  | ITE [(NakedExpr, NakedExpr)] NakedExpr
   -- | @let-in@ expression. In @Let items expr@, the elements of @items@ represent the bindings in the @expr@ expression. Although @items@
   -- is of type @[Items]@, only @Item@ values constructed by @Declare@ and @Constraint@ will translate to a syntactically correct
   -- MiniZinc let expression.
-  | Let [Item] Expr
+  | Let [Item] NakedExpr
   -- | A generator call expression.
-  | GenCall Func CompTail Expr 
+  | GenCall Func CompTail NakedExpr 
   deriving Eq
 
 -- | The type of a MiniZinc's type representation.
@@ -170,10 +153,12 @@ data VarType
   | List TypeInst
   -- | Option type
   | Opt VarType
-  -- | A constrained type using the integer range. @Range a b@ translates to @a .. b@.
-  | Range Expr Expr
+  -- | Annotation type
+  | Ann
+  -- | A constrained type using the integer range. @Interval a b@ translates to @a .. b@.
+  | Interval NakedExpr NakedExpr
   -- | A constrained type using set literals.
-  | Elems [Expr]
+  | Elems [NakedExpr]
   -- | A constrained type using a previously defined set parameter.
   | AOS Ident
   | Any
@@ -229,12 +214,37 @@ data Uop
   | UMinus  -- ^ @-@
  deriving Eq
 
--- | The type of a MiniZinc's function, test or predicate representation.
+-- | The type of a MiniZinc's function, test, predicate or   representation.
 data Func
   = CName Ident
   | PrefBop Bop
   deriving Eq
-
+  
+data Annotation = AName Ident [NakedExpr]
+  deriving (Eq)
+{-
+data AnnName
+  = AName Ident
+  -- General annotations
+  | MZadd_to_output
+  | MZis_defined_var
+  | MZis_reverse-map
+  | MZmaybe_partial
+  | MZoutput_var
+  | MZpromise_total
+  | MZvar_is_introduced
+  | MZdefines_var
+  | MZdoc_comment
+  | MZoutput_array
+  -- Propagation strength annotations
+  | MZbounds
+  | MZdomain
+  -- Search annotations
+  | MZbool_search
+  | MZ_float_search
+  | MZint_search
+  |
+-}
 -- | User defined function, test or predicate in MiniZinc. The argument of this constructor
 -- is the name of the function.
 userD :: Ident -> Func
@@ -243,207 +253,6 @@ userD = CName
 -- | Prefix notation of a MiniZinc built-in binary operator.
 prefbop :: Bop -> Func
 prefbop = PrefBop
-
-mz_abort :: Func
-mz_abort = userD "abort"
-
-mz_abs :: Func
-mz_abs = userD "abs"
-
-mz_absent :: Func
-mz_absent = userD "absent"
-
-mz_acos :: Func
-mz_acos = userD "acos"
-
-mz_acosh :: Func
-mz_acosh = userD "acosh"
-
-mz_array1d :: Func
-mz_array1d = userD "array1d"
-
-mz_array2d :: Func
-mz_array2d = userD "array2d"
-
-mz_array3d :: Func
-mz_array3d = userD "array3d"
-
-mz_array4d :: Func
-mz_array4d = userD "array4d"
-
-mz_array5d :: Func
-mz_array5d = userD "array5d"
-
-mz_array6d :: Func
-mz_array6d = userD "array6d"
-
-mz_array_intersect :: Func
-mz_array_intersect = userD "array_intersect"
-
-mz_array_union :: Func
-mz_array_union = userD "array_union"
-
-mz_asin :: Func
-mz_asin = userD "asin"
-
-mz_asinh :: Func
-mz_asinh = userD "asinh"
-
-mz_assert :: Func
-mz_assert = userD "assert"
-
-mz_atan :: Func
-mz_atan = userD "atan"
-
-mz_atanh :: Func
-mz_atanh = userD "atanh"
-
-mz_bool2int :: Func
-mz_bool2int = userD "bool2int"
-
-mz_card :: Func
-mz_card = userD "card"
-
-mz_ceil :: Func
-mz_ceil = userD "ceil"
-
-mz_concat :: Func
-mz_concat = userD "concat"
-
-mz_cos :: Func
-mz_cos = userD "cos"
-
-mz_cosh :: Func
-mz_cosh = userD "cosh"
-
-mz_deopt :: Func
-mz_deopt = userD "deopt"
-
-mz_dom :: Func
-mz_dom = userD "dom"
-
-mz_dom_array :: Func
-mz_dom_array = userD "dom_array"
-
-mz_dom_size :: Func
-mz_dom_size = userD "dom_size"
-
-mz_exists :: Func
-mz_exists = userD "exists"
-
-mz_exp :: Func
-mz_exp = userD "exp"
-
-mz_fix :: Func
-mz_fix = userD "fix"
-
-mz_floor :: Func
-mz_floor = userD "floor"
-
-mz_forall :: Func
-mz_forall = userD "forall"
-
-mz_index_set :: Func
-mz_index_set = userD "index_set"
-
-mz_index_set_1of2 :: Func
-mz_index_set_1of2 = userD "index_set_1of2"
-
-mz_index_set_2of2 :: Func
-mz_index_set_2of2 = userD "index_set_2of2"
-
-mz_int2float :: Func
-mz_int2float = userD "int2float"
-
-mz_is_fixed :: Func
-mz_is_fixed = userD "is_fixed"
-
-mz_join :: Func
-mz_join = userD "join"
-
-mz_length :: Func
-mz_length = userD "length"
-
-mz_lb :: Func
-mz_lb = userD "lb"
-
-mz_lb_array :: Func
-mz_lb_array = userD "lb_array"
-
-mz_ln :: Func
-mz_ln = userD "ln"
-
-mz_log :: Func
-mz_log = userD "log"
-
-mz_log10 :: Func
-mz_log10 = userD "log10"
-
-mz_log2 :: Func
-mz_log2 = userD "log2"
-
-mz_max :: Func
-mz_max = userD "max"
-
-mz_min :: Func
-mz_min = userD "min"
-
-mz_occurs :: Func
-mz_occurs = userD "occurs"
-
-mz_pow :: Func
-mz_pow = userD "pow"
-
-mz_product :: Func
-mz_product = userD "product"
-
-mz_regular :: Func
-mz_regular = userD "regular"
-
-mz_round :: Func
-mz_round = userD "round"
-
-mz_set2array :: Func
-mz_set2array = userD "set2array"
-
-mz_show :: Func
-mz_show = userD "show"
-
-mz_show_float :: Func
-mz_show_float = userD "show_float"
-
-mz_show_int :: Func
-mz_show_int = userD "show_int"
-
-mz_sin :: Func
-mz_sin = userD "sin"
-
-mz_sinh :: Func
-mz_sinh = userD "sinh"
-
-mz_sqrt :: Func
-mz_sqrt = userD "sqrt"
-
-mz_sum :: Func
-mz_sum = userD "sum"
-
-mz_tan :: Func
-mz_tan = userD "tan"
-
-mz_tanh :: Func
-mz_tanh = userD "tanh"
-
-mz_trace :: Func
-mz_trace = userD "trace"
-
-mz_ub :: Func
-mz_ub = userD "ub"
-
-mz_ub_array :: Func
-mz_ub_array = userD "ub_array"
-
-mz_xorall :: Func
-mz_xorall = userD "xorall"
 
 -- | The type of a MiniZinc instantiation representation.
 data Inst
@@ -458,9 +267,9 @@ data Solve
   | Maximize Expr
   deriving Eq
 
-type CompTail = ([Generator], Maybe Expr)
+type CompTail = ([Generator], Maybe NakedExpr)
 
-type Generator = ([Ident], Expr)
+type Generator = ([Ident], NakedExpr)
  
 type TypeInst = (Inst, VarType)
 

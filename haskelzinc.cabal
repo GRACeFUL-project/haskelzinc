@@ -55,7 +55,12 @@ cabal-version:       >=1.10
 
 library
   -- Modules exported by the library.
-  exposed-modules:     Interfaces.MZPrinter, Interfaces.MZinHaskell, Interfaces.MZAST, Interfaces.FZSolutionParser, Interfaces.MZAuxiliary
+  exposed-modules:  Interfaces.MZAST,
+                    Interfaces.MZBuiltIns,
+                    Interfaces.MZPrinter,
+                    Interfaces.MZinHaskell,
+                    Interfaces.FZSolutionParser,
+                    Interfaces.MZAuxiliary
   
   -- Modules included in this library but not exported.
   -- other-modules:       
