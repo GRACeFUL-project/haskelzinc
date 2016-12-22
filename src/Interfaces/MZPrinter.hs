@@ -98,8 +98,8 @@ printNakedExpr :: NakedExpr -> Doc
 printNakedExpr AnonVar             = text "_"
 printNakedExpr (Var v)             = text v
 printNakedExpr (BConst b)
-  | b                         = text "true"
-  | otherwise                 = text "false"
+  | b                              = text "true"
+  | otherwise                      = text "false"
 printNakedExpr (IConst n)          = int n
 printNakedExpr (FConst x)          = float x
 printNakedExpr (SConst str)        = doubleQuotes $ text (escape str)
@@ -107,37 +107,43 @@ printNakedExpr (Range e1 e2)       = printParensNakedExpr 0 e1
                                      <> text ".." 
                                      <> (printParensNakedExpr 0 e2)
 printNakedExpr (SetLit es)         = braces $ commaSepExpr es
-printNakedExpr (SetComp e ct)      = braces (
-                                       printNakedExpr e 
-                                       <+> text "|" 
-                                       <+> printCompTail ct
-                                     )
+printNakedExpr (SetComp e ct)      = braces ( printNakedExpr e 
+                                              <+> text "|" 
+                                              <+> printCompTail ct )
 printNakedExpr (ArrayLit es)       = brackets $ commaSepExpr es
-printNakedExpr (ArrayLit2D ess)    = brackets (foldl1 ($+$) (map (\x -> text "|" <+> commaSepExpr x) ess) <> text "|")
+printNakedExpr (ArrayLit2D ess)    = 
+  brackets (foldl1 ($+$) (map (\x -> text "|" <+> commaSepExpr x) ess) <> text "|")
 printNakedExpr (ArrayComp e ct)    = brackets (printNakedExpr e <+> text "|" <+> printCompTail ct)
 printNakedExpr (ArrayElem v es)    = text v <> brackets (commaSepExpr es)
-printNakedExpr (U op e)            = printUop op <+> (if isAtomic e then printNakedExpr e else parens (printNakedExpr e))
-printNakedExpr (Bi op e1 e2)       = printParensNakedExpr (opPrec op) e1 <+> printBop op <+> printParensNakedExpr (opPrec op) e2
+printNakedExpr (U op e)            = 
+  printOp op <+> (if isAtomic e then printNakedExpr e else parens (printNakedExpr e))
+printNakedExpr (Bi op e1 e2)       = printParensNakedExpr (opPrec op) e1 
+                                     <+> printOp op 
+                                     <+> printParensNakedExpr (opPrec op) e2
 printNakedExpr (Call f es)         = printFunc f <> parens (commaSepExpr es)
-printNakedExpr (ITE [(e1, e2)] e3) = text "if" <+> printNakedExpr e1 <+> text "then" <+> printNakedExpr e2 
+printNakedExpr (ITE [(e1, e2)] e3) = text "if" <+> printNakedExpr e1 
+                                     <+> text "then" <+> printNakedExpr e2 
                                      $+$ text "else" <+> printNakedExpr e3 <+> text "endif"
-printNakedExpr (ITE (te:tes) d)    = text "if" <+> printNakedExpr (fst te) <+> text "then" <+> printNakedExpr (snd te) 
+printNakedExpr (ITE (te:tes) d)    = text "if" <+> printNakedExpr (fst te) 
+                                     <+> text "then" <+> printNakedExpr (snd te) 
                                      $+$ printEITExpr tes 
                                      $+$ text "else" <+> printNakedExpr d <+> text "endif"
-printNakedExpr (Let is e)          = text "let" <+> braces (nest 4 (vcat (map printItem is))) $+$ text "in" <+> printNakedExpr e
+printNakedExpr (Let is e)          = text "let" 
+                                     <+> braces (nest 4 (vcat (map printItem is))) 
+                                     $+$ text "in" 
+                                     <+> printNakedExpr e
 printNakedExpr (GenCall f ct e)    = printFunc f <> parens (printCompTail ct)
                                      $+$ nest 2 (parens (printNakedExpr e))
 
 -- Only helps for printing if-then-elseif-then-...-else-endif expressions
 printEITExpr :: [(NakedExpr, NakedExpr)] -> Doc
 printEITExpr [] = empty
-printEITExpr (te:tes) = text "elseif" <+> printNakedExpr (fst te) <+> text "then" <+> printNakedExpr (snd te) $+$ printEITExpr tes
-{-
-printParensExpr :: Int -> Expr -> Doc
-printParensExpr n (Expr e ans)
-  = case e of
-      U op e' -> printNakedExpr e <+> hsep (map printAnnotation ans)
--}
+printEITExpr (te:tes) = text "elseif" 
+                        <+> printNakedExpr (fst te) 
+                        <+> text "then" 
+                        <+> printNakedExpr (snd te) 
+                        $+$ printEITExpr tes
+
 -- This function together with prec are used for placing parentheses in expressions
 printParensNakedExpr :: Int -> NakedExpr -> Doc
 printParensNakedExpr n e@(Bi op _ _)
@@ -182,11 +188,8 @@ printAnnotations ans = hsep (map printAnnotation ans)
 printAnnotation :: Annotation -> Doc
 printAnnotation (AName name es) = colon <> colon <+> text name <> parens (commaSepExpr es)
 
-printBop :: Bop -> Doc
-printBop (Bop b) = text b
-
-printUop :: Uop -> Doc
-printUop (Uop op) = text op
+printOp :: Op -> Doc
+printOp (Op op) = text op
 
 printSolve :: Solve -> Doc
 printSolve Satisfy      = text "satisfy"

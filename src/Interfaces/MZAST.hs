@@ -24,10 +24,8 @@ module Interfaces.MZAST (
   Expr(..),
   NakedExpr(..),
   Type(..),
-  -- * MiniZinc operators
-  Bop(..),
-  Uop(..),
-  userD, prefbop,
+  Op(..),
+  prefbop,
   Func(..),
   Annotation(..),
   Inst(..),
@@ -121,9 +119,9 @@ data NakedExpr
   -- dimensions of the array.
   | ArrayElem Ident [NakedExpr]
   -- | @Bi op exp1 exp2@ represents the MiniZinc expression that applies the binary operator @op@ on @exp1@ and @exp2@.
-  | Bi Bop NakedExpr NakedExpr
+  | Bi Op NakedExpr NakedExpr
   -- | @U op exp1@ represents the MiniZinc expression that applies the unary operator @op@ on @exp1@.
-  | U Uop NakedExpr
+  | U Op NakedExpr
   -- | @Call name args@ represents a call to the function or test @name@ on arguments @args@.
   | Call Func [NakedExpr]
   -- | The if-then-else conditional. If the first argument of the constructor is an empty list, the translation to MiniZinc will fail.
@@ -164,35 +162,21 @@ data Type
   | VarType Ident
   deriving Eq
 
--- | The type of MiniZinc binary operators' representation. Next to each constructor is indicated the operator it represents.
-newtype Bop = Bop String
+-- | Represents an operator name in MiniZinc.
+newtype Op = Op String
   deriving (Eq)
 
--- | Represents MiniZinc unary operators. Next to each constructor is indicated the operator it represents.  
-newtype Uop = Uop String
-  deriving (Eq)
-{-data Uop 
-  = Not     -- ^ @not@
-  | UPlus   -- ^ @+@
-  | UMinus  -- ^ @-@
- deriving Eq-}
 -- | The type of a MiniZinc's function, test or predicate representation.
-
 data Func
   = CName Ident  -- ^ Represents a MiniZinc call (function, predicate or test). The @Ident@ argument is the name of the call.
-  | PrefBop Bop
+  | PrefBop Op
   deriving Eq
   
 data Annotation = AName Ident [NakedExpr]
   deriving (Eq)
 
--- | User defined function, test or predicate in MiniZinc. The argument of this constructor
--- is the name of the function.
-userD :: Ident -> Func
-userD = CName
-
 -- | Prefix notation of a MiniZinc built-in binary operator.
-prefbop :: Bop -> Func
+prefbop :: Op -> Func
 prefbop = PrefBop
 
 -- | The type of a MiniZinc instantiation representation.
