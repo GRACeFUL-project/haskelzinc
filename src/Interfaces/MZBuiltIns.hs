@@ -16,7 +16,7 @@ module Interfaces.MZBuiltIns (
   -- ** Comparison operators
   mz_neq, mz_lt, mz_lte, mz_eq, mz_gt, mz_gte,
   -- ** Arithmetic operators
-  mz_neg, mz_times, mz_plus, mz_minus, mz_div, mz_idiv, mz_mod,
+  mz_times, mz_plus, mz_minus, mz_div, mz_idiv, mz_mod,
   -- ** Logical operators
   mz_not, mz_rarrow, mz_and, mz_larrow, mz_lrarrow, mz_or, mz_xor,
   -- ** Set operators
@@ -66,7 +66,9 @@ module Interfaces.MZBuiltIns (
   -- ** Special constraints
   mz_implied_constraint, mz_redundant_constraint, mz_symmetry_breaking_constraint,
   -- ** Language information
-  mz_mzn_compiler_version, mz_mzn_version_to_string
+  mz_mzn_compiler_version, mz_mzn_version_to_string,
+  -- * MiniZinc annotations
+  -- ** General annotations
 ) where
 
 import Interfaces.MZAST
@@ -234,8 +236,6 @@ mz_mzn_compiler_version = CName "mzn_compiler_version"
 mz_mzn_version_to_string = CName "mzn_version_to_string"
 
 -- MiniZinc unary operators
-mz_neg = Uop "-"
-mz_not = Uop "not"
 
 -- MiniZinc binary operators
 mz_absent = CName "absent"
@@ -244,66 +244,58 @@ mz_occurs = CName "occurs"
 --mz_regular = CName "regular"
 
 -- Comparison operators
-mz_neq = Bop "!="
-mz_lt  = Bop "<"
-mz_lte = Bop "<="
-mz_eq  = Bop "="
-mz_gt  = Bop ">"
-mz_gte = Bop ">="
+mz_neq = Op "!="
+mz_lt  = Op "<"
+mz_lte = Op "<="
+mz_eq  = Op "="
+mz_gt  = Op ">"
+mz_gte = Op ">="
 
 -- Arithmetic operators
-mz_times = Bop "*"
-mz_plus  = Bop "+"
-mz_minus = Bop "-"
-mz_div   = Bop "/"
-mz_idiv  = Bop "div"
-mz_mod   = Bop "mod"
+mz_times = Op "*"
+mz_plus  = Op "+"
+mz_minus = Op "-"
+mz_div   = Op "/"
+mz_idiv  = Op "div"
+mz_mod   = Op "mod"
 
 -- Logical operators
-mz_rarrow  = Bop "->"
-mz_and     = Bop "/\\"
-mz_larrow  = Bop "<-"
-mz_lrarrow = Bop "<->"
-mz_or      = Bop "\\/"
-mz_xor     = Bop "xor"
+mz_rarrow  = Op "->"
+mz_and     = Op "/\\"
+mz_larrow  = Op "<-"
+mz_lrarrow = Op "<->"
+mz_not     = Op "not"
+mz_or      = Op "\\/"
+mz_xor     = Op "xor"
 
 -- Set operators
-mz_range     = Bop ".."
-mz_diff      = Bop "diff"
-mz_in        = Bop "in"
-mz_intersect = Bop "intersect"
-mz_subset    = Bop "subset"
-mz_superset  = Bop "superset"
-mz_symdiff   = Bop "symdiff"
-mz_union     = Bop "union"
+mz_range     = Op ".."
+mz_diff      = Op "diff"
+mz_in        = Op "in"
+mz_intersect = Op "intersect"
+mz_subset    = Op "subset"
+mz_superset  = Op "superset"
+mz_symdiff   = Op "symdiff"
+mz_union     = Op "union"
 
 -- Array operators
-mz_pp = Bop "++"
+mz_pp = Op "++"
 
-opPrec :: Bop -> Int
-opPrec bop
-  | bop == mz_lrarrow = 7
-  | bop == mz_rarrow  = 7
-  | bop == mz_larrow  = 7
-  | bop == mz_and     = 7
-  | bop == mz_or      = 7
-  | bop == mz_eq      = 8
-  | bop == mz_neq     = 8
-  | bop == mz_times   = 9
-  | bop == mz_mod     = 9
-  | otherwise         = 10
-{-
-prec mz_lrarrow  = 7 
-prec mz_rarrow   = 7
-prec mz_larrow   = 7
-prec mz_and      = 7 
-prec mz_or       = 7
-prec mz_eq      = 8
-prec mz_neq      = 8
-prec mz_times    = 9
-prec mz_mod      = 9
-prec _        = 10
--}
+-- | Returns the precedence of certain defined operators. This function is used for reducing
+-- the parentheses when printing an expression.
+opPrec :: Op -> Int
+opPrec op
+  | op == mz_lrarrow = 7
+  | op == mz_rarrow  = 7
+  | op == mz_larrow  = 7
+  | op == mz_and     = 7
+  | op == mz_or      = 7
+  | op == mz_eq      = 8
+  | op == mz_neq     = 8
+  | op == mz_times   = 9
+  | op == mz_mod     = 9
+  | otherwise        = 10
+
 -- MiniZinc annotations
 {-
 data AnnName

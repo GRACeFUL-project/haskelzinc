@@ -183,7 +183,7 @@ printInst Par = text "par"
 
 printFunc :: Func -> Doc
 printFunc (CName name) = text name
-printFunc (PrefBop op) = text "`" <> printBop op <> text "`"
+printFunc (PrefBop op) = text "`" <> printOp op <> text "`"
 
 printAnnotations :: [Annotation] -> Doc
 printAnnotations ans = hsep (map printAnnotation ans)

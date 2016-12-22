@@ -25,7 +25,6 @@ module Interfaces.MZAST (
   NakedExpr(..),
   Type(..),
   Op(..),
-  prefbop,
   Func(..),
   Annotation(..),
   Inst(..),
