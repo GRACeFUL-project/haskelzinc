@@ -166,18 +166,14 @@ data Type
 newtype Op = Op String
   deriving (Eq)
 
--- | The type of a MiniZinc's function, test or predicate representation.
+-- | Represents the name of a MiniZinc function, test or predicate.
 data Func
-  = CName Ident  -- ^ Represents a MiniZinc call (function, predicate or test). The @Ident@ argument is the name of the call.
-  | PrefBop Op
+  = CName Ident  -- ^ Name given by the user
+  | PrefBop Op   -- ^ Prefix syntax of given (representation of) MiniZinc operator.
   deriving Eq
   
 data Annotation = AName Ident [NakedExpr]
   deriving (Eq)
-
--- | Prefix notation of a MiniZinc built-in binary operator.
-prefbop :: Op -> Func
-prefbop = PrefBop
 
 -- | The type of a MiniZinc instantiation representation.
 data Inst

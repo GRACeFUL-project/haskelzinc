@@ -149,7 +149,9 @@ printParensNakedExpr :: Int -> NakedExpr -> Doc
 printParensNakedExpr n e@(Bi op _ _)
   | n < opPrec op  = parens (printNakedExpr e)
   | otherwise    = printNakedExpr e
-printParensNakedExpr _ e@(U _ ue) = if isAtomic ue then printNakedExpr ue else parens (printNakedExpr ue)
+printParensNakedExpr _ e@(U _ ue) = if isAtomic ue 
+                                    then printNakedExpr ue 
+                                    else parens (printNakedExpr ue)
 printParensNakedExpr _ e          = printNakedExpr e
 
 printType :: Type -> Doc
@@ -158,7 +160,8 @@ printType Float            = text "float"
 printType Int              = text "int"
 printType String           = text "string"
 printType (Set t)          = text "set of" <+> printType t
-printType (Array ts ti)    = text "array" <> brackets (commaSep printType ts) <+> text "of" <+> printTypeInst ti
+printType (Array ts ti)    = text "array" <> brackets (commaSep printType ts) 
+                             <+> text "of" <+> printTypeInst ti
 printType (List ti)        = text "list of" <+> printTypeInst ti
 printType (Opt t)          = text "opt" <+> printType t
 printType (Ann)            = text "ann"
