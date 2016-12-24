@@ -22,6 +22,11 @@ module HaskelzincTests where
 
 import Interfaces.MZBuiltIns
 import Interfaces.MZinHaskell
+
+small = Call $ mz_abs [IConst 3, IConst 5]
+big   =
+  Call $ mz_discrete_distribution [Call $ mz_dom_bounds_array [Var "somebigarrayname"]
+                                  , Bi mz_intersect (Var "areallybigset") (Var "coulditneedmore?")]
   
 unsatisfiable =[
   Declare (Dec, (Range (IConst 1) (IConst 3)), "k") [] Nothing,

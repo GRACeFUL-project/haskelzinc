@@ -42,12 +42,10 @@ printItem :: Item -> Doc
 printItem (Empty)                 = text ""
 printItem (Comment str)           = text "%" <+> text str
 printItem (Include file)          = text "include" <+> doubleQuotes (text file) <> semi
-printItem (Declare p ans me)      = printBody (printParam p) me
+printItem (Declare p ans me)      = printCall (printParam p) me
                                     <> semi
-printItem (Constraint c)          = text "constraint" 
-                                    <+> printExpr c 
-                                    <> semi
-printItem (Assign var expr)       = printBody (text var) (Just expr)
+printItem (Constraint c)          = hang (text "constraint") 2 (printExpr c <> semi)
+printItem (Assign var expr)       = printCall (text var) (Just expr)
                                     <> semi
 printItem (Output e)              = text "output" 
                                     <+> printNakedExpr e 
@@ -60,25 +58,36 @@ printItem (Solve ans s)           = text "solve"
                                     <+> printAnnotations ans
                                     <+> printSolve s 
                                     <> semi
-printItem (Pred name ps ans me)   = printBody (text "predicate" 
+printItem (Pred name ps ans me)   = printCall (text "predicate" 
                                     <+> text name 
                                     <> parens (printParams ps)
                                     <+> printAnnotations ans
                                     ) me <> semi
-printItem (Test name ps ans me)   = printBody (text "test" 
+printItem (Test name ps ans me)   = printCall (text "test" 
                                     <+> text name 
                                     <> parens (printParams ps)
                                     <+> printAnnotations ans
                                     ) me <> semi
-printItem (Function p ps ans me)  = printBody (text "function" 
+printItem (Function p ps ans me)  = printCall (text "function" 
                                     <+> printParam p 
                                     <> parens (printParams ps) 
                                     <+> printAnnotations ans
                                     ) me <> semi
 
-printBody :: Doc -> Maybe NakedExpr -> Doc
-printBody d Nothing   = d <> empty
-printBody d (Just e)  = d <+> equals <+> nest 2 (empty $$ printNakedExpr e)
+printCallName :: String -> Maybe Param -> Ident -> [Annotation] -> [Param] -> Doc
+printCallName s Nothing  name ans ps = text s
+                                       <> parens (printParams ps)
+                                       <+> printAnnotations ans
+printCallName s (Just p) name ans ps = text s
+                                       <+> printParam p
+                                       <> parens (printParams ps)
+                                       <+> printAnnotations ans
+
+printCallBody :: Maybe NakedExpr -> Doc
+printCallBody v = maybe empty printNakedExpr v
+
+printCall :: Doc -> Maybe NakedExpr -> Doc
+printCall d v  = hang (d <+> equals) 2 (printCallBody v)
 
 printExpr :: Expr -> Doc
 printExpr (Expr e ans) = printNakedExpr e <> printAnnotations ans
@@ -112,9 +121,9 @@ printNakedExpr (ArrayComp e ct)    = brackets (printNakedExpr e <+> text "|" <+>
 printNakedExpr (ArrayElem v es)    = text v <> brackets (commaSepExpr es)
 printNakedExpr (U op e)            = 
   printOp op <+> (if isAtomic e then printNakedExpr e else parens (printNakedExpr e))
-printNakedExpr (Bi op e1 e2)       = printParensNakedExpr (opPrec op) e1 
-                                     <+> printOp op 
-                                     <+> printParensNakedExpr (opPrec op) e2
+printNakedExpr (Bi op e1 e2)       = sep [printParensNakedExpr (opPrec op) e1 
+                                         , printOp op 
+                                         , printParensNakedExpr (opPrec op) e2]
 printNakedExpr (Call f)            = printCallable f
 printNakedExpr (ITE [(e1, e2)] e3) = text "if" <+> printNakedExpr e1 
                                      <+> text "then" <+> printNakedExpr e2 

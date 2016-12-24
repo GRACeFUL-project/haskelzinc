@@ -10,3 +10,6 @@ notes.txt
 # Cabal
 .cabal-sandbox/
 cabal.sandbox.config
+
+# MiniZinc models
+*.mzn

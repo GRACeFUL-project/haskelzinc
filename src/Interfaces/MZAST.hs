@@ -84,6 +84,13 @@ data Item
 -- Represents a MiniZinc expression (first argument) annotated with the annotations contained in the list of the second argument.
 data Expr = Expr NakedExpr [Annotation]
   deriving (Show, Eq)
+  
+data Declaration = WithBody NameDeclaration [Annotation] (Maybe NakedExpr)
+
+data NameDeclaration = Variable Param 
+                     | Predicate Ident [Param]
+                     | Test' Ident [Param]
+                     | Function' Param [Param]
 
 -- | The type of a MiniZinc expression's representation.
 data NakedExpr
