@@ -39,57 +39,41 @@ printModel = foldr1 ($+$) . map printItem -- foldR1?
 -- predicate even(var int: x) =
 --   x mod 2 = 0;
 printItem :: Item -> Doc
-printItem (Empty)                 = text ""
-printItem (Comment str)           = text "%" <+> text str
-printItem (Include file)          = text "include" <+> doubleQuotes (text file) <> semi
-printItem (Declare p ans me)      = printCall (printParam p) me
-                                    <> semi
-printItem (Constraint c)          = hang (text "constraint") 2 (printExpr c <> semi)
-printItem (Assign var expr)       = printCall (text var) (Just expr)
-                                    <> semi
-printItem (Output e)              = text "output" 
-                                    <+> printNakedExpr e 
-                                    <> semi
-printItem (AnnotDec name ps)      = text "annotation" 
-                                    <+> text name 
-                                    <> parens (printParams ps) 
-                                    <> semi
-printItem (Solve ans s)           = text "solve" 
-                                    <+> printAnnotations ans
-                                    <+> printSolve s 
-                                    <> semi
-printItem (Pred name ps ans me)   = printCall (text "predicate" 
-                                    <+> text name 
-                                    <> parens (printParams ps)
-                                    <+> printAnnotations ans
-                                    ) me <> semi
-printItem (Test name ps ans me)   = printCall (text "test" 
-                                    <+> text name 
-                                    <> parens (printParams ps)
-                                    <+> printAnnotations ans
-                                    ) me <> semi
-printItem (Function p ps ans me)  = printCall (text "function" 
-                                    <+> printParam p 
-                                    <> parens (printParams ps) 
-                                    <+> printAnnotations ans
-                                    ) me <> semi
+printItem (Empty)           = empty
+printItem (Comment str)     = text "%" <+> text str
+printItem (Include file)    = text "include" <+> doubleQuotes (text file) <> semi
+printItem (Declare p)       = printDeclaration p
+                              <> semi
+printItem (Constraint c)    = hang (text "constraint") 2 (printExpr c <> semi)
+printItem (Assign var expr) = printCall (text var) (Just expr)
+                              <> semi
+printItem (Output e)        = text "output" 
+                              <+> printNakedExpr e 
+                              <> semi
+printItem (Solve ans s)     = text "solve" 
+                              <+> printAnnotations ans
+                              <+> printSolve s 
+                              <> semi
 
 printDeclaration :: Declaration -> Doc
-printDeclaration (WithBody nd ans me) =
-  hang (printDeclarationName nd) 2 (maybe empty printNakedExpr me)
+printDeclaration (Declaration nd ans me) =
+  hang (printDeclarationSig nd) 2 (maybe empty (\e -> equals <+> (printNakedExpr e)) me)
   
 
-printDeclarationName :: NameDeclaration -> Doc
-printDeclarationName (Variable p)        = printParam p
-printDeclarationName (Predicate name ps) = text "predicate"
-                                           <+> text name
-                                           <> parens (printParams ps)
-printDeclarationName (Test' name ps)     = text "test"
-                                           <+> text name
-                                           <> parens (printParams ps)
-printDeclarationName (Function' p ps)    = text "function"
-                                           <+> printParam p
-                                           <> parens (printParams ps)
+printDeclarationSig :: DeclarationSignature -> Doc
+printDeclarationSig (Variable p)          = printParam p
+printDeclarationSig (Predicate name ps)   = text "predicate"
+                                             <+> text name
+                                             <> parens (printParams ps)
+printDeclarationSig (Test name ps)       = text "test"
+                                             <+> text name
+                                             <> parens (printParams ps)
+printDeclarationSig (Function p ps)      = text "function"
+                                             <+> printParam p
+                                             <> parens (printParams ps)
+printDeclarationSig (Annotation' name ps) = text "annotation"
+                                             <+> text name
+                                             <> parens (printParams ps)
 
 printCallName :: String -> Maybe Param -> Ident -> [Annotation] -> [Param] -> Doc
 printCallName s Nothing  name ans ps = text s
@@ -105,7 +89,6 @@ printCallBody v = maybe empty printNakedExpr v
 
 printCall :: Doc -> Maybe NakedExpr -> Doc
 printCall d v  = hang (d <+> equals) 2 (printCallBody v)
-
 
 printExpr :: Expr -> Doc
 printExpr (Expr e ans) = printNakedExpr e <> printAnnotations ans

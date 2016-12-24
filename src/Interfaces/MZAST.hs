@@ -21,7 +21,7 @@ For example, it does not detect typos in the use of previously declared identifi
 module Interfaces.MZAST (
   MZModel,
   Item(..),
-  NameDeclaration(..),
+  DeclarationSignature(..),
   Declaration(..),
   Expr(..),
   NakedExpr(..),
@@ -53,11 +53,9 @@ data Item
   = Comment String
   -- | Include item
   | Include Filename
-  -- | Variable declaration item.
-  -- The value @Declare i t name maybe_exp@ represents the declaration a variable named @name@ of type @t@ and inst @i@. 
-  -- Use @Just expression@ in place of @maybe_exp@ to represent the value that initializes the declared 
-  -- variable. Use @Nothing@ in place of @maybe_exp@ to represent a variable declaration without initialization.
-  | Declare Param [Annotation] (Maybe NakedExpr)
+  -- | A declaration item. Can represent a MiniZinc variable, predicate, test, function or 
+  -- annotation declaration. This is specified by the constructor's argument.
+  | Declare Declaration
   -- | Assignment item. @Assign name exp@ represents the assignment of @exp@ to the variable @name@.
   | Assign Ident NakedExpr
   -- | Constraint item
@@ -67,18 +65,6 @@ data Item
   -- | Output item. The use of this item might cause errors in parsing the solution(s) of the model.
   -- Recommended use for testing purposes only.
   | Output NakedExpr
-  -- | User-defined predicate. @Pred name args exp@ represents the MiniZinc definition of a predicate 
-  -- called @name@, the parameters of which are the elements of the @args@ list. @exp@ represents the
-  -- optional body of the predicate.
-  | Pred Ident [Param] [Annotation] (Maybe NakedExpr)
-  -- | User-defined test. Syntax similar to the @Pred@ constructor.
-  | Test Ident [Param] [Annotation] (Maybe NakedExpr)
-  -- | User-defined function. Syntax similar to @Pred@ and @Test@ constructors. The additional @Param@
-  -- represents the type and inst of the returning value of the function, along with the name of the 
-  -- function.
-  | Function Param [Param] [Annotation] (Maybe NakedExpr)
-  -- | Represents the declaration of a user defined annotation. The first argument represents the name of the annotation and the second encodes its arguments.
-  | AnnotDec Ident [Param]
   -- | Represents an empty line in the MiniZinc model.
   | Empty        
   deriving (Show, Eq)
@@ -86,13 +72,19 @@ data Item
 -- Represents a MiniZinc expression (first argument) annotated with the annotations contained in the list of the second argument.
 data Expr = Expr NakedExpr [Annotation]
   deriving (Show, Eq)
-  
-data Declaration = WithBody NameDeclaration [Annotation] (Maybe NakedExpr)
 
-data NameDeclaration = Variable Param 
-                     | Predicate Ident [Param]
-                     | Test' Ident [Param]
-                     | Function' Param [Param]
+-- | Completes a declaration with a list of annotations (possibly empty) and maybe a body.
+data Declaration = Declaration DeclarationSignature [Annotation] (Maybe NakedExpr)
+  deriving (Show, Eq)
+
+-- | Specifies wether the declaration is a variable, predicate, test, function or annotation
+-- declaration. For each case, the arguments hold the signature of the declaration.
+data DeclarationSignature = Variable Param 
+                          | Predicate Ident [Param]
+                          | Test Ident [Param]
+                          | Function Param [Param]
+                          | Annotation' Ident [Param]
+  deriving (Show, Eq)
 
 -- | The type of a MiniZinc expression's representation.
 data NakedExpr
