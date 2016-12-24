@@ -79,11 +79,11 @@ data Item
   | AnnotDec Ident [Param]
   -- | Represents an empty line in the MiniZinc model.
   | Empty        
-  deriving Eq
+  deriving (Show, Eq)
 
 -- Represents a MiniZinc expression (first argument) annotated with the annotations contained in the list of the second argument.
 data Expr = Expr NakedExpr [Annotation]
-  deriving (Eq)
+  deriving (Show, Eq)
 
 -- | The type of a MiniZinc expression's representation.
 data NakedExpr
@@ -131,7 +131,7 @@ data NakedExpr
   | Let [Item] NakedExpr
   -- | A generator call expression.
   | GenCall Ident CompTail NakedExpr 
-  deriving Eq
+  deriving (Show, Eq)
 
 -- | The type of a MiniZinc's type representation.
 data Type
@@ -157,36 +157,36 @@ data Type
   | AOS Ident
   -- | Type variable
   | VarType Ident
-  deriving Eq
+  deriving (Show, Eq)
 
 -- | Represents an operator name in MiniZinc.
 newtype Op = Op String
-  deriving (Eq)
+  deriving (Show, Eq)
 
 -- | Represents a call to a MiniZinc function, test, predicate or annotation.
 data Callable = Callable Ident [NakedExpr] -- ^ Name given by the user
 --  | PrefBop Op [NakedExpr]  -- ^ Prefix syntax of given (representation of) MiniZinc operator.
-  deriving Eq
+  deriving (Show, Eq)
 
 prefixOp :: Op -> Ident
 prefixOp (Op name) = "`" ++ name ++ "`"
 
 -- | Represents the name of a MiniZinc annotation.  
 data Annotation = Annotation Ident [NakedExpr]
-  deriving (Eq)
+  deriving (Show, Eq)
 
 -- | The type of a MiniZinc instantiation representation.
 data Inst
   = Par -- ^ A @par@ instantiation in MiniZinc.
   | Dec -- ^ A @var@ instantiation in MiniZinc.
-  deriving Eq
+  deriving (Show, Eq)
 
 -- | The type for representing the three different kinds of solve items. 
 data Solve
   = Satisfy
   | Minimize Expr
   | Maximize Expr
-  deriving Eq
+  deriving (Show, Eq)
 
 type CompTail = ([Generator], Maybe NakedExpr)
 
