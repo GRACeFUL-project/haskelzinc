@@ -57,6 +57,7 @@ library
   -- Modules exported by the library.
   exposed-modules:  Interfaces.MZASTBase,
                     Interfaces.MZBuiltIns,
+                    Interfaces.MZAST,
                     Interfaces.MZPrinter,
                     Interfaces.MZinHaskell,
                     Interfaces.FZSolutionParser,
