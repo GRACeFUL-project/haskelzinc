@@ -308,6 +308,7 @@ opPrec op
   | op == mz_or      = 7
   | op == mz_eq      = 8
   | op == mz_neq     = 8
+  | op == mz_range   = 8
   | op == mz_times   = 9
   | op == mz_mod     = 9
   | otherwise        = 10

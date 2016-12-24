@@ -80,7 +80,7 @@ testModel m mpath s n = do
   let flatzinc = spaceFix $ mz_dir ++ "flatzinc"
   -- Uncomment line below for debugging only
   -- writeFile (mpath ++ ".mzn") (Prelude.show $ printModel m)
-  readCreateProcess (shell mfzn) (Prelude.show $ printModel m)
+  readCreateProcess (shell mfzn) (layout m)
   res <- case s of
            1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn") ""
            --1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn > " ++ mpath ++ ".fzn.results.txt") ""

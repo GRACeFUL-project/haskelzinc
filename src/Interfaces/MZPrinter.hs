@@ -16,18 +16,22 @@ module Interfaces.MZPrinter(
   printModel,
   printItem,
   printNakedExpr,
-  printExpr
+  printExpr,
+  layout
 ) where
 
 import Text.PrettyPrint
 import Data.List
 import Interfaces.MZAST
 import Interfaces.MZBuiltIns
+
+layout :: MZModel -> String
+layout = render . printModel
   
 -- | Prints the represented MiniZinc model. Essentially, this function applies 'printItem' on
 -- each element of the specified model.
 printModel :: MZModel -> Doc
-printModel = foldl1 ($+$) . map printItem -- foldR1?
+printModel = foldr1 ($+$) . map printItem -- foldR1?
 
 -- | Prints an item of the represented model. Example:
 -- 
@@ -38,15 +42,12 @@ printItem :: Item -> Doc
 printItem (Empty)                 = text ""
 printItem (Comment str)           = text "%" <+> text str
 printItem (Include file)          = text "include" <+> doubleQuotes (text file) <> semi
-printItem (Declare p ans me)      = printParam p
-                                    <> printBody me
+printItem (Declare p ans me)      = printBody (printParam p) me
                                     <> semi
 printItem (Constraint c)          = text "constraint" 
                                     <+> printExpr c 
                                     <> semi
-printItem (Assign var expr)       = text var 
-                                    <+> equals
-                                    <> printBody (Just expr)
+printItem (Assign var expr)       = printBody (text var) (Just expr)
                                     <> semi
 printItem (Output e)              = text "output" 
                                     <+> printNakedExpr e 
@@ -59,28 +60,25 @@ printItem (Solve ans s)           = text "solve"
                                     <+> printAnnotations ans
                                     <+> printSolve s 
                                     <> semi
-printItem (Pred name ps ans me)   = text "predicate" 
+printItem (Pred name ps ans me)   = printBody (text "predicate" 
                                     <+> text name 
                                     <> parens (printParams ps)
                                     <+> printAnnotations ans
-                                    <> printBody me
-                                    <> semi
-printItem (Test name ps ans me)   = text "test" 
+                                    ) me <> semi
+printItem (Test name ps ans me)   = printBody (text "test" 
                                     <+> text name 
                                     <> parens (printParams ps)
                                     <+> printAnnotations ans
-                                    <> printBody me
-                                    <> semi
-printItem (Function p ps ans me)  = text "function" 
+                                    ) me <> semi
+printItem (Function p ps ans me)  = printBody (text "function" 
                                     <+> printParam p 
                                     <> parens (printParams ps) 
                                     <+> printAnnotations ans
-                                    <> printBody me
-                                    <> semi
+                                    ) me <> semi
 
-printBody :: Maybe NakedExpr -> Doc
-printBody Nothing   = empty
-printBody (Just e)  = space <> equals $+$ nest 2 (printNakedExpr e)
+printBody :: Doc -> Maybe NakedExpr -> Doc
+printBody d Nothing   = d <> empty
+printBody d (Just e)  = d <+> equals <+> nest 2 (empty $$ printNakedExpr e)
 
 printExpr :: Expr -> Doc
 printExpr (Expr e ans) = printNakedExpr e <> printAnnotations ans
@@ -103,11 +101,6 @@ printNakedExpr (BConst b)
 printNakedExpr (IConst n)          = int n
 printNakedExpr (FConst x)          = float x
 printNakedExpr (SConst str)        = doubleQuotes $ text (escape str)
-{-
-printNakedExpr (Range e1 e2)       = printParensNakedExpr 0 e1 
-                                     <> text ".." 
-                                     <> (printParensNakedExpr 0 e2)
--}
 printNakedExpr (SetLit es)         = braces $ commaSepExpr es
 printNakedExpr (SetComp e ct)      = braces ( printNakedExpr e 
                                               <+> text "|" 
@@ -186,9 +179,9 @@ printInst Dec = text "var"
 printInst Par = text "par"
 
 printCallable :: Callable -> Doc
-printCallable (Callable name args) = text name <> parens (commaSepExpr args)
--- printCallable (PrefBop op args) = text "`" <> printOp op <> text "`"
---                                  <> parens (commaSepExpr es)
+printCallable (Callable name args) = 
+  text name 
+  <> cat (putParens $ punctuateBefore comma (map printNakedExpr args))
 
 printAnnotations :: [Annotation] -> Doc
 printAnnotations ans = hsep (map printAnnotation ans)
@@ -260,3 +253,14 @@ escapeChar '\\' = "\\\\"
 escapeChar '\f' = "\\f"
 escapeChar '\a' = "\\a"
 escapeChar c = [c]
+
+putParens :: [Doc] -> [Doc]
+putParens []  = []
+putParens [x] = [parens x]
+putParens xs  = let f = head xs
+                    l = last xs
+                in text "(" <> f : (init (tail xs)) ++ [l <> text ")"]
+
+punctuateBefore :: Doc -> [Doc] -> [Doc]
+punctuateBefore _ []     = []
+punctuateBefore p (d:ds) = d : map (p <+>) ds
