@@ -21,6 +21,8 @@ For example, it does not detect typos in the use of previously declared identifi
 module Interfaces.MZAST (
   MZModel,
   Item(..),
+  NameDeclaration(..),
+  Declaration(..),
   Expr(..),
   NakedExpr(..),
   Type(..),

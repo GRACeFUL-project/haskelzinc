@@ -74,6 +74,23 @@ printItem (Function p ps ans me)  = printCall (text "function"
                                     <+> printAnnotations ans
                                     ) me <> semi
 
+printDeclaration :: Declaration -> Doc
+printDeclaration (WithBody nd ans me) =
+  hang (printDeclarationName nd) 2 (maybe empty printNakedExpr me)
+  
+
+printDeclarationName :: NameDeclaration -> Doc
+printDeclarationName (Variable p)        = printParam p
+printDeclarationName (Predicate name ps) = text "predicate"
+                                           <+> text name
+                                           <> parens (printParams ps)
+printDeclarationName (Test' name ps)     = text "test"
+                                           <+> text name
+                                           <> parens (printParams ps)
+printDeclarationName (Function' p ps)    = text "function"
+                                           <+> printParam p
+                                           <> parens (printParams ps)
+
 printCallName :: String -> Maybe Param -> Ident -> [Annotation] -> [Param] -> Doc
 printCallName s Nothing  name ans ps = text s
                                        <> parens (printParams ps)
@@ -88,6 +105,7 @@ printCallBody v = maybe empty printNakedExpr v
 
 printCall :: Doc -> Maybe NakedExpr -> Doc
 printCall d v  = hang (d <+> equals) 2 (printCallBody v)
+
 
 printExpr :: Expr -> Doc
 printExpr (Expr e ans) = printNakedExpr e <> printAnnotations ans
