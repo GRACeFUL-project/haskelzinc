@@ -42,14 +42,10 @@ printItem :: Item -> Doc
 printItem (Empty)           = empty
 printItem (Comment str)     = text "%" <+> text str
 printItem (Include file)    = text "include" <+> doubleQuotes (text file) <> semi
-printItem (Declare p)       = printDeclaration p
-                              <> semi
+printItem (Declare p)       = printDeclaration p <> semi
 printItem (Constraint c)    = hang (text "constraint") 2 (printExpr c <> semi)
-printItem (Assign var expr) = printCall (text var) (Just expr)
-                              <> semi
-printItem (Output e)        = text "output" 
-                              <+> printNakedExpr e 
-                              <> semi
+printItem (Assign var expr) = text var <+> printBody (Just expr) <> semi
+printItem (Output e)        = text "output" <+> printNakedExpr e <> semi
 printItem (Solve ans s)     = text "solve" 
                               <+> printAnnotations ans
                               <+> printSolve s 
@@ -57,38 +53,26 @@ printItem (Solve ans s)     = text "solve"
 
 printDeclaration :: Declaration -> Doc
 printDeclaration (Declaration nd ans me) =
-  hang (printDeclarationSig nd) 2 (maybe empty (\e -> equals <+> (printNakedExpr e)) me)
+  hang (printDeclarationSig nd) 2 (printBody me)
+
+printBody :: Maybe NakedExpr -> Doc
+printBody = maybe empty (\e -> equals <+> (printNakedExpr e))
   
 
 printDeclarationSig :: DeclarationSignature -> Doc
 printDeclarationSig (Variable p)          = printParam p
 printDeclarationSig (Predicate name ps)   = text "predicate"
-                                             <+> text name
-                                             <> parens (printParams ps)
-printDeclarationSig (Test name ps)       = text "test"
-                                             <+> text name
-                                             <> parens (printParams ps)
-printDeclarationSig (Function p ps)      = text "function"
-                                             <+> printParam p
-                                             <> parens (printParams ps)
+                                            <+> text name
+                                            <> parens (printParams ps)
+printDeclarationSig (Test name ps)        = text "test"
+                                            <+> text name
+                                            <> parens (printParams ps)
+printDeclarationSig (Function p ps)       = text "function"
+                                            <+> printParam p
+                                            <> parens (printParams ps)
 printDeclarationSig (Annotation' name ps) = text "annotation"
-                                             <+> text name
-                                             <> parens (printParams ps)
-
-printCallName :: String -> Maybe Param -> Ident -> [Annotation] -> [Param] -> Doc
-printCallName s Nothing  name ans ps = text s
-                                       <> parens (printParams ps)
-                                       <+> printAnnotations ans
-printCallName s (Just p) name ans ps = text s
-                                       <+> printParam p
-                                       <> parens (printParams ps)
-                                       <+> printAnnotations ans
-
-printCallBody :: Maybe NakedExpr -> Doc
-printCallBody v = maybe empty printNakedExpr v
-
-printCall :: Doc -> Maybe NakedExpr -> Doc
-printCall d v  = hang (d <+> equals) 2 (printCallBody v)
+                                            <+> text name
+                                            <> parens (printParams ps)
 
 printExpr :: Expr -> Doc
 printExpr (Expr e ans) = printNakedExpr e <> printAnnotations ans
@@ -118,7 +102,8 @@ printNakedExpr (SetComp e ct)      = braces ( printNakedExpr e
 printNakedExpr (ArrayLit es)       = brackets $ commaSepExpr es
 printNakedExpr (ArrayLit2D ess)    = 
   brackets (foldl1 ($+$) (map (\x -> text "|" <+> commaSepExpr x) ess) <> text "|")
-printNakedExpr (ArrayComp e ct)    = brackets (printNakedExpr e <+> text "|" <+> printCompTail ct)
+--printNakedExpr (ArrayComp e ct)    = brackets (printNakedExpr e <+> text "|" <+> printCompTail ct)
+printNakedExpr (ArrayComp e ct)    = brackets (hang (printNakedExpr e <+> text "|") 0 (printCompTail ct))
 printNakedExpr (ArrayElem v es)    = text v <> brackets (commaSepExpr es)
 printNakedExpr (U op e)            = 
   printOp op <+> (if isAtomic e then printNakedExpr e else parens (printNakedExpr e))
@@ -135,8 +120,7 @@ printNakedExpr (ITE (te:tes) d)    = text "if" <+> printNakedExpr (fst te)
                                      $+$ text "else" <+> printNakedExpr d <+> text "endif"
 printNakedExpr (Let is e)          = text "let" 
                                      <+> braces (nest 4 (vcat (map printItem is))) 
-                                     $+$ text "in" 
-                                     <+> printNakedExpr e
+                                     $+$ text "in" <+> printNakedExpr e
 printNakedExpr (GenCall name ct e) = text name <> parens (printCompTail ct)
                                      $+$ nest 2 (parens (printNakedExpr e))
 
