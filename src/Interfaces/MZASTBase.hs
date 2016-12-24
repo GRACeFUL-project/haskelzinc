@@ -13,12 +13,9 @@ With the use of this module, one can represent MiniZinc models in Haskell code. 
 
 However, the module does not check semantical correctness of the represented model.
 For example, it does not detect typos in the use of previously declared identifiers.
-
-=== Featrues not supported yet
- - Annotations
 -}
 
-module Interfaces.MZAST (
+module Interfaces.MZASTBase (
   MZModel,
   Item(..),
   DeclarationSignature(..),
@@ -33,7 +30,6 @@ module Interfaces.MZAST (
   Solve(..),
   CompTail,
   Generator,
-  --TypeInst,
   Param,
   Ident,
   Filename
@@ -43,10 +39,7 @@ module Interfaces.MZAST (
 type MZModel = [Item]
 
 {-|
-  The type of a MiniZinc's top-level program item representation. MiniZinc defines 8 kinds of
-  items. This module defines a representation for 12 kinds of items. The additional 4 come from 
-  representing MiniZinc commented lines and empty lines as items, and from using 3 distinct Item
-  constructors for representing user defined calls (predicates, tests and functions).
+  ??
 -}
 data Item 
   -- | Commented line

@@ -12,7 +12,7 @@ This pretty-printer is based on the "Text.PrettyPrint" module.
 -}
 
 module Interfaces.MZPrinter(
-  Interfaces.MZAST.MZModel,
+  Interfaces.MZASTBase.MZModel,
   printModel,
   printItem,
   printNakedExpr,
@@ -22,7 +22,7 @@ module Interfaces.MZPrinter(
 
 import Text.PrettyPrint
 import Data.List
-import Interfaces.MZAST
+import Interfaces.MZASTBase
 import Interfaces.MZBuiltIns
 
 layout :: MZModel -> String

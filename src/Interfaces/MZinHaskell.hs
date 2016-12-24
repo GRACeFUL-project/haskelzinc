@@ -11,7 +11,7 @@ This module integrates constraint solving programming through MiniZinc in Haskel
 -}
 
 module Interfaces.MZinHaskell (
-  module Interfaces.MZAST,
+  module Interfaces.MZASTBase,
   module Interfaces.FZSolutionParser,
   module Interfaces.MZPrinter,
   iTestModel,
@@ -24,7 +24,7 @@ import Data.List
 import System.Process
 import System.FilePath
 import Interfaces.MZAuxiliary
-import Interfaces.MZAST hiding (UserD, PrefBop)
+import Interfaces.MZASTBase hiding (UserD, PrefBop)
 import Interfaces.MZPrinter
 import Interfaces.FZSolutionParser
 import Text.Parsec.Error

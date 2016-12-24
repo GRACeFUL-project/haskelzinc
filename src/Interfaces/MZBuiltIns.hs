@@ -87,7 +87,7 @@ module Interfaces.MZBuiltIns (
   mz_complete
 ) where
 
-import Interfaces.MZAST
+import Interfaces.MZASTBase
 
 -- MiniZinc calls
 

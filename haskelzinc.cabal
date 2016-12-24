@@ -55,7 +55,7 @@ cabal-version:       >=1.10
 
 library
   -- Modules exported by the library.
-  exposed-modules:  Interfaces.MZAST,
+  exposed-modules:  Interfaces.MZASTBase,
                     Interfaces.MZBuiltIns,
                     Interfaces.MZPrinter,
                     Interfaces.MZinHaskell,
