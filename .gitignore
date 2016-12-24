@@ -13,3 +13,4 @@ cabal.sandbox.config
 
 # MiniZinc models
 *.mzn
+*.dzn
