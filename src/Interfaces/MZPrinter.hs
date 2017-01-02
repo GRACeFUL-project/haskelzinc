@@ -55,8 +55,8 @@ printDeclaration :: Declaration -> Doc
 printDeclaration (Declaration nd ans me) =
   hang (printDeclarationSig nd) 2 (printBody me)
 
-printBody :: Maybe NakedExpr -> Doc
-printBody = maybe empty (\e -> equals <+> (printNakedExpr e))
+printBody :: Maybe Expr -> Doc
+printBody = maybe empty (\e -> equals <+> (printExpr e))
   
 
 printDeclarationSig :: DeclarationSignature -> Doc
@@ -175,7 +175,7 @@ printInst Par = text "par"
 printCallable :: Callable -> Doc
 printCallable (Callable name args) = 
   text name 
-  <> cat (putParens $ punctuateBefore comma (map printNakedExpr args))
+  <> cat (putParens $ punctuateBefore comma (map printExpr args))
 
 printAnnotations :: [Annotation] -> Doc
 printAnnotations ans = hsep (map printAnnotation ans)

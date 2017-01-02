@@ -50,7 +50,7 @@ data Item
   -- annotation declaration. This is specified by the constructor's argument.
   | Declare Declaration
   -- | Assignment item. @Assign name exp@ represents the assignment of @exp@ to the variable @name@.
-  | Assign Ident NakedExpr
+  | Assign Ident Expr
   -- | Constraint item
   | Constraint Expr
   -- | Solve item
@@ -67,7 +67,7 @@ data Expr = Expr NakedExpr [Annotation]
   deriving (Show, Eq)
 
 -- | Completes a declaration with a list of annotations (possibly empty) and maybe a body.
-data Declaration = Declaration DeclarationSignature [Annotation] (Maybe NakedExpr)
+data Declaration = Declaration DeclarationSignature [Annotation] (Maybe Expr)
   deriving (Show, Eq)
 
 -- | Specifies wether the declaration is a variable, predicate, test, function or annotation
@@ -158,7 +158,7 @@ newtype Op = Op String
   deriving (Show, Eq)
 
 -- | Represents a call to a MiniZinc function, test, predicate or annotation.
-data Callable = Callable Ident [NakedExpr] -- ^ Name given by the user
+data Callable = Callable Ident [Expr] -- ^ Name given by the user
 --  | PrefBop Op [NakedExpr]  -- ^ Prefix syntax of given (representation of) MiniZinc operator.
   deriving (Show, Eq)
 
