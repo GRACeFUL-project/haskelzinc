@@ -1,102 +1,152 @@
-module Interfaces.MZAST(
-  -- * Items
-  (|+),
-  -- ** Declaration items
-  var, predicate, test, function, annotation, (.=), (|>),
-  -- ** Other items
-  constraint, solve, (=.), (##), include, output
-  -- * Expressions
-) where
+{-# LANGUAGE TypeFamilies, FlexibleInstances #-}
+
+module Interfaces.MZAST where
 
 import Interfaces.MZASTBase
 import Interfaces.MZPrinter
 
-declare :: DeclarationSignature -> Declaration
-declare ds = Declaration ds [] Nothing
+-- Items'
 
--- Declaring a variable
-var :: (Inst, Type) -> Ident -> Declaration
-var (i, t) name = declare $ Variable (i, t, name)
+newtype EmptyItem'    = EmptyItem' ()
+newtype Comment'      = Comment' String
+newtype Include'      = Include' String
+newtype Declare'      = Declare' Declaration
+newtype Assign'       = Assign' (Ident, Expr)
+newtype Constraint'   = Constraint' Expr
+data    Solve'        = Solve' [Annotation] Solve
+newtype Output'       = Output' NakedExpr
 
--- Declaring a predicate
-predicate :: Ident -> [Param] -> Declaration
-predicate name args = declare (Predicate name args)
+emptyLine :: EmptyItem'
+emptyLine = EmptyItem' ()
 
--- Declaring a test
-test :: Ident -> [Param] -> Declaration
-test name args = declare (Test name args)
+comment :: String -> Comment'
+comment = Comment'
 
--- Declaring a function
-function :: (Inst, Type) -> Ident -> [Param] -> Declaration
-function (i, t) name args = declare (Function (i, t, name) args)
+(%%) :: String -> Comment'
+(%%) = comment
 
--- Declaring an annotation
-annotation :: Ident -> [Param] -> Declaration
-annotation name args = declare (Annotation' name args)
+include :: String -> Include'
+include = Include'
 
--- Building up a model
-(|+) :: MZModel -> Item -> MZModel
-(|+) = flip (:)
+output :: NakedExpr -> Output'
+output = Output'
 
--- Assignment when declaring
-(.=) :: Declaration -> NakedExpr -> Declaration
-(Declaration ds ans _) .= e = Declaration ds ans (Just e)
+(|:) :: (Item' a) => a -> [Item] -> [Item]
+v |: is = toItem v : is
 
--- Annotation
+-- Internal
+
+class Item' a where
+  toItem :: a -> Item
+
+instance Item' EmptyItem' where
+  toItem x = Empty
+instance Item' Comment' where
+  toItem (Comment' text) = Comment text
+instance Item' Include' where
+  toItem (Include' file) = Include file
+instance Item' Output' where
+  toItem (Output' e) = Output e
+
+-- Expressions (plain and annotated)
+
+class Expression a where
+  toExpression :: a -> Expr
+
+instance Expression NakedExpr where
+  toExpression e = Expr e []
+
+instance Expression Expr where
+  toExpression = id
+
+class NakedExpression a where
+  toNExpr :: a -> NakedExpr
+
+instance NakedExpression NakedExpr where
+  toNExpr = id
+
+instance NakedExpression Int where
+  toNExpr = IConst
+
+instance NakedExpression Bool where
+  toNExpr = BConst
+
+instance NakedExpression Float where
+  toNExpr = FConst
+
+instance NakedExpression [Char] where
+  toNExpr = SConst
+
+instance NakedExpression a => NakedExpression (Op, a) where
+  toNExpr (op, e) = U op (toNExpr e)
+
+instance (NakedExpression a, NakedExpression b) => NakedExpression (a, Op, b) where
+  toNExpr (e1, op, e2) = Bi op (toNExpr e1) (toNExpr e2)
+
+instance NakedExpression IF_THEN_ELSE where
+  toNExpr (ELSE e e1 e2) = ITE [(e, e1)] e2
+
+set :: (NakedExpression a) => [a] -> NakedExpr
+set = SetLit . (map toNExpr)
+
+array :: (NakedExpression a) => [a] -> NakedExpr
+array = ArrayLit . (map toNExpr)
+
+(\\) :: Ident -> [NakedExpr] -> NakedExpr
+name \\ is = ArrayElem name is
+
+-- Auxiliary types for if-then-else expressions
+
+data IF_THEN_ELSE = ELSE NakedExpr NakedExpr NakedExpr
+data ELSEIF = ELSEIF [(NakedExpr, NakedExpr)] NakedExpr
+
+if' :: NakedExpr -> (NakedExpr -> NakedExpr -> IF_THEN_ELSE)
+if' e = \e1 e2 -> ELSE e e1 e2
+
+then' :: (NakedExpr -> NakedExpr -> IF_THEN_ELSE) -> NakedExpr -> (NakedExpr -> IF_THEN_ELSE)
+then' f e = f e
+
+else' :: (NakedExpr -> IF_THEN_ELSE) -> NakedExpr -> IF_THEN_ELSE
+else' f e = f e
+
+-- Assignments (plain and when declaring sth)
+class Assignable a where
+  type Assigned a
+  (=.) :: (Expression b) => a -> b -> Assigned a
+
+instance Assignable [Char] where
+  type Assigned [Char] = Assign'
+  name =. expr = Assign' (name, toExpression expr)
+
+instance Assignable DeclarationSignature where
+  type Assigned DeclarationSignature = Declare'
+  ds =. expr = Declare' $ Declaration ds [] (Just (toExpression expr))
+
+-- Annotations 
 class WithAnnotation a where
-  (|>) :: a -> [Annotation] -> a
+  type Annotated a
+  (|>) :: a -> [Annotation] -> Annotated a
 
 instance WithAnnotation Declaration where
-  (Declaration ds _ me) |> ans = Declaration ds ans me
+  type Annotated Declaration = Declare'
+  (Declaration ds _ me) |> ans = Declare' $ Declaration ds ans me
 
 instance WithAnnotation Expr where
-  (Expr ne _) |> ans = Expr ne ans
+  type Annotated Expr = Expr
+  (Expr e _) |> ans = Expr e ans
 
--- Only annotating a declaration, a constraint or a solve item makes sense.
-instance WithAnnotation Item where
-  (Declare d)    |> ans = Declare (d |> ans)
-  (Solve _ s)    |> ans = Solve ans s
-  (Constraint e) |> ans = Constraint (e |> ans)
-  other          |> ans = other
+instance WithAnnotation NakedExpr where
+  type Annotated NakedExpr = Expr
+  e |> ans = Expr e ans
 
--- Other items
-(##) :: String -> Item
-(##) r = Comment r
+instance WithAnnotation Assign' where
+  type Annotated Assign' = Assign'
+  (Assign' (name, body)) |> ans = Assign' (name, body |> ans)
 
--- Posting a constraint
-constraint :: NakedExpr -> Item
-constraint e = Constraint (Expr e [])
-
-include :: String -> Item
-include = Include
-
-output :: NakedExpr -> Item
-output = Output
-
-(=.) :: String -> NakedExpr -> Item
-name =. e = Assign name e
-
-solve :: Solve -> Item
-solve = Solve []
-
-nl :: Item
-nl = Empty
-
--- Expressions (naked)
-class ToExpr a where
-  toExpr :: a -> NakedExpr
-
-instance ToExpr (Char) where
-  toExpr '_' = AnonVar
-
-instance ToExpr Bool where
-  toExpr = BConst
-
-instance ToExpr Int where
-  toExpr = IConst
-
-instance ToExpr Float where
-  toExpr = FConst
-
-instance Callable where
-  toExpr = Call
+instance WithAnnotation Constraint' where
+  type Annotated Constraint' = Constraint'
+  (Constraint' e) |> ans = Constraint' (e |> ans)
+  
+instance WithAnnotation Solve' where
+  type Annotated Solve' = Solve'
+  (Solve' _ s) |> ans = Solve' ans s

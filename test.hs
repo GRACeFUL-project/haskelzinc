@@ -26,7 +26,7 @@ import Interfaces.MZinHaskell
 import Interfaces.MZASTBase
 import Interfaces.MZAST
 
-default (Int, Double)
+default (Int, Float)
 
 small = Call $ mz_abs [Expr (IConst 3) [], Expr (IConst 5) []]
 big   =
@@ -127,7 +127,7 @@ australia = [
     SConst "\t nsw=",
     Call $ mz_show [Expr (Var "nsw") []],
     SConst "\t v=",
-    Call $ mz_show [expr $ Var "v"],
+    Call $ mz_show [Expr (Var "v") []],
     SConst "\n",
     SConst "t=",
     Call $ mz_show [Expr (Var "t") []],

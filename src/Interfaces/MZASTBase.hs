@@ -38,9 +38,6 @@ module Interfaces.MZASTBase (
 -- | An abbreviation for the type of a represented MiniZinc model.
 type MZModel = [Item]
 
-{-|
-  ??
--}
 data Item 
   -- | Commented line
   = Comment String
