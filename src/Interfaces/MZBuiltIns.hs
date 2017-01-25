@@ -14,15 +14,16 @@ module Interfaces.MZBuiltIns (
   opPrec,
   -- * MiniZinc built-in operators
   -- ** Comparison operators
-  mz_neq, mz_lt, mz_lte, mz_eq, mz_gt, mz_gte,
+  --_neq_, _lt_, _lte_, _eq_, _gt_, _gte_,
+  (!=.), (>.), (>=.), (=.=), (<.), (<=.),
   -- ** Arithmetic operators
-  mz_times, mz_plus, mz_minus, mz_div, mz_idiv, mz_mod,
+  (*.), (+.), plus_, (-.), minus_, (/.), _div_, _mod_,
   -- ** Logical operators
-  mz_not, mz_rarrow, mz_and, mz_larrow, mz_lrarrow, mz_or, mz_xor,
+  not_, (->.), (/\.), (<-.), (<->.), (\/.), _xor_,
   -- ** Set operators
-  mz_range, mz_diff, mz_in, mz_intersect, mz_subset, mz_superset, mz_symdiff, mz_union,
+  (-.-), _diff_, _in_, _intersect_, _subset_, _superset_, _symdiff_, _union_,
   -- ** Array operators
-  mz_pp,
+  (++.),
   -- * MiniZinc built-in calls
   -- ** Arithmetic calls
   mz_abs, mz_arg_max, mz_arg_min, mz_max, mz_min, mz_pow, mz_product, mz_sqrt, mz_sum,
@@ -89,175 +90,178 @@ module Interfaces.MZBuiltIns (
 
 import Interfaces.MZASTBase
 
+call :: Ident -> [NakedExpr] -> NakedExpr
+call name args = Call name (map toSimpleExpr args)
+
 -- MiniZinc calls
 
 -- Arithmetic calls
-mz_abs     = Callable "abs"
-mz_arg_max = Callable "arg_max"
-mz_arg_min = Callable "arg_min"
-mz_max     = Callable "max"
-mz_min     = Callable "min"
-mz_pow     = Callable "pow"
-mz_product = Callable "product"
-mz_sqrt    = Callable "sqrt"
-mz_sum     = Callable "sum"
+mz_abs     = call "abs"
+mz_arg_max = call "arg_max"
+mz_arg_min = call "arg_min"
+mz_max     = call "max"
+mz_min     = call "min"
+mz_pow     = call "pow"
+mz_product = call "product"
+mz_sqrt    = call "sqrt"
+mz_sum     = call "sum"
 
 -- Exponential and logarithmic calls
-mz_exp   = Callable "exp"
-mz_ln    = Callable "ln"
-mz_log   = Callable "log"
-mz_log10 = Callable "log10"
-mz_log2  = Callable "log2"
+mz_exp   = call "exp"
+mz_ln    = call "ln"
+mz_log   = call "log"
+mz_log10 = call "log10"
+mz_log2  = call "log2"
 
 -- Trigonometric calls
-mz_acos  = Callable "acos"
-mz_acosh = Callable "acosh"
-mz_asin  = Callable "asin"
-mz_asinh = Callable "asinh"
-mz_atan  = Callable "atan"
-mz_atanh = Callable "atanh"
-mz_cos   = Callable "cos"
-mz_cosh  = Callable "cosh"
-mz_sin   = Callable "sin"
-mz_sinh  = Callable "sinh"
-mz_tan   = Callable "tan"
-mz_tanh  = Callable "tanh"
+mz_acos  = call "acos"
+mz_acosh = call "acosh"
+mz_asin  = call "asin"
+mz_asinh = call "asinh"
+mz_atan  = call "atan"
+mz_atanh = call "atanh"
+mz_cos   = call "cos"
+mz_cosh  = call "cosh"
+mz_sin   = call "sin"
+mz_sinh  = call "sinh"
+mz_tan   = call "tan"
+mz_tanh  = call "tanh"
 
 -- Logical calls
-mz_clause = Callable "clause"
-mz_exists = Callable "exists"
-mz_forall = Callable "forall"
-mz_iffall = Callable "iffall"
-mz_xorall = Callable "xorall"
+mz_clause = call "clause"
+mz_exists = call "exists"
+mz_forall = call "forall"
+mz_iffall = call "iffall"
+mz_xorall = call "xorall"
 
 -- Set calls
-mz_array_intersect = Callable "array_intersect"
-mz_array_union     = Callable "array_union"
-mz_card            = Callable "card"
+mz_array_intersect = call "array_intersect"
+mz_array_union     = call "array_union"
+mz_card            = call "card"
 
 -- Array calls
-mz_array1d     = Callable "array1d"
-mz_array2d     = Callable "array2d"
-mz_array3d     = Callable "array3d"
-mz_array4d     = Callable "array4d"
-mz_array5d     = Callable "array5d"
-mz_array6d     = Callable "array6d"
-mz_arrayXd     = Callable "arrayXd"
-mz_col         = Callable "col"
-mz_has_element = Callable "has_element"
-mz_has_index   = Callable "has_index"
-mz_index_set   = Callable "index_set"
-mz_index_set_1of2 = Callable "index_set_1of2"
-mz_index_set_1of3 = Callable "index_set_1of3"
-mz_index_set_1of4 = Callable "index_set_1of4"
-mz_index_set_1of5 = Callable "index_set_1of5"
-mz_index_set_1of6 = Callable "index_set_1of6"
-mz_index_set_2of2 = Callable "index_set_2of2"
-mz_index_set_2of3 = Callable "index_set_2of3"
-mz_index_set_2of4 = Callable "index_set_2of4"
-mz_index_set_2of5 = Callable "index_set_2of5"
-mz_index_set_2of6 = Callable "index_set_2of6"
-mz_index_set_3of3 = Callable "index_set_3of3"
-mz_index_set_3of4 = Callable "index_set_3of4"
-mz_index_set_3of5 = Callable "index_set_3of5"
-mz_index_set_3of6 = Callable "index_set_3of6"
-mz_index_set_4of4 = Callable "index_set_4of4"
-mz_index_set_4of5 = Callable "index_set_4of5"
-mz_index_set_4of6 = Callable "index_set_4of6"
-mz_index_set_5of5 = Callable "index_set_5of5"
-mz_index_set_5of6 = Callable "index_set_5of6"
-mz_index_set_6of6 = Callable "index_set_6of6"
-mz_index_sets_agree = Callable "index_sets_agree"
-mz_length  = Callable "length"
-mz_reverse = Callable "reverse"
-mz_row     = Callable "row"
+mz_array1d     = call "array1d"
+mz_array2d     = call "array2d"
+mz_array3d     = call "array3d"
+mz_array4d     = call "array4d"
+mz_array5d     = call "array5d"
+mz_array6d     = call "array6d"
+mz_arrayXd     = call "arrayXd"
+mz_col         = call "col"
+mz_has_element = call "has_element"
+mz_has_index   = call "has_index"
+mz_index_set   = call "index_set"
+mz_index_set_1of2 = call "index_set_1of2"
+mz_index_set_1of3 = call "index_set_1of3"
+mz_index_set_1of4 = call "index_set_1of4"
+mz_index_set_1of5 = call "index_set_1of5"
+mz_index_set_1of6 = call "index_set_1of6"
+mz_index_set_2of2 = call "index_set_2of2"
+mz_index_set_2of3 = call "index_set_2of3"
+mz_index_set_2of4 = call "index_set_2of4"
+mz_index_set_2of5 = call "index_set_2of5"
+mz_index_set_2of6 = call "index_set_2of6"
+mz_index_set_3of3 = call "index_set_3of3"
+mz_index_set_3of4 = call "index_set_3of4"
+mz_index_set_3of5 = call "index_set_3of5"
+mz_index_set_3of6 = call "index_set_3of6"
+mz_index_set_4of4 = call "index_set_4of4"
+mz_index_set_4of5 = call "index_set_4of5"
+mz_index_set_4of6 = call "index_set_4of6"
+mz_index_set_5of5 = call "index_set_5of5"
+mz_index_set_5of6 = call "index_set_5of6"
+mz_index_set_6of6 = call "index_set_6of6"
+mz_index_sets_agree = call "index_sets_agree"
+mz_length  = call "length"
+mz_reverse = call "reverse"
+mz_row     = call "row"
 
 -- Array sorting calls
-mz_arg_sort = Callable "arg_sort"
-mz_sort     = Callable "sort"
-mz_sort_by  = Callable "sort_by"
+mz_arg_sort = call "arg_sort"
+mz_sort     = call "sort"
+mz_sort_by  = call "sort_by"
 
 -- Coercion calls
-mz_bool2float = Callable "bool2float"
-mz_bool2int   = Callable "bool2int"
-mz_ceil       = Callable "ceil"
-mz_floor      = Callable "floor"
-mz_int2float  = Callable "int2float"
-mz_round      = Callable "round"
-mz_set2array  = Callable "set2array"
+mz_bool2float = call "bool2float"
+mz_bool2int   = call "bool2int"
+mz_ceil       = call "ceil"
+mz_floor      = call "floor"
+mz_int2float  = call "int2float"
+mz_round      = call "round"
+mz_set2array  = call "set2array"
 
 -- String calls
-mz_concat    = Callable "concat"
-mz_file_path = Callable "file_path"
-mz_format    = Callable "format"
-mz_join      = Callable "join"
-mz_show      = Callable "show"
-mz_show2d    = Callable "show2d"
-mz_show3d    = Callable "show3d"
-mz_showJSON  = Callable "showJSON"
-mz_show_float = Callable "show_float"
-mz_show_int   = Callable "show_int"
-mz_strig_length = Callable "string_length"
+mz_concat    = call "concat"
+mz_file_path = call "file_path"
+mz_format    = call "format"
+mz_join      = call "join"
+mz_show      = call "show"
+mz_show2d    = call "show2d"
+mz_show3d    = call "show3d"
+mz_showJSON  = call "showJSON"
+mz_show_float = call "show_float"
+mz_show_int   = call "show_int"
+mz_strig_length = call "string_length"
 
 -- Reflection calls
-mz_dom              = Callable "dom"
-mz_dom_array        = Callable "dom_array"
-mz_dom_bounds_array = Callable "dom_bounds_array"
-mz_dom_size         = Callable "dom_size"
-mz_fix              = Callable "fix"
-mz_has_bounds       = Callable "has_bounds"
-mz_has_ub_set       = Callable "has_ub_set"
-mz_is_fixed         = Callable "is_fixed"
-mz_lb               = Callable "lb"
-mz_lb_array         = Callable "lb_array"
-mz_ub               = Callable "ub"
-mz_ub_array         = Callable "ub_array"
+mz_dom              = call "dom"
+mz_dom_array        = call "dom_array"
+mz_dom_bounds_array = call "dom_bounds_array"
+mz_dom_size         = call "dom_size"
+mz_fix              = call "fix"
+mz_has_bounds       = call "has_bounds"
+mz_has_ub_set       = call "has_ub_set"
+mz_is_fixed         = call "is_fixed"
+mz_lb               = call "lb"
+mz_lb_array         = call "lb_array"
+mz_ub               = call "ub"
+mz_ub_array         = call "ub_array"
 
 -- Assertions and debugging calls
-mz_abort        = Callable "abort"
-mz_assert       = Callable "assert"
-mz_trace        = Callable "trace"
-mz_trace_stdout = Callable "trace_stdout"
+mz_abort        = call "abort"
+mz_assert       = call "assert"
+mz_trace        = call "trace"
+mz_trace_stdout = call "trace_stdout"
 
 -- Calls for @Enum@s
-mz_enum_next = Callable "enum_next"
-mz_enum_prev = Callable "enum_prev"
-mz_to_enum   = Callable "to_enum"
+mz_enum_next = call "enum_next"
+mz_enum_prev = call "enum_prev"
+mz_to_enum   = call "to_enum"
 
 -- Calls for Optionals
 
 -- Random number generator calls
-mz_bernoulli      = Callable "bernoulli"
-mz_binomial       = Callable "binomial"
-mz_cauchy         = Callable "cauchy"
-mz_chisquared     = Callable "chisquared"
-mz_discrete_distribution = Callable "discrete_distribution"
-mz_exponential    = Callable "exponential"
-mz_fdistribution  = Callable "fdistribution"
-mz_gamma          = Callable "gamma"
-mz_lognormal      = Callable "lognormal"
-mz_normal         = Callable "normal"
-mz_poisson        = Callable "poisson"
-mz_tdistribution  = Callable "tdistribution"
-mz_uniform        = Callable "uniform"
-mz_weibull        = Callable "weibull"
+mz_bernoulli      = call "bernoulli"
+mz_binomial       = call "binomial"
+mz_cauchy         = call "cauchy"
+mz_chisquared     = call "chisquared"
+mz_discrete_distribution = call "discrete_distribution"
+mz_exponential    = call "exponential"
+mz_fdistribution  = call "fdistribution"
+mz_gamma          = call "gamma"
+mz_lognormal      = call "lognormal"
+mz_normal         = call "normal"
+mz_poisson        = call "poisson"
+mz_tdistribution  = call "tdistribution"
+mz_uniform        = call "uniform"
+mz_weibull        = call "weibull"
 
 -- Special constraints
-mz_implied_constraint           = Callable "implied_constraint"
-mz_redundant_constraint         = Callable "redundant_constraint"
-mz_symmetry_breaking_constraint = Callable "symmetry_breaking_constraint"
+mz_implied_constraint           = call "implied_constraint"
+mz_redundant_constraint         = call "redundant_constraint"
+mz_symmetry_breaking_constraint = call "symmetry_breaking_constraint"
 
 -- Language information
-mz_mzn_compiler_version  = Callable "mzn_compiler_version"
-mz_mzn_version_to_string = Callable "mzn_version_to_string"
+mz_mzn_compiler_version  = call "mzn_compiler_version"
+mz_mzn_version_to_string = call "mzn_version_to_string"
 
 -- MiniZinc unary operators
 
 -- MiniZinc binary operators
-mz_absent = Callable "absent"
-mz_deopt  = Callable "deopt"
-mz_occurs = Callable "occurs"
---mz_regular = Callable "regular"
+mz_absent = call "absent"
+mz_deopt  = call "deopt"
+mz_occurs = call "occurs"
+--mz_regular = call "regular"
 
 -- Comparison operators
 mz_neq = Op "!="
@@ -266,6 +270,13 @@ mz_lte = Op "<="
 mz_eq  = Op "="
 mz_gt  = Op ">"
 mz_gte = Op ">="
+infixl 5 !=., <., <=., =.=, >., >=.
+(!=.) = Bi mz_neq
+(<.)  = Bi mz_lt
+(<=.) = Bi mz_lte
+(=.=) = Bi mz_eq
+(>.)  = Bi mz_gt
+(>=.) = Bi mz_gte
 
 -- Arithmetic operators
 mz_times = Op "*"
@@ -274,6 +285,16 @@ mz_minus = Op "-"
 mz_div   = Op "/"
 mz_idiv  = Op "div"
 mz_mod   = Op "mod"
+infixl 6 *.
+infixl 7 +.
+(*.)   = Bi mz_times
+(+.)   = Bi mz_plus
+plus_  = U  mz_plus
+(-.)   = Bi mz_minus
+minus_ = U  mz_minus
+(/.)   = Bi mz_div
+_div_  = Bi mz_idiv
+_mod_  = Bi mz_mod
 
 -- Logical operators
 mz_rarrow  = Op "->"
@@ -283,6 +304,13 @@ mz_lrarrow = Op "<->"
 mz_not     = Op "not"
 mz_or      = Op "\\/"
 mz_xor     = Op "xor"
+(->.)  = Bi mz_rarrow
+(/\.)  = Bi mz_and
+(<-.)  = Bi mz_larrow
+(<->.) = Bi mz_lrarrow
+not_   = U  mz_not
+(\/.)  = Bi mz_or
+_xor_  = Bi mz_xor
 
 -- Set operators
 mz_range     = Op ".."
@@ -293,9 +321,19 @@ mz_subset    = Op "subset"
 mz_superset  = Op "superset"
 mz_symdiff   = Op "symdiff"
 mz_union     = Op "union"
+(-.-)        = Bi mz_range
+_diff_       = Bi mz_diff
+_in_         = Bi mz_in
+_intersect_  = Bi mz_intersect
+_subset_     = Bi mz_subset
+_superset_   = Bi mz_superset
+_symdiff_    = Bi mz_symdiff
+_union_      = Bi mz_union
 
 -- Array operators
 mz_pp = Op "++"
+infixl 4 ++.
+(++.) = Bi mz_pp
 
 -- | Returns the precedence of certain defined operators. This function is used for reducing
 -- the parentheses when printing an expression.
