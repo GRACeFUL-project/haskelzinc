@@ -1,152 +1,213 @@
-{-# LANGUAGE TypeFamilies, FlexibleInstances #-}
+--{-# LANGUAGE TypeFamilies, FlexibleInstances, AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Interfaces.MZAST where
 
 import Interfaces.MZASTBase
-import Interfaces.MZPrinter
+import Interfaces.MZBuiltIns
 
--- Items'
+-- Items
 
-newtype EmptyItem'    = EmptyItem' ()
-newtype Comment'      = Comment' String
-newtype Include'      = Include' String
-newtype Declare'      = Declare' Declaration
-newtype Assign'       = Assign' (Ident, Expr)
-newtype Constraint'   = Constraint' Expr
-data    Solve'        = Solve' [Annotation] Solve
-newtype Output'       = Output' NakedExpr
+emptyLine :: Item
+emptyLine = Empty
 
-emptyLine :: EmptyItem'
-emptyLine = EmptyItem' ()
+(%%) :: String -> Item
+(%%) = Comment
 
-comment :: String -> Comment'
-comment = Comment'
+include :: String -> Item
+include = Include
 
-(%%) :: String -> Comment'
-(%%) = comment
+output :: NakedExpr -> Item
+output = Output
 
-include :: String -> Include'
-include = Include'
+constraint :: NakedExpr -> Item
+constraint e = Constraint $ Expr e []
 
-output :: NakedExpr -> Output'
-output = Output'
+solve :: Solve -> Item
+solve = Solve
 
-(|:) :: (Item' a) => a -> [Item] -> [Item]
-v |: is = toItem v : is
+-- Declaring and assigning
 
--- Internal
+infixl 1 =.
+class Assignable a where
+  (=.) :: a -> NakedExpr -> Item
 
-class Item' a where
-  toItem :: a -> Item
+instance Assignable [Char] where
+  name =. e = Assign name $ Expr e []
 
-instance Item' EmptyItem' where
-  toItem x = Empty
-instance Item' Comment' where
-  toItem (Comment' text) = Comment text
-instance Item' Include' where
-  toItem (Include' file) = Include file
-instance Item' Output' where
-  toItem (Output' e) = Output e
+instance Assignable DeclarationSignature where
+  ds =. e = Declare $ Declaration ds [] (Just (Expr e []))
 
--- Expressions (plain and annotated)
+declareOnly :: DeclarationSignature -> Item
+declareOnly ds = Declare $ Declaration ds [] Nothing
 
-class Expression a where
-  toExpression :: a -> Expr
+variable :: Inst -> Type -> Ident -> Item
+variable i t s = declareOnly $ Variable (i, t, s)
 
-instance Expression NakedExpr where
-  toExpression e = Expr e []
+predicate :: Ident -> [Param] -> Item
+predicate name ps = declareOnly $ Predicate name ps
 
-instance Expression Expr where
-  toExpression = id
+test :: Ident -> [Param] -> Item
+test name ps = declareOnly $ Test name ps
 
-class NakedExpression a where
-  toNExpr :: a -> NakedExpr
+function :: Inst -> Type -> Ident -> [Param] -> Item
+function i t s ps = declareOnly $ Function (i, t, s) ps
 
-instance NakedExpression NakedExpr where
-  toNExpr = id
+annotation :: Ident -> [Param] -> Item
+annotation i ps = declareOnly $ Annotation' i ps
 
-instance NakedExpression Int where
-  toNExpr = IConst
+-- Solve satisfy, minimize, maximize
 
-instance NakedExpression Bool where
-  toNExpr = BConst
+satisfy :: Solve
+satisfy = Satisfy []
 
-instance NakedExpression Float where
-  toNExpr = FConst
+minimize :: NakedExpr -> Solve
+minimize = Minimize []
 
-instance NakedExpression [Char] where
-  toNExpr = SConst
+maximize :: NakedExpr -> Solve
+maximize = Maximize []
 
-instance NakedExpression a => NakedExpression (Op, a) where
-  toNExpr (op, e) = U op (toNExpr e)
+-- Expressions (plain)
 
-instance (NakedExpression a, NakedExpression b) => NakedExpression (a, Op, b) where
-  toNExpr (e1, op, e2) = Bi op (toNExpr e1) (toNExpr e2)
+__ :: NakedExpr
+__ = AnonVar
 
-instance NakedExpression IF_THEN_ELSE where
-  toNExpr (ELSE e e1 e2) = ITE [(e, e1)] e2
+var :: Ident -> NakedExpr
+var = Var
 
-set :: (NakedExpression a) => [a] -> NakedExpr
-set = SetLit . (map toNExpr)
+true :: NakedExpr
+true = BConst True
 
-array :: (NakedExpression a) => [a] -> NakedExpr
-array = ArrayLit . (map toNExpr)
+false :: NakedExpr
+false = BConst False
 
-(\\) :: Ident -> [NakedExpr] -> NakedExpr
-name \\ is = ArrayElem name is
+int :: Int -> NakedExpr
+int = IConst
+
+float :: Float -> NakedExpr
+float = FConst
+
+string :: String -> NakedExpr
+string = SConst
+
+boolSet :: [Bool] -> NakedExpr
+boolSet = SetLit . (map BConst)
+
+intSet :: [Int] -> NakedExpr
+intSet = SetLit . (map IConst)
+
+floatSet :: [Float] -> NakedExpr
+floatSet = SetLit . (map FConst)
+
+stringSet :: [String] -> NakedExpr
+stringSet = SetLit . (map SConst)
+
+class SetClass a where
+  set :: a -> NakedExpr
+
+instance SetClass [NakedExpr] where
+  set = SetLit
+
+instance SetClass (NakedExpr, CompTail) where
+  set (e, ct) = SetComp e ct
+
+boolArray :: [Bool] -> NakedExpr
+boolArray = array BConst
+
+intArray :: [Int] -> NakedExpr
+intArray = array IConst
+
+floatArray :: [Float] -> NakedExpr
+floatArray = array FConst
+
+stringArray :: [String] -> NakedExpr
+stringArray = array SConst
+
+boolArray2 :: [[Bool]] -> NakedExpr
+boolArray2 = array2 BConst
+
+intArray2 :: [[Int]] -> NakedExpr
+intArray2 = array2 IConst
+
+floatArray2 :: [[Float]] -> NakedExpr
+floatArray2 = array2 FConst
+
+stringArray2 :: [[String]] -> NakedExpr
+stringArray2 = array2 SConst
+
+-- Creating one- or two-dimensional arrays by mapping
+array :: (a -> NakedExpr) -> [a] -> NakedExpr
+array f = ArrayLit . map f
+
+array2 :: (a -> NakedExpr) -> [[a]] -> NakedExpr
+array2 f = ArrayLit2D . (map (map f))
+
+-- Array comprehension?
+
+infixl 9 #/., #|.
+
+(#/.) :: NakedExpr -> CompTail -> NakedExpr
+e #/. ct = SetComp e ct
+
+(#|.) :: NakedExpr -> CompTail -> NakedExpr
+e #|. ct = ArrayComp e ct
+
+infixl 2 !.
+(!.) :: Ident -> [NakedExpr] -> NakedExpr
+(!.) = ArrayElem
+
+-- Comprehension
+-- comprehension tail "i in expr"
+--infixr 2 @@
+(@@) :: [Ident] -> NakedExpr -> CompTail
+(@@) vars e = ([(vars, e)], Nothing)
+
+and_ :: CompTail -> CompTail -> CompTail
+and_ (ins1, me1) (ins2, me2) = (ins1 ++ ins2, decideWhere me1 me2)
+
+decideWhere :: Maybe NakedExpr -> Maybe NakedExpr -> Maybe NakedExpr
+decideWhere Nothing   Nothing   = Nothing
+decideWhere Nothing   (Just e)  = Just e
+decideWhere (Just e)  Nothing   = Just e
+decideWhere (Just e1) (Just e2) = Just $ Bi (Op "/\\") e1 e2
+
+where_ :: CompTail -> NakedExpr -> CompTail
+where_ (gs, _) e = (gs, Just e)
+
+-- Generator calls
+forall :: CompTail -> Ident -> NakedExpr -> NakedExpr
+forall ct name e = GenCall name ct e
+
+infixl 5 ...
+(...) :: NakedExpr -> NakedExpr -> Type
+(...) = Range
 
 -- Auxiliary types for if-then-else expressions
 
 data IF_THEN_ELSE = ELSE NakedExpr NakedExpr NakedExpr
-data ELSEIF = ELSEIF [(NakedExpr, NakedExpr)] NakedExpr
+data ELSEIF = ELSEIF [(NakedExpr, NakedExpr)] NakedExpr -- ?
 
-if' :: NakedExpr -> (NakedExpr -> NakedExpr -> IF_THEN_ELSE)
-if' e = \e1 e2 -> ELSE e e1 e2
+if_ :: NakedExpr -> (NakedExpr -> NakedExpr -> IF_THEN_ELSE)
+if_ e = \e1 e2 -> ELSE e e1 e2
 
-then' :: (NakedExpr -> NakedExpr -> IF_THEN_ELSE) -> NakedExpr -> (NakedExpr -> IF_THEN_ELSE)
-then' f e = f e
+then_ :: (NakedExpr -> NakedExpr -> IF_THEN_ELSE) -> NakedExpr -> (NakedExpr -> IF_THEN_ELSE)
+then_ f e = f e
 
-else' :: (NakedExpr -> IF_THEN_ELSE) -> NakedExpr -> IF_THEN_ELSE
-else' f e = f e
+else_ :: (NakedExpr -> IF_THEN_ELSE) -> NakedExpr -> IF_THEN_ELSE
+else_ f e = f e
 
--- Assignments (plain and when declaring sth)
-class Assignable a where
-  type Assigned a
-  (=.) :: (Expression b) => a -> b -> Assigned a
+-- Annotations
 
-instance Assignable [Char] where
-  type Assigned [Char] = Assign'
-  name =. expr = Assign' (name, toExpression expr)
+class Annotatable a where
+  (|:) :: a -> [Annotation] -> a
 
-instance Assignable DeclarationSignature where
-  type Assigned DeclarationSignature = Declare'
-  ds =. expr = Declare' $ Declaration ds [] (Just (toExpression expr))
+instance Annotatable Expr where
+  (Expr e a1) |: a2 = Expr e (a1 ++ a2)
 
--- Annotations 
-class WithAnnotation a where
-  type Annotated a
-  (|>) :: a -> [Annotation] -> Annotated a
+instance Annotatable Declaration where
+  (Declaration ds a1 me) |: a2 = Declaration ds (a1 ++ a2) me
 
-instance WithAnnotation Declaration where
-  type Annotated Declaration = Declare'
-  (Declaration ds _ me) |> ans = Declare' $ Declaration ds ans me
-
-instance WithAnnotation Expr where
-  type Annotated Expr = Expr
-  (Expr e _) |> ans = Expr e ans
-
-instance WithAnnotation NakedExpr where
-  type Annotated NakedExpr = Expr
-  e |> ans = Expr e ans
-
-instance WithAnnotation Assign' where
-  type Annotated Assign' = Assign'
-  (Assign' (name, body)) |> ans = Assign' (name, body |> ans)
-
-instance WithAnnotation Constraint' where
-  type Annotated Constraint' = Constraint'
-  (Constraint' e) |> ans = Constraint' (e |> ans)
-  
-instance WithAnnotation Solve' where
-  type Annotated Solve' = Solve'
-  (Solve' _ s) |> ans = Solve' ans s
+instance Annotatable Solve where
+  (Satisfy a1)    |: a2 = Satisfy (a1 ++ a2)
+  (Minimize a1 e) |: a2 = Minimize (a1 ++ a2) e
+  (Maximize a1 e) |: a2 = Maximize (a1 ++ a2) e

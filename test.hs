@@ -28,10 +28,10 @@ import Interfaces.MZAST
 
 default (Int, Float)
 
-small = Call $ mz_abs [Expr (IConst 3) [], Expr (IConst 5) []]
+small = mz_abs [int 3, int 5]
 big   =
-  Call $ mz_discrete_distribution [Expr (Call $ mz_dom_bounds_array [Expr (Var "somebigarrayname") []]) []
-                                  ,Expr (Bi mz_intersect (Var "areallybigset") (Var "coulditneedmore?")) []]
+  mz_discrete_distribution [mz_dom_bounds_array [var "somebigarrayname"]
+                           ,var "areallybigset" `_intersect_` var "coulditneedmore?"]
 
 {-  
 unsatisfiable =[
@@ -42,143 +42,136 @@ unsatisfiable =[
   ]
 -}
 planning = [
-  Declare $ Declaration (Variable (Par, Int, "nproducts")) [] Nothing,
-  Declare $ Declaration (Variable (Par, Set Int, "Products")) [] (Just (Expr (Bi mz_range (IConst 1) (Var "nproducts")) [])),
-  Declare $ Declaration (Variable (Par, Array [AOS "Products"] (Par, Int), "profit")) [] Nothing,
-  Declare $ Declaration (Variable (Par, Array [AOS "Products"] (Par, String), "pname")) [] Nothing,
-  Declare $ Declaration (Variable (Par, Int, "nresources")) [] Nothing,
-  Declare $ Declaration (Variable (Par, Set Int, "Resources")) [] (Just (Expr (Bi mz_range (IConst 1) (Var "nresources")) [])),
-  Declare $ Declaration (Variable (Par, Array [AOS "Resources"] (Par, Int), "capacity")) [] Nothing,
-  Declare $ Declaration (Variable (Par, Array [AOS "Resources"] (Par, String), "rname" )) [] Nothing,
-  Declare $ Declaration (Variable (Dec, Array [AOS "Products", AOS "Resources"] (Par, Int), "consumption")) [] Nothing,
-  Constraint $
-    Expr (Call $ mz_assert [Expr (Call $ mz_forall [Expr (ArrayComp (Bi mz_gte (ArrayElem "consumption" [Var "p", Var "r"]) (IConst 0)) 
-                                                                    ([(["r"], Var "Resources"), (["p"], Var "Products")], Nothing)) []]) []
-                           , Expr (SConst "Error: Negative consumption") []]) [],
-  Declare $
-    Declaration
-      (Variable (Par, Int, "mproducts")) [] 
-      (Just (Expr (Call $ mz_max [Expr (ArrayComp (Call $ mz_min [Expr (ArrayComp (Bi mz_idiv (ArrayElem "capacity" [Var "r"]) (ArrayElem "consumption" [Var "p", Var "r"])) ([(["r"], Var "Resources")], (Just (Bi mz_gt (ArrayElem "consumption" [Var "p", Var "r"]) (IConst 0))))) []]) ([(["p"], Var "Products")], Nothing)) []]) [])),
-  Declare $ Declaration (Variable (Dec, Array [AOS "Products"] (Dec, Range (IConst 0) (Var "mproducts")), "produce")) [] Nothing,
-  Declare $ Declaration (Variable (Dec, Array [AOS "Resources"] (Dec, Range (IConst 0) (Call $ mz_max [Expr (Var "capacity") []])), "used")) [] Nothing,
-  Constraint $ Expr (Call $ mz_forall [Expr (ArrayComp (Bi mz_and (Bi mz_eq (ArrayElem "used" [Var "r"]) (Call $ mz_sum [Expr (ArrayComp (Bi mz_times (ArrayElem "consumption" [Var "p", Var "r"]) (ArrayElem "produce" [Var "p"])) ([(["p"],Var "Products")], Nothing)) []])) (Bi mz_lte (ArrayElem "used" [Var "r"]) (ArrayElem "capacity" [Var "r"]))) ([(["r"], Var "Resources")], Nothing)) []]) [],
-  Solve [] (Maximize $ Expr (Call $ mz_sum [Expr (ArrayComp (Bi mz_times (ArrayElem "profit" [Var "p"]) (ArrayElem "produce" [Var "p"])) ([(["p"],Var "Products")], Nothing)) []]) [])
+  variable Par Int "nproducts",
+  Variable (Par, Set Int, "Products") =. int 1 -.- var "nproducts",
+  variable Par (Array [ACT "Products"] (Par, Int)) "profit",
+  variable Par (Array [ACT "Products"] (Par, String)) "pname",
+  variable Par Int "nresources",
+  Variable (Par, Set Int, "Resources") =. int 1 -.- var "nresources",
+  variable Par (Array [ACT "Resources"] (Par, Int)) "capacity",
+  variable Par (Array [ACT "Resources"] (Par, String)) "rname",
+  variable Dec (Array [ACT "Products", ACT "Resources"] (Par, Int)) "consumption",
+  constraint $
+    mz_assert [mz_forall [ArrayComp (("consumption"!.[Var "p", Var "r"]) >=. int 0) ((["r"] @@ var "Resources") `and_` (["p"] @@ var "Products"))], string "Error: Negative consumption"],
+  Variable (Par, Int, "mproducts") =.
+      mz_max [ArrayComp (mz_min [ArrayComp (("capacity"!.[Var "r"]) `_div_` ("consumption"!.[var "p", var "r"])) (["r"] @@ var "Resources" `where_` (("consumption"!.[var "p", var "r"]) >=. int 0))]) (["p"] @@ var "Products")],
+  variable Dec (Array [ACT "Products"] (Dec, int 0 ... var "mproducts")) "produce",
+  variable Dec (Array [ACT "Resources"] (Dec, int 0 ... mz_max[var "capacity"])) "used",
+  constraint $ mz_forall [
+    (("used"!.[var "r"]) =.= (mz_sum [("consumption"!.[var "p", var "r"]) *. ("produce"!.[var "p"]) #|. (["p"] @@ var "Products")]))
+    /\. (("used"!.[var "r"]) <=. ("capacity"!.[var "r"])) #|. (["r"] @@ var "Resources")],
+  solve $ maximize (mz_sum [(("profit"!.[Var "p"]) *. ("produce"!.[var "p"])) #|. (["p"] @@ var "Products")])
   ]
 
 planningData = [
-  Assign "nproducts" $ Expr (IConst 2) [],
-  Assign "profit" $ Expr (ArrayLit [IConst 400, IConst 450]) [],
-  Assign "pname" $ Expr (ArrayLit [SConst "banana-cake", SConst "chocolate-cake"]) [],
-  Assign "nresources" $ Expr (IConst 5) [],
-  Assign "capacity" $ Expr (ArrayLit [IConst 4000, IConst 6, IConst 2000, IConst 500, IConst 500]) [],
-  Assign "rname" $ Expr (ArrayLit [SConst "flour", SConst "banana", SConst "sugar", SConst "butter", SConst "cocoa"]) [],
-  Assign "consumption" $ Expr (ArrayLit2D [[IConst 250, IConst 2, IConst 75, IConst 100, IConst 0], [IConst 200, IConst 0, IConst 150, IConst 150, IConst 75]]) []]
+  "nproducts" =. int 2,
+  "profit" =. intArray [400, 450],
+  "pname" =. stringArray ["banana-cake", "chocolate-cake"],
+  "nresources" =. int 5,
+  "capacity" =. intArray [4000, 6, 2000, 500, 500],
+  "rname" =. stringArray ["flour", "banana", "sugar", "butter", "cocoa"],
+  "consumption" =. intArray2 [[250, 2,  75, 100,  0]
+                             ,[200, 0, 150, 150, 75]]
+  ]
 
 knapsack = [
-  Declare $ Declaration (Variable (Par, Int, "n")) [] Nothing,
-  Declare $ Declaration (Variable (Par, Set Int, "Items")) [] (Just (Expr (Bi mz_range (IConst 1) (Var "n")) [])),
-  Declare $ Declaration (Variable (Par, Int, "capacity")) [] Nothing,
+  variable Par Int "n",
+  Variable (Par, Set Int, "Items") =. (int 1) -.- (var "n"),
+  variable Par Int "capacity",
   Empty,
-  Declare $ Declaration (Variable (Par, Array [AOS "Items"] (Par, Int), "profits")) [] Nothing,
-  Declare $ Declaration (Variable (Par, Array [AOS "Items"] (Par, Int), "weights")) [] Nothing,
+  variable Par (Array [ACT "Items"] (Par, Int)) "profits",
+  variable Par (Array [ACT "Items"] (Par, Int)) "weights",
   Empty,
-  Declare $ Declaration (Variable (Dec, Set (AOS "Items"), "knapsack")) [] Nothing,
+  variable Dec (Set (ACT "Items")) "knapsack",
   Empty,
-  Constraint $ Expr (Bi mz_lte (GenCall "sum" ([(["i"], Var "Items")], Nothing) (Bi mz_times (Call $ mz_bool2int [Expr (Bi mz_in (Var "i") (Var "knapsack")) []]) (ArrayElem "weights" [Var "i"]))) (Var "capacity")) [],
+  constraint $ (forall (["i"] @@ var "Items") "sum" ((mz_bool2int [var "i" `_in_` var "knapsack"]) *. ("weights"!.[var "i"]))) <=. var "capacity",
   Empty,
-  Solve [] $ Maximize (Expr (GenCall "sum" ([(["i"], Var "Items")], Nothing) (Bi mz_times (Call $ mz_bool2int [Expr (Bi mz_in (Var "i") (Var "knapsack")) []]) (ArrayElem "profits" [Var "i"]))) [])]
+  solve $ maximize (forall (["i"] @@ var "Items") "sum" (mz_bool2int [var "i" `_in_` var "knapsack"] *. ("profits"!.[Var "i"])))]
 
 knapdata = [
-  Assign "n" $ Expr (IConst 6) [],
-  Assign "capacity" $ Expr (IConst 13) [],
-  Assign "profits" $ Expr (ArrayLit [IConst 5, IConst 9, IConst 15, IConst 10, IConst 3, IConst 6]) [],
-  Assign "weights" $ Expr (Bi mz_range (IConst 1) (IConst 6)) []]
+  "n" =. int 6,
+  "capacity" =. int 13,
+  "profits" =. intArray [5, 9, 15, 10, 3, 6],
+  "weights" =. int 1 -.- int 6]
 
 australia = [
-  Comment "Colouring Australia using nc colours",
-  Declare $ Declaration (Variable (Par, Int, "nc")) [] (Just (Expr (IConst 3) [])),
-  Declare $ Declaration (Variable (Dec, Range (IConst 1) (Var "nc"), "wa")) [] Nothing,
-  Declare $ Declaration (Variable (Dec, Range (IConst 1) (Var "nc"), "nsw")) [] Nothing,
-  Declare $ Declaration (Variable (Dec, Range (IConst 1) (Var "nc"), "nt")) [] Nothing,
-  Declare $ Declaration (Variable (Dec, Range (IConst 1) (Var "nc"), "v")) [] Nothing,
-  Declare $ Declaration (Variable (Dec, Range (IConst 1) (Var "nc"), "sa")) [] Nothing,
-  Declare $ Declaration (Variable (Dec, Range (IConst 1) (Var "nc"), "t")) [] Nothing,
-  Declare $ Declaration (Variable (Dec, Range (IConst 1) (Var "nc"), "q")) [] Nothing,
-  Constraint $ Expr (Bi mz_neq (Var "wa") (Var "nt")) [],
-  Constraint $ Expr (Bi mz_neq (Var "wa") (Var "sa")) [],
-  Constraint $ Expr (Bi mz_neq (Var "nt") (Var "sa")) [],
-  Constraint $ Expr (Bi mz_neq (Var "nt") (Var "q")) [],
-  Constraint $ Expr (Bi mz_neq (Var "sa") (Var "q")) [],
-  Constraint $ Expr (Bi mz_neq (Var "sa") (Var "nsw")) [],
-  Constraint $ Expr (Bi mz_neq (Var "sa") (Var "v")) [],
-  Constraint $ Expr (Bi mz_neq (Var "q") (Var "nsw")) [],
-  Constraint $ Expr (Bi mz_neq (Var "nsw") (Var "v")) [],
-  Solve [] Satisfy,
+  (%%) "Colouring Australia using nc colours",
+  Variable (Par, Int, "nc") =. int 3,
+  variable Dec (int 1 ... var "nc") "wa",
+  variable Dec (int 1 ... var "nc") "nsw",
+  variable Dec (int 1 ... var "nc") "nt",
+  variable Dec (int 1 ... var "nc") "v",
+  variable Dec (int 1 ... var "nc") "sa",
+  variable Dec (int 1 ... var "nc") "t",
+  variable Dec (int 1 ... var "nc") "q",
+  constraint $ var "wa" !=. var "nt",
+  constraint $ var "wa" !=. var "sa",
+  constraint $ var "nt" !=. var "sa",
+  constraint $ var "nt" !=. var "q",
+  constraint $ var "sa" !=. var "q",
+  constraint $ var "sa" !=. var "nsw",
+  constraint $ var "sa" !=. var "v",
+  constraint $ var "q"  !=. var "nsw",
+  constraint $ var "nsw" !=. var "v",
+  solve satisfy,
   Output (ArrayLit [
-    SConst "wa=",
-    Call $ mz_show [Expr (Var "wa") []],
-    SConst "\t nt=",
-    Call $ mz_show [Expr (Var "nt") []],
-    SConst "\t sa=",
-    Call $ mz_show [Expr (Var "sa") []],
-    SConst "\n",
-    SConst "q=",
-    Call $ mz_show [Expr (Var "q") []],
-    SConst "\t nsw=",
-    Call $ mz_show [Expr (Var "nsw") []],
-    SConst "\t v=",
-    Call $ mz_show [Expr (Var "v") []],
-    SConst "\n",
-    SConst "t=",
-    Call $ mz_show [Expr (Var "t") []],
-    SConst "\n"])]
+    string "wa=", mz_show [var "wa"],
+    string "\t nt=", mz_show [var "nt"],
+    string "\t sa=", mz_show [var "sa"],
+    string "\n",
+    string "q=", mz_show [var "q"],
+    string "\t nsw=", mz_show [var "nsw"],
+    string "\t v=", mz_show [var "v"],
+    string "\n",
+    string "t=", mz_show [var "t"],
+    string "\n"])]
 
 cakes = [
-  Comment "Baking cakes for the school fete (with data file)",
-  Declare $ Declaration (Variable (Par, Int, "flour")) [] Nothing,
-  Declare $ Declaration (Variable (Par, Int, "banana")) [] Nothing,
-  Declare $ Declaration (Variable (Par, Int, "sugar")) [] Nothing,
-  Declare $ Declaration (Variable (Par, Int, "butter")) [] Nothing,
-  Declare $ Declaration (Variable (Par, Int, "cocoa")) [] Nothing,
-  Constraint $ 
-    Expr (Call $ mz_assert [Expr (Bi mz_gte (Var "flour") (IConst 0)) []
-                           ,Expr (Bi mz_pp (SConst "mz_invalid datafile: ") (SConst "Ammount of flour is non-negative")) []]
-         ) [],
-  Constraint $
-    Expr (Call $ mz_assert [Expr (Bi mz_gte (Var "banana") (IConst 0)) []
-                           ,Expr (Bi mz_pp (SConst "mz_invalid datafile: ") (SConst "Ammount of banana is non-negative")) []]
-         ) [],
-  Constraint $
-    Expr (Call $ mz_assert [Expr (Bi mz_gte (Var "sugar") (IConst 0)) []
-                           ,Expr (Bi mz_pp (SConst "mz_invalid datafile: ") (SConst "Ammount of sugar is non-negative")) []]
-         ) [],
-  Constraint $
-    Expr (Call $ mz_assert [Expr (Bi mz_gte (Var "butter") (IConst 0)) []
-                           ,Expr (Bi mz_pp (SConst "mz_invalid datafile: ") (SConst "Ammount of butter is non-negative")) []]
-         ) [],
-  Constraint $
-    Expr (Call $ mz_assert [Expr (Bi mz_gte (Var "cocoa") (IConst 0)) []
-                           ,Expr (Bi mz_pp (SConst "mz_invalid datafile: ") (SConst "Ammount of cocoa is non-negative")) []]
-         ) [],
-  Declare $ Declaration (Variable (Dec, Range (IConst 0) (IConst 100), "b")) [] Nothing,
-  Declare $ Declaration (Variable (Dec, Range (IConst 0) (IConst 100), "c")) [] Nothing,
-  Constraint $ Expr (Bi mz_lte (Bi mz_plus (Bi mz_times (IConst 250) (Var "b")) (Bi mz_times (IConst 200) (Var "c"))) (Var "flour")) [],
-  Constraint $ Expr (Bi mz_lte (Bi mz_times (IConst 2) (Var "b")) (Var "banana")) [],
-  Constraint $ Expr (Bi mz_lte (Bi mz_plus (Bi mz_times (IConst 75) (Var "b")) (Bi mz_times (IConst 150) (Var "c"))) (Var "sugar")) [],
-  Constraint $ Expr (Bi mz_lte (Bi mz_plus (Bi mz_times (IConst 100) (Var "b")) (Bi mz_times (IConst 150) (Var "c"))) (Var "butter")) [],
-  Constraint $ Expr (Bi mz_lte (Bi mz_times (IConst 75) (Var "c")) (Var "cocoa")) [],
-  Comment "Maximize our profit",
-  Solve [] (Maximize (Expr (Bi mz_plus (Bi mz_times (IConst 400) (Var "b")) (Bi mz_times (IConst 450) (Var "c"))) [])),
-  Output (ArrayLit [
-    SConst "no. of banana cakes = ", Call $ mz_show [Expr (Var "b") []], SConst "\n", SConst "no. of chocolate cakes = ", Call $ mz_show [Expr (Var "c") []], SConst "\n"
-  ])]
+  (%%) "Baking cakes for the school fete (with data file)",
+  variable Par Int "flour",
+  variable Par Int "banana",
+  variable Par Int "sugar",
+  variable Par Int "butter",
+  variable Par Int "cocoa",
+  constraint $ 
+    mz_assert [var "flour" >=. int 0
+             ,string "mz_invalid datafile: Ammount of flour is non-negative"],
+  constraint $
+    mz_assert [var "banana" >=. int 0
+             ,string "mz_invalid datafile: Ammount of banana is non-negative"],
+  constraint $
+    mz_assert [var "sugar" >=. int 0
+              ,string "mz_invalid datafile: Ammount of sugar is non-negative"],
+  constraint $
+    mz_assert [var "butter" >=. int 0
+              ,string "mz_invalid datafile: Ammount of butter is non-negative"],
+  constraint $
+    mz_assert [var "cocoa" >=. int 0
+              ,string "mz_invalid datafile: Ammount of cocoa is non-negative"],
+  variable Dec (int 0 ... int 100) "b",
+  variable Dec (int 0 ... int 100) "c",
+  constraint $ int 250 *. var "b" +. int 200 *. var "c" <=. var "flour",
+  constraint $ int 2 *. var "b" <=. var "banana",
+  constraint $ int 75 *. var "b" +. int 150 *. var "c" <=. var "sugar",
+  constraint $ int 100 *. var "b" +. int 150 *. var "c" <=. var "butter",
+  constraint $ int 75 *. var "c" <=. var "cocoa",
+  (%%) "Maximize our profit",
+  solve $ maximize (int 400 *. var "b" +. int 450 *. var "c"),
+  output (ArrayLit
+    [string "no. of banana cakes = "
+    ,mz_show [var "b"]
+    ,string "\n"
+    ,string "no. of chocolate cakes = "
+    ,mz_show [var "c"], string "\n"
+    ])]
     
-cakedata = [
-  Assign "flour"  $ Expr (IConst 4000) [],
-  Assign "banana" $ Expr (IConst 6)    [],
-  Assign "sugar"  $ Expr (IConst 2000) [],
-  Assign "butter" $ Expr (IConst 500)  [],
-  Assign "cocoa"  $ Expr (IConst 500)  []]
+cakedata =
+  ["flour"   =. int 4000
+  ,"banana"  =. int 6
+  ,"sugar"   =. int 2000
+  ,"butter"  =. int 500
+  ,"cocoa"   =. int 500
+  ]
 {-
 test1 = printExpr $ SetComp (Bi mz_times (IConst 2) (Var "i")) ([(["i"], mz_interval (IConst 1) (IConst 5))], Nothing)
 -- results to: {2 * i | i in 1..5}
