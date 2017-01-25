@@ -1,6 +1,11 @@
 0.3.0.0
- - Added support for annotations ?
- - Minor corrections in documentation.
+ - Added support for annotations
+ - Changes in the representational system of MiniZinc models
+   - Module Interfaces.MZAST renamed to Interfaces.MZASTBase
+ - Module Interfaces.MZAST used as a more human friendly system for building representations of 
+   MiniZinc models.
+ - Module Interfaces.MZBuiltIns added. Contains predefined MiniZinc operators, functions, tests,
+   predicates and annotations.
 
 0.2.0.0
  - Added support for returning specified number of solutions
