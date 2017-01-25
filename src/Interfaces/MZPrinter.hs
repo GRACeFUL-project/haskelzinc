@@ -23,7 +23,7 @@ module Interfaces.MZPrinter(
 import Text.PrettyPrint
 import Data.List
 import Interfaces.MZASTBase
-import Interfaces.MZBuiltIns
+import Interfaces.MZBuiltIns (opPrec)
 
 layout :: MZModel -> String
 layout = render . printModel
@@ -46,8 +46,7 @@ printItem (Declare p)       = printDeclaration p <> semi
 printItem (Constraint c)    = hang (text "constraint") 2 (printExpr c <> semi)
 printItem (Assign var expr) = text var <+> printBody (Just expr) <> semi
 printItem (Output e)        = text "output" <+> printNakedExpr e <> semi
-printItem (Solve ans s)     = text "solve" 
-                              <+> printAnnotations ans
+printItem (Solve s)         = text "solve" 
                               <+> printSolve s 
                               <> semi
 
@@ -110,7 +109,7 @@ printNakedExpr (U op e)            =
 printNakedExpr (Bi op e1 e2)       = sep [printParensNakedExpr (opPrec op) e1 
                                          , printOp op 
                                          , printParensNakedExpr (opPrec op) e2]
-printNakedExpr (Call f)            = printCallable f
+printNakedExpr (Call name args)    = printCallable name args
 printNakedExpr (ITE [(e1, e2)] e3) = text "if" <+> printNakedExpr e1 
                                      <+> text "then" <+> printNakedExpr e2 
                                      $+$ text "else" <+> printNakedExpr e3 <+> text "endif"
@@ -158,7 +157,7 @@ printType (Range e1 e2)  = printParensNakedExpr 0 e1
                            <> text ".." 
                            <> printParensNakedExpr 0 e2
 printType (Elems es)     = braces $ commaSepExpr es
-printType (AOS name)     = text name
+printType (ACT name)     = text name
 printType (VarType name) = text "$" <> text name
 
 printCompTail :: CompTail -> Doc
@@ -172,8 +171,8 @@ printInst :: Inst -> Doc
 printInst Dec = text "var"
 printInst Par = text "par"
 
-printCallable :: Callable -> Doc
-printCallable (Callable name args) = 
+printCallable :: Ident -> [Expr] -> Doc
+printCallable name args = 
   text name 
   <> cat (putParens $ punctuateBefore comma (map printExpr args))
 
@@ -190,9 +189,13 @@ printOp :: Op -> Doc
 printOp (Op op) = text op
 
 printSolve :: Solve -> Doc
-printSolve Satisfy      = text "satisfy"
-printSolve (Minimize e) = text "minimize" <+> printExpr e
-printSolve (Maximize e) = text "maximize" <+> printExpr e
+printSolve (Satisfy  ans  ) = printAnnotations ans <+> text "satisfy"
+printSolve (Minimize ans e) = printAnnotations ans 
+                              <+> text "minimize"
+                              <+> printNakedExpr e
+printSolve (Maximize ans e) = printAnnotations ans 
+                              <+> text "maximize"
+                              <+> printNakedExpr e
 
 printParams :: [Param] -> Doc
 printParams ps = commaSep printParam ps

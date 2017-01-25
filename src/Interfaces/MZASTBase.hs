@@ -24,7 +24,6 @@ module Interfaces.MZASTBase (
   NakedExpr(..),
   Type(..),
   Op(..),
-  Callable(..),
   Annotation(..),
   Inst(..),
   Solve(..),
@@ -32,7 +31,9 @@ module Interfaces.MZASTBase (
   Generator,
   Param,
   Ident,
-  Filename
+  Filename,
+  stripExprOff,
+  toSimpleExpr
 ) where 
 
 -- | An abbreviation for the type of a represented MiniZinc model.
@@ -51,7 +52,7 @@ data Item
   -- | Constraint item
   | Constraint Expr
   -- | Solve item
-  | Solve [Annotation] Solve
+  | Solve Solve
   -- | Output item. The use of this item might cause errors in parsing the solution(s) of the model.
   -- Recommended use for testing purposes only.
   | Output NakedExpr
@@ -62,6 +63,12 @@ data Item
 -- Represents a MiniZinc expression (first argument) annotated with the annotations contained in the list of the second argument.
 data Expr = Expr NakedExpr [Annotation]
   deriving (Show, Eq)
+
+toSimpleExpr :: NakedExpr -> Expr
+toSimpleExpr e = Expr e []
+
+stripExprOff :: Expr -> NakedExpr
+stripExprOff (Expr e ans) = e
 
 -- | Completes a declaration with a list of annotations (possibly empty) and maybe a body.
 data Declaration = Declaration DeclarationSignature [Annotation] (Maybe Expr)
@@ -111,7 +118,7 @@ data NakedExpr
   -- | @U op exp1@ represents the MiniZinc expression that applies the unary operator @op@ on @exp1@.
   | U Op NakedExpr
   -- | @Call name args@ represents a call to the function or test @name@ on arguments @args@.
-  | Call Callable
+  | Call Ident [Expr]
   -- | The if-then-else conditional. If the first argument of the constructor is an empty list, the translation to MiniZinc will fail.
   -- @ITE [(cond, expr1)] expr2@, where the list is a singleton, translates to @if cond then exp1 else exp2 endif@.
   -- If the list contains more than one pairs, then the corresponding @elseif-then@ pairs are inserted before the final @else@ expression.
@@ -145,7 +152,7 @@ data Type
   -- | A constrained type using set literals.
   | Elems [NakedExpr]
   -- | A constrained type using a previously defined set parameter.
-  | AOS Ident
+  | ACT Ident
   -- | Type variable
   | VarType Ident
   deriving (Show, Eq)
@@ -154,15 +161,10 @@ data Type
 newtype Op = Op String
   deriving (Show, Eq)
 
--- | Represents a call to a MiniZinc function, test, predicate or annotation.
-data Callable = Callable Ident [Expr] -- ^ Name given by the user
---  | PrefBop Op [NakedExpr]  -- ^ Prefix syntax of given (representation of) MiniZinc operator.
-  deriving (Show, Eq)
-
 prefixOp :: Op -> Ident
 prefixOp (Op name) = "`" ++ name ++ "`"
 
--- | Represents the name of a MiniZinc annotation.  
+-- | Represents a call to a MiniZinc annotation.  
 data Annotation = Annotation Ident [NakedExpr]
   deriving (Show, Eq)
 
@@ -174,9 +176,9 @@ data Inst
 
 -- | The type for representing the three different kinds of solve items. 
 data Solve
-  = Satisfy
-  | Minimize Expr
-  | Maximize Expr
+  = Satisfy [Annotation]
+  | Minimize [Annotation] NakedExpr
+  | Maximize [Annotation] NakedExpr
   deriving (Show, Eq)
 
 type CompTail = ([Generator], Maybe NakedExpr)
