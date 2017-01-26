@@ -64,8 +64,6 @@ function i t s ps = declareOnly $ Function (i, t, s) ps
 annotation :: Ident -> [Param] -> Declaration
 annotation i ps = declareOnly $ Annotation' i ps
 
-
-
 -- Solve satisfy, minimize, maximize
 
 satisfy :: Solve
@@ -122,58 +120,68 @@ instance SetClass (NakedExpr, CompTail) where
   set (e, ct) = SetComp e ct
 
 boolArray :: [Bool] -> NakedExpr
-boolArray = array BConst
+boolArray = arrayMap BConst
 
 intArray :: [Int] -> NakedExpr
-intArray = array IConst
+intArray = arrayMap IConst
 
 floatArray :: [Float] -> NakedExpr
-floatArray = array FConst
+floatArray = arrayMap FConst
 
 stringArray :: [String] -> NakedExpr
-stringArray = array SConst
+stringArray = arrayMap SConst
 
 boolArray2 :: [[Bool]] -> NakedExpr
-boolArray2 = array2 BConst
+boolArray2 = arrayMap2 BConst
 
 intArray2 :: [[Int]] -> NakedExpr
-intArray2 = array2 IConst
+intArray2 = arrayMap2 IConst
 
 floatArray2 :: [[Float]] -> NakedExpr
-floatArray2 = array2 FConst
+floatArray2 = arrayMap2 FConst
 
 stringArray2 :: [[String]] -> NakedExpr
-stringArray2 = array2 SConst
+stringArray2 = arrayMap2 SConst
 
 -- Creating one- or two-dimensional arrays by mapping
-array :: (a -> NakedExpr) -> [a] -> NakedExpr
-array f = ArrayLit . map f
+arrayMap :: (a -> NakedExpr) -> [a] -> NakedExpr
+arrayMap f = ArrayLit . map f
 
-array2 :: (a -> NakedExpr) -> [[a]] -> NakedExpr
-array2 f = ArrayLit2D . (map (map f))
+arrayMap2 :: (a -> NakedExpr) -> [[a]] -> NakedExpr
+arrayMap2 f = ArrayLit2D . (map (map f))
+
+array :: [NakedExpr] -> NakedExpr
+array = ArrayLit
+
+array2 :: [[NakedExpr]] -> NakedExpr
+array2 = ArrayLit2D
 
 -- Array comprehension?
 
-infixl 9 #/., #|.
+infixl 1 #/., #|.
 
-(#/.) :: NakedExpr -> CompTail -> NakedExpr
-e #/. ct = SetComp e ct
+(#/.) :: NakedExpr -> [CompTail] -> NakedExpr
+e #/. cts = SetComp e (mergeCompTails cts)
 
-(#|.) :: NakedExpr -> CompTail -> NakedExpr
-e #|. ct = ArrayComp e ct
+(#|.) :: NakedExpr -> [CompTail] -> NakedExpr
+e #|. cts = ArrayComp e (mergeCompTails cts)
 
-infixl 2 !.
+infix 9 !.
 (!.) :: Ident -> [NakedExpr] -> NakedExpr
 (!.) = ArrayElem
 
 -- Comprehension
 -- comprehension tail "i in expr"
---infixr 2 @@
+infix 4 @@
 (@@) :: [Ident] -> NakedExpr -> CompTail
 (@@) vars e = ([(vars, e)], Nothing)
 
-and_ :: CompTail -> CompTail -> CompTail
-and_ (ins1, me1) (ins2, me2) = (ins1 ++ ins2, decideWhere me1 me2)
+--infixl 6 `and_`
+combineCompTail :: CompTail -> CompTail -> CompTail
+combineCompTail (ins1, me1) (ins2, me2) = (ins1 ++ ins2, decideWhere me1 me2)
+
+mergeCompTails :: [CompTail] -> CompTail
+mergeCompTails = foldr1 combineCompTail
 
 decideWhere :: Maybe NakedExpr -> Maybe NakedExpr -> Maybe NakedExpr
 decideWhere Nothing   Nothing   = Nothing
@@ -181,12 +189,14 @@ decideWhere Nothing   (Just e)  = Just e
 decideWhere (Just e)  Nothing   = Just e
 decideWhere (Just e1) (Just e2) = Just $ Bi (Op "/\\") e1 e2
 
+infix 6 `where_`
 where_ :: CompTail -> NakedExpr -> CompTail
 where_ (gs, _) e = (gs, Just e)
 
 -- Generator calls
-forall :: CompTail -> Ident -> NakedExpr -> NakedExpr
-forall ct name e = GenCall name ct e
+-- CompTail list makes no sense to be empty
+forall :: [CompTail] -> Ident -> NakedExpr -> NakedExpr
+forall cts name e = GenCall name (mergeCompTails cts) e
 
 -- Types
 infix 2 ...

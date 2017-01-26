@@ -50,9 +50,9 @@ evens = [
   solve $ satisfy,
   newline,
   constraint $ 
-    forall (["i"] @@ var "S" `and_` (["j"] @@ var "S")) "sum" (("x"!.[var"i", var "j"]) =.= var "coin")
-    /\. forall (["i"] @@ var "S") "forall" (
-      forall (["j"] @@ var "S") "sum" (("x"!.[var"i", var "j"]) =.= int 2 *. ("m"!.[var "j"]))
+    forall [["i"] @@ var "S", ["j"] @@ var "S"] "sum" ("x"!.[var"i", var "j"] =.= var "coin")
+    /\. forall [["i"] @@ var "S"] "forall" (
+      forall [["j"] @@ var "S"] "sum" ("x"!.[var"i", var "j"] =.= int 2 *. "m"!.[var "j"])
     )
   ]
 
@@ -68,7 +68,7 @@ divisor225 = [
     =. Let [
       declare $ variable Dec Int "len" =. mz_length[var "a"]
     ]
-    (var "n" =.= forall (["i"] @@ (int 1 --. var "len")) "sum" (mz_pow[int 10, var "len" -. var "i"] *. ("a"!.[var "i"]))),
+    (var "n" =.= forall [["i"] @@ int 1 --. var "len"] "sum" (mz_pow[int 10, var "len" -. var "i"] *. "a"!.[var "i"])),
     newline,
     solve $ minimize (var "y")
             |: [mz_int_search[E $ var "x", A $ mz_first_fail[], A $ mz_indomain_min[], A $ mz_complete[]]],
@@ -86,15 +86,20 @@ planning = [
   declare $ variable Par (Array [iSet "Resources"] (Par, String)) "rname",
   declare $ variable Dec (Array [iSet "Products", iSet "Resources"] (Par, Int)) "consumption",
   constraint $
-    mz_assert [mz_forall [ArrayComp (("consumption"!.[Var "p", Var "r"]) >=. int 0) ((["r"] @@ var "Resources") `and_` (["p"] @@ var "Products"))], string "Error: Negative consumption"],
+    mz_assert [mz_forall ["consumption"!.[Var "p", Var "r"] >=. int 0 
+                         #|. [["r"] @@ var "Resources", ["p"] @@ var "Products"]]
+              , string "Error: Negative consumption"],
   declare $ variable Par Int "mproducts" =.
-      mz_max [ArrayComp (mz_min [ArrayComp (("capacity"!.[Var "r"]) `_div_` ("consumption"!.[var "p", var "r"])) (["r"] @@ var "Resources" `where_` (("consumption"!.[var "p", var "r"]) >=. int 0))]) (["p"] @@ var "Products")],
+    mz_max [mz_min [("capacity"!.[Var "r"] `_div_` "consumption"!.[var "p", var "r"]) 
+                      #|. [(["r"] @@ var "Resources") 
+                          `where_` ("consumption"!.[var "p", var "r"] >=. int 0)]] 
+                   #|. [["p"] @@ var "Products"]],
   declare $ variable Dec (Array [iSet "Products"] (Dec, int 0 ... var "mproducts")) "produce",
   declare $ variable Dec (Array [iSet "Resources"] (Dec, int 0 ... mz_max[var "capacity"])) "used",
   constraint $ mz_forall [
-    (("used"!.[var "r"]) =.= (mz_sum [("consumption"!.[var "p", var "r"]) *. ("produce"!.[var "p"]) #|. (["p"] @@ var "Products")]))
-    /\. (("used"!.[var "r"]) <=. ("capacity"!.[var "r"])) #|. (["r"] @@ var "Resources")],
-  solve $ maximize (mz_sum [(("profit"!.[Var "p"]) *. ("produce"!.[var "p"])) #|. (["p"] @@ var "Products")])
+    ("used"!.[var "r"] =.= mz_sum ["consumption"!.[var "p", var "r"] *. ("produce"!.[var "p"]) #|. [["p"] @@ var "Products"]])
+    /\. ("used"!.[var "r"] <=. "capacity"!.[var "r"]) #|. [["r"] @@ var "Resources"]],
+  solve $ maximize (mz_sum [("profit"!.[Var "p"] *. "produce"!.[var "p"]) #|. [["p"] @@ var "Products"]])
   ]
 
 planningData = [
@@ -118,9 +123,15 @@ knapsack = [
   newline,
   declare $ variable Dec (Set (iSet "Items")) "knapsack",
   newline,
-  constraint $ (forall (["i"] @@ var "Items") "sum" ((mz_bool2int [var "i" `_in_` var "knapsack"]) *. ("weights"!.[var "i"]))) <=. var "capacity",
+  constraint $ 
+    forall [["i"] @@ var "Items"] "sum" 
+      (mz_bool2int[var "i" `_in_` var "knapsack"] *. "weights"!.[var "i"]) 
+    <=. var "capacity",
   newline,
-  solve $ maximize (forall (["i"] @@ var "Items") "sum" (mz_bool2int [var "i" `_in_` var "knapsack"] *. ("profits"!.[Var "i"])))]
+  solve $ maximize 
+    (forall [["i"] @@ var "Items"] "sum" 
+      (mz_bool2int [var "i" `_in_` var "knapsack"] *. "profits"!.[Var "i"]))
+  ]
 
 knapdata = [
   "n" =. int 6,
@@ -192,13 +203,14 @@ cakes = [
   constraint $ int 75 *. var "c" <=. var "cocoa",
   (%) "Maximize our profit",
   solve $ maximize (int 400 *. var "b" +. int 450 *. var "c"),
-  output (ArrayLit
-    [string "no. of banana cakes = "
-    ,mz_show [var "b"]
-    ,string "\n"
-    ,string "no. of chocolate cakes = "
-    ,mz_show [var "c"], string "\n"
-    ])]
+  output $ 
+    array [string "no. of banana cakes = "
+          ,mz_show [var "b"]
+          ,string "\n"
+          ,string "no. of chocolate cakes = "
+          ,mz_show [var "c"], string "\n"
+          ]
+  ]
     
 cakedata =
   ["flour"   =. int 4000
