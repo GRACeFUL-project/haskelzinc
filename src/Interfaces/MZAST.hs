@@ -1,5 +1,6 @@
---{-# LANGUAGE TypeFamilies, FlexibleInstances, AllowAmbiguousTypes #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies, FlexibleInstances, AllowAmbiguousTypes #-}
+-- {-# LANGUAGE TypeFamilies, FlexibleInstances #-}
+-- {-# LANGUAGE FlexibleInstances #-}
 
 module Interfaces.MZAST where
 
@@ -8,11 +9,11 @@ import Interfaces.MZBuiltIns
 
 -- Items
 
-emptyLine :: Item
-emptyLine = Empty
+newline :: Item
+newline = Empty
 
-(%%) :: String -> Item
-(%%) = Comment
+(%) :: String -> Item
+(%) = Comment
 
 include :: String -> Item
 include = Include
@@ -30,31 +31,40 @@ solve = Solve
 
 infixl 1 =.
 class Assignable a where
-  (=.) :: a -> NakedExpr -> Item
+  type Assigned a
+  
+  (=.) :: a -> NakedExpr -> Assigned a
 
 instance Assignable [Char] where
+  type Assigned [Char] = Item
   name =. e = Assign name $ Expr e []
 
-instance Assignable DeclarationSignature where
-  ds =. e = Declare $ Declaration ds [] (Just (Expr e []))
+instance Assignable Declaration where
+  type Assigned Declaration = Declaration
+  (Declaration ds ans _) =. e = Declaration ds [] (Just (Expr e []))
 
-declareOnly :: DeclarationSignature -> Item
-declareOnly ds = Declare $ Declaration ds [] Nothing
+declare :: Assigned Declaration -> Item
+declare = Declare
 
-variable :: Inst -> Type -> Ident -> Item
+declareOnly :: DeclarationSignature -> Declaration
+declareOnly ds = Declaration ds [] Nothing
+
+variable :: Inst -> Type -> Ident -> Declaration
 variable i t s = declareOnly $ Variable (i, t, s)
 
-predicate :: Ident -> [Param] -> Item
+predicate :: Ident -> [Param] -> Declaration
 predicate name ps = declareOnly $ Predicate name ps
 
-test :: Ident -> [Param] -> Item
+test :: Ident -> [Param] -> Declaration
 test name ps = declareOnly $ Test name ps
 
-function :: Inst -> Type -> Ident -> [Param] -> Item
+function :: Inst -> Type -> Ident -> [Param] -> Declaration
 function i t s ps = declareOnly $ Function (i, t, s) ps
 
-annotation :: Ident -> [Param] -> Item
+annotation :: Ident -> [Param] -> Declaration
 annotation i ps = declareOnly $ Annotation' i ps
+
+
 
 -- Solve satisfy, minimize, maximize
 
@@ -178,9 +188,16 @@ where_ (gs, _) e = (gs, Just e)
 forall :: CompTail -> Ident -> NakedExpr -> NakedExpr
 forall ct name e = GenCall name ct e
 
-infixl 5 ...
+-- Types
+infix 2 ...
 (...) :: NakedExpr -> NakedExpr -> Type
 (...) = Range
+
+($$) :: Ident -> Type
+($$) = VarType
+
+iSet :: Ident -> Type
+iSet = ACT
 
 -- Auxiliary types for if-then-else expressions
 

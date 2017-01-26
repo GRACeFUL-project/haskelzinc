@@ -1,3 +1,5 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
+
 {-|
 Module      : MZBuiltIns
 Description : MiniZinc built-in predicates, tests and functions
@@ -21,7 +23,7 @@ module Interfaces.MZBuiltIns (
   -- ** Logical operators
   not_, (->.), (/\.), (<-.), (<->.), (\/.), _xor_,
   -- ** Set operators
-  (-.-), _diff_, _in_, _intersect_, _subset_, _superset_, _symdiff_, _union_,
+  (--.), _diff_, _in_, _intersect_, _subset_, _superset_, _symdiff_, _union_,
   -- ** Array operators
   (++.),
   -- * MiniZinc built-in calls
@@ -85,13 +87,15 @@ module Interfaces.MZBuiltIns (
   mz_indomain_split_random, mz_outdomain_max, mz_outdomain_median, mz_outdomain_min,
   mz_outdomain_random,
   -- *** Exploration strategy annotations
-  mz_complete
+  mz_complete,
+  -- Others
+  call
 ) where
 
 import Interfaces.MZASTBase
 
 call :: Ident -> [NakedExpr] -> NakedExpr
-call name args = Call name (map toSimpleExpr args)
+call name = Call name . map toSimpleExpr
 
 -- MiniZinc calls
 
@@ -258,6 +262,17 @@ mz_mzn_version_to_string = call "mzn_version_to_string"
 -- MiniZinc unary operators
 
 -- MiniZinc binary operators
+
+infixl 1 /\., <->., <-., ->., \/., `_xor_`
+infix 2 <., <=., >., >=., =.=, !=.
+infix 3 `_in_`, `_subset_`, `_superset_`
+infixl 4 `_union_`, `_diff_`, `_symdiff_`
+infix 5 --.
+infixl 6 +., -.
+infixl 7 *., /., `_div_`, `_mod_`
+infixl 8 `_intersect_`
+infixr 9 ++.
+
 mz_absent = call "absent"
 mz_deopt  = call "deopt"
 mz_occurs = call "occurs"
@@ -270,7 +285,6 @@ mz_lte = Op "<="
 mz_eq  = Op "="
 mz_gt  = Op ">"
 mz_gte = Op ">="
-infixl 5 !=., <., <=., =.=, >., >=.
 (!=.) = Bi mz_neq
 (<.)  = Bi mz_lt
 (<=.) = Bi mz_lte
@@ -285,8 +299,6 @@ mz_minus = Op "-"
 mz_div   = Op "/"
 mz_idiv  = Op "div"
 mz_mod   = Op "mod"
-infixl 6 *.
-infixl 7 +.
 (*.)   = Bi mz_times
 (+.)   = Bi mz_plus
 plus_  = U  mz_plus
@@ -321,7 +333,7 @@ mz_subset    = Op "subset"
 mz_superset  = Op "superset"
 mz_symdiff   = Op "symdiff"
 mz_union     = Op "union"
-(-.-)        = Bi mz_range
+(--.)        = Bi mz_range
 _diff_       = Bi mz_diff
 _in_         = Bi mz_in
 _intersect_  = Bi mz_intersect
@@ -332,26 +344,57 @@ _union_      = Bi mz_union
 
 -- Array operators
 mz_pp = Op "++"
-infixl 4 ++.
 (++.) = Bi mz_pp
 
 -- | Returns the precedence of certain defined operators. This function is used for reducing
 -- the parentheses when printing an expression.
+
+
 opPrec :: Op -> Int
+opPrec (Qop _) = 1
 opPrec op
-  | op == mz_lrarrow = 7
-  | op == mz_rarrow  = 7
-  | op == mz_larrow  = 7
-  | op == mz_and     = 7
-  | op == mz_or      = 7
-  | op == mz_eq      = 8
-  | op == mz_neq     = 8
-  | op == mz_range   = 8
-  | op == mz_times   = 9
-  | op == mz_mod     = 9
-  | otherwise        = 10
+  | op == mz_pp        = 2
+  | op == mz_times     = 3
+  | op == mz_div       = 3
+  | op == mz_mod       = 3
+  | op == mz_idiv      = 3
+  | op == mz_intersect = 3
+  | op == mz_plus      = 4
+  | op == mz_minus     = 4
+  | op == mz_range     = 5
+  | op == mz_union     = 6
+  | op == mz_diff      = 6
+  | op == mz_symdiff   = 6
+  | op == mz_in        = 7
+  | op == mz_subset    = 7
+  | op == mz_superset  = 7
+  | op == mz_neq       = 8
+  | op == mz_lt        = 8
+  | op == mz_lte       = 8
+  | op == mz_eq        = 8
+  | op == mz_gt        = 8
+  | op == mz_gte       = 8
+  | op == mz_and       = 9
+  | op == mz_or        = 10
+  | op == mz_xor       = 10
+  | op == mz_rarrow    = 11
+  | op == mz_larrow    = 11
+  | op == mz_lrarrow   = 12
+  | otherwise          = 15
 
 -- MiniZinc annotations
+{-
+annotationCall :: Ident -> [Callable] -> NakedExpr -- ExprOrAnn a => a -> Either Annotation NakedExpr
+annotationCall name args = Annotation name . map 
+
+class ExprOrAnn a where
+  toCallable :: a -> Callable
+
+instance ExprOrAnn Annotation where
+  toCallable = A'
+
+instance ExprOrAnn NakedExpr where
+  toCallable = C -}
 
 -- General annotations
 mz_add_to_output     = Annotation "add_to_output"

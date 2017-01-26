@@ -24,6 +24,7 @@ module Interfaces.MZASTBase (
   NakedExpr(..),
   Type(..),
   Op(..),
+  GArguments(..),
   Annotation(..),
   Inst(..),
   Solve(..),
@@ -158,14 +159,20 @@ data Type
   deriving (Show, Eq)
 
 -- | Represents an operator name in MiniZinc.
-newtype Op = Op String
+data Op = Op Ident
+        | Qop Ident
   deriving (Show, Eq)
 
-prefixOp :: Op -> Ident
-prefixOp (Op name) = "`" ++ name ++ "`"
+prefixOp :: Op -> Op
+prefixOp (Op name) = Qop name
+prefixOp op        = op
+
+data GArguments = A Annotation
+               | E NakedExpr
+  deriving (Show, Eq)
 
 -- | Represents a call to a MiniZinc annotation.  
-data Annotation = Annotation Ident [NakedExpr]
+data Annotation = Annotation Ident [GArguments]
   deriving (Show, Eq)
 
 -- | The type of a MiniZinc instantiation representation.

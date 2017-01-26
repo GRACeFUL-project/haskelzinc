@@ -33,30 +33,64 @@ big   =
   mz_discrete_distribution [mz_dom_bounds_array [var "somebigarrayname"]
                            ,var "areallybigset" `_intersect_` var "coulditneedmore?"]
 
-{-  
-unsatisfiable =[
-  Declare $ Declaration (Variable (Dec, (Range (IConst 1) (IConst 3)), "k")) [] Nothing,
-  --var (Dec, (Range (IConst 1) (IConst 3))) "k",
-  Constraint $ Expr (Bi mz_gt (Var "k") (IConst 3)) [],
-  Solve [] Satisfy
+unsatisfiable = [
+    declare $ variable Dec (int 1 ... int 3) "k",
+    constraint $ var "k" >. int 3,
+    solve $ satisfy
   ]
--}
+  
+evens = [
+  declare $ variable Par Int "square" =. int 4,
+  declare $ variable Par Int "coin" =. int 10,
+  newline,
+  declare $ variable Par (Set $ int 1 ... var "square") "S" =. int 1 --. var "square",
+  declare $ variable Dec (Array [ACT "S"] (Dec, Int)) "n",
+  declare $ variable Dec (Array [ACT "S"] (Dec, Int)) "m",
+  newline,
+  solve $ satisfy,
+  newline,
+  constraint $ 
+    forall (["i"] @@ var "S" `and_` (["j"] @@ var "S")) "sum" (("x"!.[var"i", var "j"]) =.= var "coin")
+    /\. forall (["i"] @@ var "S") "forall" (
+      forall (["j"] @@ var "S") "sum" (("x"!.[var"i", var "j"]) =.= int 2 *. ("m"!.[var "j"]))
+    )
+  ]
+
+divisor225 = [
+  include "globals.mzn",
+  declare $ variable Par Int "n" =. int 11,
+  newline,
+  (%) "decision variables",
+  declare $ variable Dec (Array [int 1 ... var "n"] (Dec, int 0 ... int 1)) "x",
+  declare $ variable Dec (int 1 ... mz_pow[int 10, var "n"] -. int 1) "y",
+  newline,
+  declare $ predicate "to_num"[(Dec, Array [Int] (Dec, Int), "a"), (Dec, Int, "n")]
+    =. Let [
+      declare $ variable Dec Int "len" =. mz_length[var "a"]
+    ]
+    (var "n" =.= forall (["i"] @@ (int 1 --. var "len")) "sum" (mz_pow[int 10, var "len" -. var "i"] *. ("a"!.[var "i"]))),
+    newline,
+    solve $ minimize (var "y")
+            |: [mz_int_search[E $ var "x", A $ mz_first_fail[], A $ mz_indomain_min[], A $ mz_complete[]]],
+    constraint $ call "to_num" [var "x", var "y"] /\. (var "y") `_mod_` (int 225) =.= int 0
+    ]
+
 planning = [
-  variable Par Int "nproducts",
-  Variable (Par, Set Int, "Products") =. int 1 -.- var "nproducts",
-  variable Par (Array [ACT "Products"] (Par, Int)) "profit",
-  variable Par (Array [ACT "Products"] (Par, String)) "pname",
-  variable Par Int "nresources",
-  Variable (Par, Set Int, "Resources") =. int 1 -.- var "nresources",
-  variable Par (Array [ACT "Resources"] (Par, Int)) "capacity",
-  variable Par (Array [ACT "Resources"] (Par, String)) "rname",
-  variable Dec (Array [ACT "Products", ACT "Resources"] (Par, Int)) "consumption",
+  declare $ variable Par Int "nproducts",
+  declare $ variable Par (Set Int) "Products" =. int 1 --. var "nproducts",
+  declare $ variable Par (Array [iSet "Products"] (Par, Int)) "profit",
+  declare $ variable Par (Array [iSet "Products"] (Par, String)) "pname",
+  declare $ variable Par Int "nresources",
+  declare $ variable Par (Set Int) "Resources" =. int 1 --. var "nresources",
+  declare $ variable Par (Array [iSet "Resources"] (Par, Int)) "capacity",
+  declare $ variable Par (Array [iSet "Resources"] (Par, String)) "rname",
+  declare $ variable Dec (Array [iSet "Products", iSet "Resources"] (Par, Int)) "consumption",
   constraint $
     mz_assert [mz_forall [ArrayComp (("consumption"!.[Var "p", Var "r"]) >=. int 0) ((["r"] @@ var "Resources") `and_` (["p"] @@ var "Products"))], string "Error: Negative consumption"],
-  Variable (Par, Int, "mproducts") =.
+  declare $ variable Par Int "mproducts" =.
       mz_max [ArrayComp (mz_min [ArrayComp (("capacity"!.[Var "r"]) `_div_` ("consumption"!.[var "p", var "r"])) (["r"] @@ var "Resources" `where_` (("consumption"!.[var "p", var "r"]) >=. int 0))]) (["p"] @@ var "Products")],
-  variable Dec (Array [ACT "Products"] (Dec, int 0 ... var "mproducts")) "produce",
-  variable Dec (Array [ACT "Resources"] (Dec, int 0 ... mz_max[var "capacity"])) "used",
+  declare $ variable Dec (Array [iSet "Products"] (Dec, int 0 ... var "mproducts")) "produce",
+  declare $ variable Dec (Array [iSet "Resources"] (Dec, int 0 ... mz_max[var "capacity"])) "used",
   constraint $ mz_forall [
     (("used"!.[var "r"]) =.= (mz_sum [("consumption"!.[var "p", var "r"]) *. ("produce"!.[var "p"]) #|. (["p"] @@ var "Products")]))
     /\. (("used"!.[var "r"]) <=. ("capacity"!.[var "r"])) #|. (["r"] @@ var "Resources")],
@@ -75,35 +109,36 @@ planningData = [
   ]
 
 knapsack = [
-  variable Par Int "n",
-  Variable (Par, Set Int, "Items") =. (int 1) -.- (var "n"),
-  variable Par Int "capacity",
-  Empty,
-  variable Par (Array [ACT "Items"] (Par, Int)) "profits",
-  variable Par (Array [ACT "Items"] (Par, Int)) "weights",
-  Empty,
-  variable Dec (Set (ACT "Items")) "knapsack",
-  Empty,
+  declare $ variable Par Int "n",
+  declare $ variable Par (Set Int) "Items" =. (int 1) --. (var "n"),
+  declare $ variable Par Int "capacity",
+  newline,
+  declare $ variable Par (Array [iSet "Items"] (Par, Int)) "profits",
+  declare $ variable Par (Array [iSet "Items"] (Par, Int)) "weights",
+  newline,
+  declare $ variable Dec (Set (iSet "Items")) "knapsack",
+  newline,
   constraint $ (forall (["i"] @@ var "Items") "sum" ((mz_bool2int [var "i" `_in_` var "knapsack"]) *. ("weights"!.[var "i"]))) <=. var "capacity",
-  Empty,
+  newline,
   solve $ maximize (forall (["i"] @@ var "Items") "sum" (mz_bool2int [var "i" `_in_` var "knapsack"] *. ("profits"!.[Var "i"])))]
 
 knapdata = [
   "n" =. int 6,
   "capacity" =. int 13,
   "profits" =. intArray [5, 9, 15, 10, 3, 6],
-  "weights" =. int 1 -.- int 6]
+  "weights" =. int 1 --. int 6]
 
 australia = [
-  (%%) "Colouring Australia using nc colours",
-  Variable (Par, Int, "nc") =. int 3,
-  variable Dec (int 1 ... var "nc") "wa",
-  variable Dec (int 1 ... var "nc") "nsw",
-  variable Dec (int 1 ... var "nc") "nt",
-  variable Dec (int 1 ... var "nc") "v",
-  variable Dec (int 1 ... var "nc") "sa",
-  variable Dec (int 1 ... var "nc") "t",
-  variable Dec (int 1 ... var "nc") "q",
+  (%) "Colouring Australia using nc colours",
+  -- Variable (Par, Int, "nc") =. int 3,
+  declare $ variable Par Int "nc" =. int 3,
+  declare $ variable Dec (int 1 ... var "nc") "wa",
+  declare $ variable Dec (int 1 ... var "nc") "nsw",
+  declare $ variable Dec (int 1 ... var "nc") "nt",
+  declare $ variable Dec (int 1 ... var "nc") "v",
+  declare $ variable Dec (int 1 ... var "nc") "sa",
+  declare $ variable Dec (int 1 ... var "nc") "t",
+  declare $ variable Dec (int 1 ... var "nc") "q",
   constraint $ var "wa" !=. var "nt",
   constraint $ var "wa" !=. var "sa",
   constraint $ var "nt" !=. var "sa",
@@ -127,12 +162,12 @@ australia = [
     string "\n"])]
 
 cakes = [
-  (%%) "Baking cakes for the school fete (with data file)",
-  variable Par Int "flour",
-  variable Par Int "banana",
-  variable Par Int "sugar",
-  variable Par Int "butter",
-  variable Par Int "cocoa",
+  (%) "Baking cakes for the school fete (with data file)",
+  declare $ variable Par Int "flour",
+  declare $ variable Par Int "banana",
+  declare $ variable Par Int "sugar",
+  declare $ variable Par Int "butter",
+  declare $ variable Par Int "cocoa",
   constraint $ 
     mz_assert [var "flour" >=. int 0
              ,string "mz_invalid datafile: Ammount of flour is non-negative"],
@@ -148,14 +183,14 @@ cakes = [
   constraint $
     mz_assert [var "cocoa" >=. int 0
               ,string "mz_invalid datafile: Ammount of cocoa is non-negative"],
-  variable Dec (int 0 ... int 100) "b",
-  variable Dec (int 0 ... int 100) "c",
+  declare $ variable Dec (int 0 ... int 100) "b",
+  declare $ variable Dec (int 0 ... int 100) "c",
   constraint $ int 250 *. var "b" +. int 200 *. var "c" <=. var "flour",
   constraint $ int 2 *. var "b" <=. var "banana",
   constraint $ int 75 *. var "b" +. int 150 *. var "c" <=. var "sugar",
   constraint $ int 100 *. var "b" +. int 150 *. var "c" <=. var "butter",
   constraint $ int 75 *. var "c" <=. var "cocoa",
-  (%%) "Maximize our profit",
+  (%) "Maximize our profit",
   solve $ maximize (int 400 *. var "b" +. int 450 *. var "c"),
   output (ArrayLit
     [string "no. of banana cakes = "

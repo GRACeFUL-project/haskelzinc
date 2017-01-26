@@ -31,7 +31,7 @@ layout = render . printModel
 -- | Prints the represented MiniZinc model. Essentially, this function applies 'printItem' on
 -- each element of the specified model.
 printModel :: MZModel -> Doc
-printModel = foldr1 ($+$) . map printItem -- foldR1?
+printModel = foldr1 ($+$) . map printItem
 
 -- | Prints an item of the represented model. Example:
 -- 
@@ -39,7 +39,7 @@ printModel = foldr1 ($+$) . map printItem -- foldR1?
 -- predicate even(var int: x) =
 --   x mod 2 = 0;
 printItem :: Item -> Doc
-printItem (Empty)           = empty
+printItem (Empty)           = space
 printItem (Comment str)     = text "%" <+> text str
 printItem (Include file)    = text "include" <+> doubleQuotes (text file) <> semi
 printItem (Declare p)       = printDeclaration p <> semi
@@ -94,22 +94,23 @@ printNakedExpr (BConst b)
 printNakedExpr (IConst n)          = int n
 printNakedExpr (FConst x)          = float x
 printNakedExpr (SConst str)        = doubleQuotes $ text (escape str)
-printNakedExpr (SetLit es)         = braces $ commaSepExpr es
+printNakedExpr (SetLit es)         = braces $ commaSepExprs es
 printNakedExpr (SetComp e ct)      = braces ( printNakedExpr e 
                                               <+> text "|" 
                                               <+> printCompTail ct )
-printNakedExpr (ArrayLit es)       = brackets $ commaSepExpr es
+printNakedExpr (ArrayLit es)       = brackets $ commaSepExprs es
 printNakedExpr (ArrayLit2D ess)    = 
-  brackets (foldl1 ($+$) (map (\x -> text "|" <+> commaSepExpr x) ess) <> text "|")
+  brackets (foldl1 ($+$) (map (\x -> text "|" <+> commaSepExprs x) ess) <> text "|")
 --printNakedExpr (ArrayComp e ct)    = brackets (printNakedExpr e <+> text "|" <+> printCompTail ct)
 printNakedExpr (ArrayComp e ct)    = brackets (hang (printNakedExpr e <+> text "|") 0 (printCompTail ct))
-printNakedExpr (ArrayElem v es)    = text v <> brackets (commaSepExpr es)
+printNakedExpr (ArrayElem v es)    = text v <> brackets (commaSepExprs es)
 printNakedExpr (U op e)            = 
   printOp op <+> (if isAtomic e then printNakedExpr e else parens (printNakedExpr e))
 printNakedExpr (Bi op e1 e2)       = sep [printParensNakedExpr (opPrec op) e1 
                                          , printOp op 
                                          , printParensNakedExpr (opPrec op) e2]
-printNakedExpr (Call name args)    = printCallable name args
+printNakedExpr (Call name args)    = text name 
+                      <> cat (putParens $ punctuateBefore comma (map printExpr args))
 printNakedExpr (ITE [(e1, e2)] e3) = text "if" <+> printNakedExpr e1 
                                      <+> text "then" <+> printNakedExpr e2 
                                      $+$ text "else" <+> printNakedExpr e3 <+> text "endif"
@@ -132,11 +133,11 @@ printEITExpr (te:tes) = text "elseif"
                         <+> printNakedExpr (snd te) 
                         $+$ printEITExpr tes
 
--- This function together with prec are used for placing parentheses in expressions
+-- This function is used for placing parentheses in expressions
 printParensNakedExpr :: Int -> NakedExpr -> Doc
 printParensNakedExpr n e@(Bi op _ _)
-  | n < opPrec op  = parens (printNakedExpr e)
-  | otherwise    = printNakedExpr e
+  | n < opPrec op  = parens $ printNakedExpr e
+  | otherwise      = printNakedExpr e
 printParensNakedExpr _ e@(U _ ue) = if isAtomic ue 
                                     then printNakedExpr ue 
                                     else parens (printNakedExpr ue)
@@ -153,10 +154,10 @@ printType (Array ts ti)  = text "array" <> brackets (commaSep printType ts)
 printType (List ti)      = text "list of" <+> printTypeInst ti
 printType (Opt t)        = text "opt" <+> printType t
 printType (Ann)          = text "ann"
-printType (Range e1 e2)  = printParensNakedExpr 0 e1 
-                           <> text ".." 
-                           <> printParensNakedExpr 0 e2
-printType (Elems es)     = braces $ commaSepExpr es
+printType (Range e1 e2)  = printParensNakedExpr (opPrec (Op "..")) e1 
+                           <+> text ".." 
+                           <+> printParensNakedExpr (opPrec (Op "..")) e2
+printType (Elems es)     = braces $ commaSepExprs es
 printType (ACT name)     = text name
 printType (VarType name) = text "$" <> text name
 
@@ -170,23 +171,35 @@ printGenerator (es, r) = text (intercalate ", " es) <+> text "in" <+> printNaked
 printInst :: Inst -> Doc
 printInst Dec = text "var"
 printInst Par = text "par"
-
-printCallable :: Ident -> [Expr] -> Doc
-printCallable name args = 
-  text name 
-  <> cat (putParens $ punctuateBefore comma (map printExpr args))
-
+{-
+printCallable :: Callable -> Doc -- Ident -> [Expr] -> Doc
+printCallable (A' a)        = printAnnotation a
+printCallable (C name args) = text name 
+                      <> cat (putParens $ punctuateBefore comma (map printExpr args))
+-}
 printAnnotations :: [Annotation] -> Doc
-printAnnotations ans = hsep (map printAnnotation ans)
+printAnnotations ans = hsep $ map (\a -> colon <> colon <+> printAnnotation a) ans
 
 printAnnotation :: Annotation -> Doc
-printAnnotation (Annotation name args) = colon <> colon <+> text name
-                                         <> case args of
-                                              []        -> empty
-                                              otherwise -> parens (commaSepExpr args)
+printAnnotation (Annotation name args) 
+  = text name
+  <> case args of
+       [] -> empty
+       xs -> cat (putParens $ punctuateBefore comma (map printArg args))
+                                              --xs -> commaSepArgs xs
+                                              {-
+                                                case x of 
+                                                  Right e -> parens (commaSepExprs args)
+                                                  Left a  -> printAnnotation a
+                                              -}
+
+printArg :: GArguments -> Doc
+printArg (A a) = printAnnotation a
+printArg (E e) = printNakedExpr e
 
 printOp :: Op -> Doc
-printOp (Op op) = text op
+printOp (Op op)  = text op
+printOp (Qop op) = text $ "`" ++ op ++ "`"
 
 printSolve :: Solve -> Doc
 printSolve (Satisfy  ans  ) = printAnnotations ans <+> text "satisfy"
@@ -226,18 +239,29 @@ commaSep :: (a -> Doc) -> [a] -> Doc
 commaSep f ls = commaSepDoc $ map f ls
 
 -- Special case of commaSep, where f = printNakedExpr
-commaSepExpr :: [NakedExpr] -> Doc
-commaSepExpr = commaSep printNakedExpr
+commaSepExprs :: [NakedExpr] -> Doc
+commaSepExprs = commaSep printNakedExpr
+
+commaSepArgs :: [Either Annotation NakedExpr] -> Doc
+commaSepArgs = commaSep printExprOrAnnot
+  where printExprOrAnnot (Right e) = printNakedExpr e
+        printExprOrAnnot (Left a)  = printAnnotation a
 
 isAtomic :: NakedExpr -> Bool
-isAtomic AnonVar    = True
-isAtomic (Var _)    = True
-isAtomic (BConst _) = True
-isAtomic (IConst _) = True
-isAtomic (FConst _) = True
-isAtomic (SConst _) = True
-isAtomic (SetLit _) = True
-isAtomic _          = False
+isAtomic AnonVar         = True
+isAtomic (Var _)         = True
+isAtomic (BConst _)      = True
+isAtomic (IConst _)      = True
+isAtomic (FConst _)      = True
+isAtomic (SConst _)      = True
+isAtomic (SetLit _)      = True
+isAtomic (ArrayLit _)    = True
+isAtomic (ArrayLit2D _)  = True
+isAtomic (ArrayElem _ _) = True
+isAtomic (SetComp _ _)   = True
+isAtomic (ArrayComp _ _) = True
+isAtomic (Call _ _)      = True
+isAtomic _               = False
 
 escape:: String -> String
 escape str = concatMap escapeChar str
