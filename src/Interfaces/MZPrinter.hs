@@ -104,8 +104,12 @@ printNakedExpr (ArrayLit2D ess)    =
 --printNakedExpr (ArrayComp e ct)    = brackets (printNakedExpr e <+> text "|" <+> printCompTail ct)
 printNakedExpr (ArrayComp e ct)    = brackets (hang (printNakedExpr e <+> text "|") 0 (printCompTail ct))
 printNakedExpr (ArrayElem v es)    = text v <> brackets (commaSepExprs es)
-printNakedExpr (U op e)            = 
-  printOp op <+> (if isAtomic e then printNakedExpr e else parens (printNakedExpr e))
+printNakedExpr (U op e)            = printOp op 
+                                     <+> (
+                                       if isAtomic e 
+                                       then printNakedExpr e 
+                                       else parens (printNakedExpr e)
+                                     )
 printNakedExpr (Bi op e1 e2)       = sep [printParensNakedExpr (opPrec op) e1 
                                          , printOp op 
                                          , printParensNakedExpr (opPrec op) e2]
@@ -135,13 +139,11 @@ printEITExpr (te:tes) = text "elseif"
 
 -- This function is used for placing parentheses in expressions
 printParensNakedExpr :: Int -> NakedExpr -> Doc
+-- A smaller integer represents higher precedence (tighter binding)
 printParensNakedExpr n e@(Bi op _ _)
-  | n < opPrec op  = parens $ printNakedExpr e
-  | otherwise      = printNakedExpr e
-printParensNakedExpr _ e@(U _ ue) = if isAtomic ue 
-                                    then printNakedExpr ue 
-                                    else parens (printNakedExpr ue)
-printParensNakedExpr _ e          = printNakedExpr e
+  | opPrec op < n         = printNakedExpr e
+  | otherwise             = parens $ printNakedExpr e
+printParensNakedExpr _ e  = printNakedExpr e
 
 printType :: Type -> Doc
 printType Bool           = text "bool"
@@ -163,20 +165,19 @@ printType (VarType name) = text "$" <> text name
 
 printCompTail :: CompTail -> Doc
 printCompTail (gs, Nothing) = commaSep printGenerator gs
-printCompTail (gs, Just wh) = commaSep printGenerator gs <+> text "where" <+> printNakedExpr wh
+printCompTail (gs, Just wh) = commaSep printGenerator gs 
+                              <+> text "where" 
+                              <+> printNakedExpr wh
 
 printGenerator :: Generator -> Doc
-printGenerator (es, r) = text (intercalate ", " es) <+> text "in" <+> printNakedExpr r
+printGenerator (es, r) = text (intercalate ", " es) 
+                         <+> text "in" 
+                         <+> printNakedExpr r
 
 printInst :: Inst -> Doc
 printInst Dec = text "var"
 printInst Par = text "par"
-{-
-printCallable :: Callable -> Doc -- Ident -> [Expr] -> Doc
-printCallable (A' a)        = printAnnotation a
-printCallable (C name args) = text name 
-                      <> cat (putParens $ punctuateBefore comma (map printExpr args))
--}
+
 printAnnotations :: [Annotation] -> Doc
 printAnnotations ans = hsep $ map (\a -> colon <> colon <+> printAnnotation a) ans
 
@@ -186,12 +187,6 @@ printAnnotation (Annotation name args)
   <> case args of
        [] -> empty
        xs -> cat (putParens $ punctuateBefore comma (map printArg args))
-                                              --xs -> commaSepArgs xs
-                                              {-
-                                                case x of 
-                                                  Right e -> parens (commaSepExprs args)
-                                                  Left a  -> printAnnotation a
-                                              -}
 
 printArg :: GArguments -> Doc
 printArg (A a) = printAnnotation a
