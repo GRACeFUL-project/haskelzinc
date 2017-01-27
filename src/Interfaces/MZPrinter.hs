@@ -16,7 +16,7 @@ module Interfaces.MZPrinter(
   printModel,
   printItem,
   printNakedExpr,
-  printExpr,
+  printAnnExpr,
   layout
 ) where
 
@@ -43,7 +43,7 @@ printItem (Empty)           = space
 printItem (Comment str)     = text "%" <+> text str
 printItem (Include file)    = text "include" <+> doubleQuotes (text file) <> semi
 printItem (Declare p)       = printDeclaration p <> semi
-printItem (Constraint c)    = hang (text "constraint") 2 (printExpr c <> semi)
+printItem (Constraint c)    = hang (text "constraint") 2 (printAnnExpr c <> semi)
 printItem (Assign var expr) = text var <+> printBody (Just expr) <> semi
 printItem (Output e)        = text "output" <+> printNakedExpr e <> semi
 printItem (Solve s)         = text "solve" 
@@ -54,8 +54,8 @@ printDeclaration :: Declaration -> Doc
 printDeclaration (Declaration nd ans me) =
   hang (printDeclarationSig nd) 2 (printBody me)
 
-printBody :: Maybe Expr -> Doc
-printBody = maybe empty (\e -> equals <+> (printExpr e))
+printBody :: Maybe AnnExpr -> Doc
+printBody = maybe empty (\e -> equals <+> (printAnnExpr e))
   
 
 printDeclarationSig :: DeclarationSignature -> Doc
@@ -73,8 +73,14 @@ printDeclarationSig (Annotation' name ps) = text "annotation"
                                             <+> text name
                                             <> parens (printParams ps)
 
-printExpr :: Expr -> Doc
-printExpr (Expr e ans) = printNakedExpr e <> printAnnotations ans
+-- Taking precedence into account
+printAnnExpr :: AnnExpr -> Doc
+printAnnExpr (AnnExpr e@(Bi _ _ _) ans) = parens (printNakedExpr e) 
+                                          <+> printAnnotations ans
+printAnnExpr (AnnExpr e@(U _ _) ans)    = parens (printNakedExpr e) 
+                                          <+> printAnnotations ans
+printAnnExpr (AnnExpr e ans)            = printNakedExpr e 
+                                          <+> printAnnotations ans
 
 -- | Prints the represented MiniZinc expressions of a model. Examples:
 -- 
@@ -85,7 +91,7 @@ printExpr (Expr e ans) = printNakedExpr e <> printAnnotations ans
 -- let {var int: x = 3;
 --      var int: y = 4;}
 -- in x + y
-printNakedExpr :: NakedExpr -> Doc
+printNakedExpr :: Expr -> Doc
 printNakedExpr AnonVar             = text "_"
 printNakedExpr (Var v)             = text v
 printNakedExpr (BConst b)
@@ -110,11 +116,11 @@ printNakedExpr (U op e)            = printOp op
                                        then printNakedExpr e 
                                        else parens (printNakedExpr e)
                                      )
-printNakedExpr (Bi op e1 e2)       = sep [printParensNakedExpr (opPrec op) e1 
+printNakedExpr (Bi op e1 e2)       = fsep [printParensNakedExpr (opPrec op) e1 
                                          , printOp op 
                                          , printParensNakedExpr (opPrec op) e2]
 printNakedExpr (Call name args)    = text name 
-                      <> cat (putParens $ punctuateBefore comma (map printExpr args))
+                                     <> printArgs printAnnExpr args
 printNakedExpr (ITE [(e1, e2)] e3) = text "if" <+> printNakedExpr e1 
                                      <+> text "then" <+> printNakedExpr e2 
                                      $+$ text "else" <+> printNakedExpr e3 <+> text "endif"
@@ -129,7 +135,7 @@ printNakedExpr (GenCall name ct e) = text name <> parens (printCompTail ct)
                                      $+$ nest 2 (parens (printNakedExpr e))
 
 -- Only helps for printing if-then-elseif-then-...-else-endif expressions
-printEITExpr :: [(NakedExpr, NakedExpr)] -> Doc
+printEITExpr :: [(Expr, Expr)] -> Doc
 printEITExpr [] = empty
 printEITExpr (te:tes) = text "elseif" 
                         <+> printNakedExpr (fst te) 
@@ -138,7 +144,7 @@ printEITExpr (te:tes) = text "elseif"
                         $+$ printEITExpr tes
 
 -- This function is used for placing parentheses in expressions
-printParensNakedExpr :: Int -> NakedExpr -> Doc
+printParensNakedExpr :: Int -> Expr -> Doc
 -- A smaller integer represents higher precedence (tighter binding)
 printParensNakedExpr n e@(Bi op _ _)
   | opPrec op < n         = printNakedExpr e
@@ -186,15 +192,17 @@ printAnnotation (Annotation name args)
   = text name
   <> case args of
        [] -> empty
-       xs -> cat (putParens $ punctuateBefore comma (map printArg args))
+       xs -> printArgs printGArg args
 
-printArg :: GArguments -> Doc
-printArg (A a) = printAnnotation a
-printArg (E e) = printNakedExpr e
+printArgs :: (a -> Doc) -> [a] -> Doc
+printArgs f args = cat $ putParens (punctuateBefore comma (map f args))
+
+printGArg :: GArguments -> Doc
+printGArg (A a) = printAnnotation a
+printGArg (E e) = printNakedExpr e
 
 printOp :: Op -> Doc
 printOp (Op op)  = text op
-printOp (Qop op) = text $ "`" ++ op ++ "`"
 
 printSolve :: Solve -> Doc
 printSolve (Satisfy  ans  ) = printAnnotations ans <+> text "satisfy"
@@ -234,15 +242,15 @@ commaSep :: (a -> Doc) -> [a] -> Doc
 commaSep f ls = commaSepDoc $ map f ls
 
 -- Special case of commaSep, where f = printNakedExpr
-commaSepExprs :: [NakedExpr] -> Doc
+commaSepExprs :: [Expr] -> Doc
 commaSepExprs = commaSep printNakedExpr
 
-commaSepArgs :: [Either Annotation NakedExpr] -> Doc
+commaSepArgs :: [Either Annotation Expr] -> Doc
 commaSepArgs = commaSep printExprOrAnnot
   where printExprOrAnnot (Right e) = printNakedExpr e
         printExprOrAnnot (Left a)  = printAnnotation a
 
-isAtomic :: NakedExpr -> Bool
+isAtomic :: Expr -> Bool
 isAtomic AnonVar         = True
 isAtomic (Var _)         = True
 isAtomic (BConst _)      = True

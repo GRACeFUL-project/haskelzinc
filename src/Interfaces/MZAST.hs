@@ -1,6 +1,4 @@
-{-# LANGUAGE TypeFamilies, FlexibleInstances, AllowAmbiguousTypes #-}
--- {-# LANGUAGE TypeFamilies, FlexibleInstances #-}
--- {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE TypeFamilies, FlexibleInstances #-}
 
 module Interfaces.MZAST where
 
@@ -18,11 +16,11 @@ newline = Empty
 include :: String -> Item
 include = Include
 
-output :: NakedExpr -> Item
+output :: Expr -> Item
 output = Output
 
-constraint :: NakedExpr -> Item
-constraint e = Constraint $ Expr e []
+constraint :: Expr -> Item
+constraint e = Constraint $ AnnExpr e []
 
 solve :: Solve -> Item
 solve = Solve
@@ -33,15 +31,15 @@ infixl 1 =.
 class Assignable a where
   type Assigned a
   
-  (=.) :: a -> NakedExpr -> Assigned a
+  (=.) :: a -> Expr -> Assigned a
 
 instance Assignable [Char] where
   type Assigned [Char] = Item
-  name =. e = Assign name $ Expr e []
+  name =. e = Assign name $ AnnExpr e []
 
 instance Assignable Declaration where
   type Assigned Declaration = Declaration
-  (Declaration ds ans _) =. e = Declaration ds [] (Just (Expr e []))
+  (Declaration ds ans _) =. e = Declaration ds [] (Just (AnnExpr e []))
 
 declare :: Assigned Declaration -> Item
 declare = Declare
@@ -69,111 +67,111 @@ annotation i ps = declareOnly $ Annotation' i ps
 satisfy :: Solve
 satisfy = Satisfy []
 
-minimize :: NakedExpr -> Solve
+minimize :: Expr -> Solve
 minimize = Minimize []
 
-maximize :: NakedExpr -> Solve
+maximize :: Expr -> Solve
 maximize = Maximize []
 
 -- Expressions (plain)
 
-__ :: NakedExpr
+__ :: Expr
 __ = AnonVar
 
-var :: Ident -> NakedExpr
+var :: Ident -> Expr
 var = Var
 
-true :: NakedExpr
+true :: Expr
 true = BConst True
 
-false :: NakedExpr
+false :: Expr
 false = BConst False
 
-int :: Int -> NakedExpr
+int :: Int -> Expr
 int = IConst
 
-float :: Float -> NakedExpr
+float :: Float -> Expr
 float = FConst
 
-string :: String -> NakedExpr
+string :: String -> Expr
 string = SConst
 
-boolSet :: [Bool] -> NakedExpr
+boolSet :: [Bool] -> Expr
 boolSet = SetLit . (map BConst)
 
-intSet :: [Int] -> NakedExpr
+intSet :: [Int] -> Expr
 intSet = SetLit . (map IConst)
 
-floatSet :: [Float] -> NakedExpr
+floatSet :: [Float] -> Expr
 floatSet = SetLit . (map FConst)
 
-stringSet :: [String] -> NakedExpr
+stringSet :: [String] -> Expr
 stringSet = SetLit . (map SConst)
 
 class SetClass a where
-  set :: a -> NakedExpr
+  set :: a -> Expr
 
-instance SetClass [NakedExpr] where
+instance SetClass [Expr] where
   set = SetLit
 
-instance SetClass (NakedExpr, CompTail) where
+instance SetClass (Expr, CompTail) where
   set (e, ct) = SetComp e ct
 
-boolArray :: [Bool] -> NakedExpr
+boolArray :: [Bool] -> Expr
 boolArray = arrayMap BConst
 
-intArray :: [Int] -> NakedExpr
+intArray :: [Int] -> Expr
 intArray = arrayMap IConst
 
-floatArray :: [Float] -> NakedExpr
+floatArray :: [Float] -> Expr
 floatArray = arrayMap FConst
 
-stringArray :: [String] -> NakedExpr
+stringArray :: [String] -> Expr
 stringArray = arrayMap SConst
 
-boolArray2 :: [[Bool]] -> NakedExpr
+boolArray2 :: [[Bool]] -> Expr
 boolArray2 = arrayMap2 BConst
 
-intArray2 :: [[Int]] -> NakedExpr
+intArray2 :: [[Int]] -> Expr
 intArray2 = arrayMap2 IConst
 
-floatArray2 :: [[Float]] -> NakedExpr
+floatArray2 :: [[Float]] -> Expr
 floatArray2 = arrayMap2 FConst
 
-stringArray2 :: [[String]] -> NakedExpr
+stringArray2 :: [[String]] -> Expr
 stringArray2 = arrayMap2 SConst
 
 -- Creating one- or two-dimensional arrays by mapping
-arrayMap :: (a -> NakedExpr) -> [a] -> NakedExpr
+arrayMap :: (a -> Expr) -> [a] -> Expr
 arrayMap f = ArrayLit . map f
 
-arrayMap2 :: (a -> NakedExpr) -> [[a]] -> NakedExpr
+arrayMap2 :: (a -> Expr) -> [[a]] -> Expr
 arrayMap2 f = ArrayLit2D . (map (map f))
 
-array :: [NakedExpr] -> NakedExpr
+array :: [Expr] -> Expr
 array = ArrayLit
 
-array2 :: [[NakedExpr]] -> NakedExpr
+array2 :: [[Expr]] -> Expr
 array2 = ArrayLit2D
 
 -- Array comprehension?
 
 infixl 1 #/., #|.
 
-(#/.) :: NakedExpr -> [CompTail] -> NakedExpr
+(#/.) :: Expr -> [CompTail] -> Expr
 e #/. cts = SetComp e (mergeCompTails cts)
 
-(#|.) :: NakedExpr -> [CompTail] -> NakedExpr
+(#|.) :: Expr -> [CompTail] -> Expr
 e #|. cts = ArrayComp e (mergeCompTails cts)
 
 infix 9 !.
-(!.) :: Ident -> [NakedExpr] -> NakedExpr
+(!.) :: Ident -> [Expr] -> Expr
 (!.) = ArrayElem
 
 -- Comprehension
 -- comprehension tail "i in expr"
 infix 4 @@
-(@@) :: [Ident] -> NakedExpr -> CompTail
+(@@) :: [Ident] -> Expr -> CompTail
 (@@) vars e = ([(vars, e)], Nothing)
 
 --infixl 6 `and_`
@@ -183,24 +181,24 @@ combineCompTail (ins1, me1) (ins2, me2) = (ins1 ++ ins2, decideWhere me1 me2)
 mergeCompTails :: [CompTail] -> CompTail
 mergeCompTails = foldr1 combineCompTail
 
-decideWhere :: Maybe NakedExpr -> Maybe NakedExpr -> Maybe NakedExpr
+decideWhere :: Maybe Expr -> Maybe Expr -> Maybe Expr
 decideWhere Nothing   Nothing   = Nothing
 decideWhere Nothing   (Just e)  = Just e
 decideWhere (Just e)  Nothing   = Just e
 decideWhere (Just e1) (Just e2) = Just $ Bi (Op "/\\") e1 e2
 
 infix 6 `where_`
-where_ :: CompTail -> NakedExpr -> CompTail
+where_ :: CompTail -> Expr -> CompTail
 where_ (gs, _) e = (gs, Just e)
 
 -- Generator calls
 -- CompTail list makes no sense to be empty
-forall :: [CompTail] -> Ident -> NakedExpr -> NakedExpr
+forall :: [CompTail] -> Ident -> Expr -> Expr
 forall cts name e = GenCall name (mergeCompTails cts) e
 
 -- Types
 infix 2 ...
-(...) :: NakedExpr -> NakedExpr -> Type
+(...) :: Expr -> Expr -> Type
 (...) = Range
 
 ($$) :: Ident -> Type
@@ -211,16 +209,16 @@ iSet = ACT
 
 -- Auxiliary types for if-then-else expressions
 
-data IF_THEN_ELSE = ELSE NakedExpr NakedExpr NakedExpr
-data ELSEIF = ELSEIF [(NakedExpr, NakedExpr)] NakedExpr -- ?
+data IF_THEN_ELSE = ELSE Expr Expr Expr
+data ELSEIF = ELSEIF [(Expr, Expr)] Expr -- ?
 
-if_ :: NakedExpr -> (NakedExpr -> NakedExpr -> IF_THEN_ELSE)
+if_ :: Expr -> (Expr -> Expr -> IF_THEN_ELSE)
 if_ e = \e1 e2 -> ELSE e e1 e2
 
-then_ :: (NakedExpr -> NakedExpr -> IF_THEN_ELSE) -> NakedExpr -> (NakedExpr -> IF_THEN_ELSE)
+then_ :: (Expr -> Expr -> IF_THEN_ELSE) -> Expr -> (Expr -> IF_THEN_ELSE)
 then_ f e = f e
 
-else_ :: (NakedExpr -> IF_THEN_ELSE) -> NakedExpr -> IF_THEN_ELSE
+else_ :: (Expr -> IF_THEN_ELSE) -> Expr -> IF_THEN_ELSE
 else_ f e = f e
 
 -- Annotations
@@ -228,8 +226,8 @@ else_ f e = f e
 class Annotatable a where
   (|:) :: a -> [Annotation] -> a
 
-instance Annotatable Expr where
-  (Expr e a1) |: a2 = Expr e (a1 ++ a2)
+instance Annotatable AnnExpr where
+  (AnnExpr e a1) |: a2 = AnnExpr e (a1 ++ a2)
 
 instance Annotatable Declaration where
   (Declaration ds a1 me) |: a2 = Declaration ds (a1 ++ a2) me

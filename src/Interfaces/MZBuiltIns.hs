@@ -94,7 +94,7 @@ module Interfaces.MZBuiltIns (
 
 import Interfaces.MZASTBase
 
-call :: Ident -> [NakedExpr] -> NakedExpr
+call :: Ident -> [Expr] -> Expr
 call name = Call name . map toSimpleExpr
 
 -- MiniZinc calls
@@ -348,38 +348,35 @@ mz_pp = Op "++"
 
 -- | Returns the precedence of certain defined operators. This function is used for reducing
 -- the parentheses when printing an expression.
-
-
 opPrec :: Op -> Int
-opPrec (Qop _) = 1
 opPrec op
-  | op == mz_pp        = 2
-  | op == mz_times     = 3
-  | op == mz_div       = 3
-  | op == mz_mod       = 3
-  | op == mz_idiv      = 3
-  | op == mz_intersect = 3
-  | op == mz_plus      = 4
-  | op == mz_minus     = 4
-  | op == mz_range     = 5
-  | op == mz_union     = 6
-  | op == mz_diff      = 6
-  | op == mz_symdiff   = 6
-  | op == mz_in        = 7
-  | op == mz_subset    = 7
-  | op == mz_superset  = 7
-  | op == mz_neq       = 8
-  | op == mz_lt        = 8
-  | op == mz_lte       = 8
-  | op == mz_eq        = 8
-  | op == mz_gt        = 8
-  | op == mz_gte       = 8
-  | op == mz_and       = 9
-  | op == mz_or        = 10
-  | op == mz_xor       = 10
-  | op == mz_rarrow    = 11
-  | op == mz_larrow    = 11
-  | op == mz_lrarrow   = 12
+  | op == mz_pp        = 1
+  | op == mz_times     = 2
+  | op == mz_div       = 2
+  | op == mz_mod       = 2
+  | op == mz_idiv      = 2
+  | op == mz_intersect = 2
+  | op == mz_plus      = 3
+  | op == mz_minus     = 3
+  | op == mz_range     = 4
+  | op == mz_union     = 5
+  | op == mz_diff      = 5
+  | op == mz_symdiff   = 5
+  | op == mz_in        = 6
+  | op == mz_subset    = 6
+  | op == mz_superset  = 6
+  | op == mz_neq       = 7
+  | op == mz_lt        = 7
+  | op == mz_lte       = 7
+  | op == mz_eq        = 7
+  | op == mz_gt        = 7
+  | op == mz_gte       = 7
+  | op == mz_and       = 8
+  | op == mz_or        = 9
+  | op == mz_xor       = 9
+  | op == mz_rarrow    = 10
+  | op == mz_larrow    = 10
+  | op == mz_lrarrow   = 11
   | otherwise          = 15
 
 -- MiniZinc annotations
