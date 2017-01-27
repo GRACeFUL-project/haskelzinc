@@ -143,13 +143,6 @@ listEI :: Expr -> [Doc]
 listEI e = [ text "else" <+> printNakedExpr e
            , text "endif"]
 
--- Only helps for printing if-then-elseif-then-...-else-endif expressions
-printEITExpr :: [(Expr, Expr)] -> Doc
-printEITExpr [] = empty
-printEITExpr (te:tes) = sep [ text "elseif" <+> printNakedExpr (fst te) 
-                            , text "then" <+> printNakedExpr (snd te) 
-                            , printEITExpr tes]
-
 -- This function is used for placing parentheses in expressions
 printParensNakedExpr :: Int -> Expr -> Doc
 -- A smaller integer represents higher precedence (tighter binding)
