@@ -39,6 +39,62 @@ unsatisfiable = [
     solve $ satisfy
   ]
   
+car = [
+  declare $ variable Par Int "nbCars" =. int 6,
+  declare $ variable Par Int "nbOptions" =. int 5,
+  declare $ variable Par Int "nbSlots" =. int 10,
+  declare $ variable Par (Set Int) "Cars" =. int 1 --. var "nbCars",
+  declare $ variable Par (Set Int) "Options" =. int 1 --. var "nbOptions",
+  declare $ variable Par (Set Int) "Slots" =. int 1 --. var "nbSlots",
+  newline,
+  declare $ variable Par (Array[ACT "Cars"] (Dec,Int)) "demand"
+    =. intArray [1, 1, 2, 2, 2, 2],
+  newline,
+  declare $ variable Par (Array[ACT "Options", ACT "Cars"] (Dec,Int)) "option"
+    =. mz_array2d[var "Options", var "Cars", intArray [ 1, 0, 0, 0, 1, 1
+                                                      , 0, 0, 1, 1, 0, 1
+                                                      , 1, 0, 0, 0, 1, 0
+                                                      , 1, 1, 0, 1, 0, 0
+                                                      , 0, 0, 1, 0, 0, 0
+                                                      ]
+         ],
+  declare $ variable Par (Array[ACT "Options", int 1 ... int 2] (Dec,Int)) "capacity"
+    =. mz_array2d[var "Options", int 1 --. int 2, intArray [1, 2, 2, 3, 1, 3, 2, 5, 1, 5]],
+  newline,
+  declare $ variable Dec (Array[ACT "Options"] (Dec, Int)) "optionDemand"
+    =. forall [["j"] @@ var "Cars"] "sum" ("demand"!.[var "j"] *. "option"!.[var "i", var "j"]) #|. [["i"] @@ var "Options"],
+  newline,
+  (%) "decision variables",
+  newline,
+  declare $ variable Dec (Array[ACT "Slots"] (Dec, ACT "Cars")) "slot",
+  declare $ variable Dec (Array[ACT "Options", ACT "Slots"] (Dec, int 0 ... int 1)) "setup",
+  newline,
+  declare $ variable Dec Int "z" 
+    =. forall [["s"] @@ var "Cars"] "sum" (var "s" *. "slot"!.[var "s"]),
+  newline,
+  solve $ minimize (var "z"),
+  constraint $
+    forall [["c"] @@ var "Cars"] "forall" (
+      forall [["s"] @@ var "Slots"] "sum" (mz_bool2int["slot"!.[var "s"] =.= var "c"])
+      =.= "demand"!.[var "c"]
+    ) /\.
+    forall [["o"] @@ var "Options"
+           ,["s"] @@ int 1 --. var "nbSlots" -. "capacity"!.[var "o", int 2] +. int 1]
+           "forall" (
+      forall [["j"] @@ var "s" --. (var "s" +. "capacity"!.[var "o", int 2] -. int 1)] "sum" ("setup"!.[var "o", var "j"]) <=. "capacity"!.[var "o", int 1]
+    ) /\.
+    forall [["o"] @@ var "Options", ["s"] @@ var "Slots"] "forall" (
+      "setup"!.[var "o", var "s"] =.= "option"!.[var "o", "slot"!.[var "s"]]
+    ) /\.
+    forall [["o"] @@ var "Options", ["i"] @@ int 1 --. "optionDemand"!.[var "o"]]
+    "forall" (
+      forall [["s"] @@ int 1 --. var "nbSlots" -. var "i" *. "capacity"!.[var "o", int 2]]
+      "sum" (
+        "setup"!.[var "o", var "s"]
+      ) >=. ("optionDemand"!.[var "o"] -. var "i" *. "capacity"!.[var "o", int 1])
+    )
+  ]
+  
 evens = [
   declare $ variable Par Int "square" =. int 4,
   declare $ variable Par Int "coin" =. int 10,

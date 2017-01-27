@@ -126,8 +126,7 @@ printNakedExpr (Let is e)          = text "let"
                                      <+> braces (nest 4 (vcat (map printItem is))) 
                                      $+$ text "in" <+> printNakedExpr e
 printNakedExpr (GenCall name ct e) = 
-  text name 
-  <> hang (parens (printCompTail ct)) 2 (parens (printNakedExpr e))
+  hang (text name <> parens (printCompTail ct)) 2 (parens (printNakedExpr e))
 
 listIT :: (Expr, Expr) -> [Doc]
 listIT (e1, e2) = [ text "if" <+> printNakedExpr e1
@@ -147,7 +146,7 @@ listEI e = [ text "else" <+> printNakedExpr e
 printParensNakedExpr :: Int -> Expr -> Doc
 -- A smaller integer represents higher precedence (tighter binding)
 printParensNakedExpr n e@(Bi op _ _)
-  | opPrec op < n         = printNakedExpr e
+  | opPrec op <= n         = printNakedExpr e
   | otherwise             = parens $ printNakedExpr e
 printParensNakedExpr _ e  = printNakedExpr e
 

@@ -27,7 +27,7 @@ solve = Solve
 
 -- Declaring and assigning
 
-infixl 1 =.
+infix 1 =.
 class Assignable a where
   type Assigned a
   
@@ -156,7 +156,7 @@ array2 = ArrayLit2D
 
 -- Array comprehension?
 
-infixl 1 #/., #|.
+infix 2 #/., #|.
 
 (#/.) :: Expr -> [CompTail] -> Expr
 e #/. cts = SetComp e (mergeCompTails cts)
@@ -197,7 +197,7 @@ forall :: [CompTail] -> Ident -> Expr -> Expr
 forall cts name e = GenCall name (mergeCompTails cts) e
 
 -- Types
-infix 2 ...
+infix 3 ...
 (...) :: Expr -> Expr -> Type
 (...) = Range
 
