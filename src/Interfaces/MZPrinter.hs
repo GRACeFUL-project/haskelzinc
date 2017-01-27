@@ -75,6 +75,7 @@ printDeclarationSig (Annotation' name ps) = text "annotation"
 
 -- Taking precedence into account
 printAnnExpr :: AnnExpr -> Doc
+printAnnExpr (AnnExpr e [])             = printNakedExpr e
 printAnnExpr (AnnExpr e@(Bi _ _ _) ans) = parens (printNakedExpr e) 
                                           <+> printAnnotations ans
 printAnnExpr (AnnExpr e@(U _ _) ans)    = parens (printNakedExpr e) 
@@ -107,7 +108,6 @@ printNakedExpr (SetComp e ct)      = braces ( printNakedExpr e
 printNakedExpr (ArrayLit es)       = brackets $ commaSepExprs es
 printNakedExpr (ArrayLit2D ess)    = 
   brackets (foldl1 ($+$) (map (\x -> text "|" <+> commaSepExprs x) ess) <> text "|")
---printNakedExpr (ArrayComp e ct)    = brackets (printNakedExpr e <+> text "|" <+> printCompTail ct)
 printNakedExpr (ArrayComp e ct)    = brackets (hang (printNakedExpr e <+> text "|") 0 (printCompTail ct))
 printNakedExpr (ArrayElem v es)    = text v <> brackets (commaSepExprs es)
 printNakedExpr (U op e)            = printOp op 
@@ -116,32 +116,39 @@ printNakedExpr (U op e)            = printOp op
                                        then printNakedExpr e 
                                        else parens (printNakedExpr e)
                                      )
-printNakedExpr (Bi op e1 e2)       = fsep [printParensNakedExpr (opPrec op) e1 
+printNakedExpr (Bi op e1 e2)       = sep [printParensNakedExpr (opPrec op) e1 
                                          , printOp op 
                                          , printParensNakedExpr (opPrec op) e2]
 printNakedExpr (Call name args)    = text name 
                                      <> printArgs printAnnExpr args
-printNakedExpr (ITE [(e1, e2)] e3) = text "if" <+> printNakedExpr e1 
-                                     <+> text "then" <+> printNakedExpr e2 
-                                     $+$ text "else" <+> printNakedExpr e3 <+> text "endif"
-printNakedExpr (ITE (te:tes) d)    = text "if" <+> printNakedExpr (fst te) 
-                                     <+> text "then" <+> printNakedExpr (snd te) 
-                                     $+$ printEITExpr tes 
-                                     $+$ text "else" <+> printNakedExpr d <+> text "endif"
+printNakedExpr (ITE (pe:pes) e)    = sep (listIT pe ++ listEIT pes ++ listEI e)
 printNakedExpr (Let is e)          = text "let" 
                                      <+> braces (nest 4 (vcat (map printItem is))) 
                                      $+$ text "in" <+> printNakedExpr e
-printNakedExpr (GenCall name ct e) = text name <> parens (printCompTail ct)
-                                     $+$ nest 2 (parens (printNakedExpr e))
+printNakedExpr (GenCall name ct e) = 
+  text name 
+  <> hang (parens (printCompTail ct)) 2 (parens (printNakedExpr e))
+
+listIT :: (Expr, Expr) -> [Doc]
+listIT (e1, e2) = [ text "if" <+> printNakedExpr e1
+                  , text "then" <+> printNakedExpr e2]
+
+listEIT :: [(Expr, Expr)] -> [Doc]
+listEIT []            = []
+listEIT ((e1, e2):es) = [ text "elseif" <+> printNakedExpr e1
+                        , text "then" <+> printNakedExpr e2]
+                        ++ listEIT es 
+
+listEI :: Expr -> [Doc]
+listEI e = [ text "else" <+> printNakedExpr e
+           , text "endif"]
 
 -- Only helps for printing if-then-elseif-then-...-else-endif expressions
 printEITExpr :: [(Expr, Expr)] -> Doc
 printEITExpr [] = empty
-printEITExpr (te:tes) = text "elseif" 
-                        <+> printNakedExpr (fst te) 
-                        <+> text "then" 
-                        <+> printNakedExpr (snd te) 
-                        $+$ printEITExpr tes
+printEITExpr (te:tes) = sep [ text "elseif" <+> printNakedExpr (fst te) 
+                            , text "then" <+> printNakedExpr (snd te) 
+                            , printEITExpr tes]
 
 -- This function is used for placing parentheses in expressions
 printParensNakedExpr :: Int -> Expr -> Doc

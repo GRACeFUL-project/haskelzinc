@@ -44,16 +44,19 @@ evens = [
   declare $ variable Par Int "coin" =. int 10,
   newline,
   declare $ variable Par (Set $ int 1 ... var "square") "S" =. int 1 --. var "square",
+  declare $ variable Dec (Array [ACT "S", ACT "S"] (Dec, int 0 ... int 1)) "x",
   declare $ variable Dec (Array [ACT "S"] (Dec, Int)) "n",
   declare $ variable Dec (Array [ACT "S"] (Dec, Int)) "m",
   newline,
   solve $ satisfy,
   newline,
   constraint $ 
-    forall [["i"] @@ var "S", ["j"] @@ var "S"] "sum" ("x"!.[var"i", var "j"] =.= var "coin")
+    (forall [["i"] @@ var "S", ["j"] @@ var "S"] "sum" ("x"!.[var"i", var "j"]) =.= var "coin")
     /\. forall [["i"] @@ var "S"] "forall" (
-      forall [["j"] @@ var "S"] "sum" ("x"!.[var"i", var "j"] =.= int 2 *. "m"!.[var "j"])
+      forall [["j"] @@ var "S"] "sum" ("x"!.[var"i", var "j"]) =.= int 2 *. "n"!.[var "i"]
     )
+    /\. forall [["j"] @@ var "S"] "forall" (
+      forall [["i"] @@ var "S"] "sum" ("x"!.[var "i", var "j"]) =.= int 2 *. "m"!.[var "j"])
   ]
 
 divisor225 = [

@@ -209,17 +209,17 @@ iSet = ACT
 
 -- Auxiliary types for if-then-else expressions
 
-data IF_THEN_ELSE = ELSE Expr Expr Expr
-data ELSEIF = ELSEIF [(Expr, Expr)] Expr -- ?
+if_ :: Expr -> (Expr -> [(Expr, Expr)])
+if_ e = \e1 -> [(e, e1)]
 
-if_ :: Expr -> (Expr -> Expr -> IF_THEN_ELSE)
-if_ e = \e1 e2 -> ELSE e e1 e2
-
-then_ :: (Expr -> Expr -> IF_THEN_ELSE) -> Expr -> (Expr -> IF_THEN_ELSE)
+then_ :: (Expr -> [(Expr, Expr)]) -> Expr -> [(Expr, Expr)]
 then_ f e = f e
 
-else_ :: (Expr -> IF_THEN_ELSE) -> Expr -> IF_THEN_ELSE
-else_ f e = f e
+elseif_ :: [(Expr, Expr)] -> Expr -> (Expr -> [(Expr, Expr)])
+elseif_ es e = \e1 -> es ++ [(e, e1)]
+
+else_ :: [(Expr, Expr)] -> Expr -> Expr
+else_ = ITE
 
 -- Annotations
 
