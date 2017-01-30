@@ -28,6 +28,12 @@ import Interfaces.MZAST
 
 default (Int, Float)
 
+klara = declare $ 
+  variable Dec Int "varname"
+  |: [ mz_int_search[A $ mz_domain[], E $ intArray [1, 2, 3, 4]]
+     , mz_bool_search[A $ mz_domain[], E $ intArray [1, 2, 3, 4]]]
+  =. int 4;
+  
 small = mz_abs [int 3, int 5]
 big   =
   mz_discrete_distribution [mz_dom_bounds_array [var "somebigarrayname"]
@@ -40,6 +46,8 @@ unsatisfiable = [
   ]
   
 car = [
+  (%) "Example taken from http://hakank.org/minizinc/car.mzn",
+  newline,
   declare $ variable Par Int "nbCars" =. int 6,
   declare $ variable Par Int "nbOptions" =. int 5,
   declare $ variable Par Int "nbSlots" =. int 10,
@@ -96,6 +104,8 @@ car = [
   ]
   
 evens = [
+  (%) "Example taken from http://hakank.org/minizinc/evens.mzn",
+  newline,
   declare $ variable Par Int "square" =. int 4,
   declare $ variable Par Int "coin" =. int 10,
   newline,
@@ -116,6 +126,8 @@ evens = [
   ]
 
 divisor225 = [
+  (%) "Example taken from http://hakank.org/minizinc/225_divisor.mzn",
+  newline,
   include "globals.mzn",
   declare $ variable Par Int "n" =. int 11,
   newline,

@@ -30,16 +30,19 @@ solve = Solve
 infix 1 =.
 class Assignable a where
   type Assigned a
+  type Body a
   
   (=.) :: a -> Expr -> Assigned a
 
 instance Assignable [Char] where
   type Assigned [Char] = Item
+  type Body [Char] = Expr
   name =. e = Assign name $ AnnExpr e []
 
 instance Assignable Declaration where
   type Assigned Declaration = Declaration
-  (Declaration ds ans _) =. e = Declaration ds [] (Just (AnnExpr e []))
+  type Body Declaration = Expr
+  (Declaration ds ans _) =. e = Declaration ds ans (Just (AnnExpr e []))
 
 declare :: Assigned Declaration -> Item
 declare = Declare
@@ -49,7 +52,10 @@ declareOnly ds = Declaration ds [] Nothing
 
 variable :: Inst -> Type -> Ident -> Declaration
 variable i t s = declareOnly $ Variable (i, t, s)
-
+{-
+enum :: Ident -> Declaration
+enum name = declareOnly $ Enum name
+-}
 predicate :: Ident -> [Param] -> Declaration
 predicate name ps = declareOnly $ Predicate name ps
 

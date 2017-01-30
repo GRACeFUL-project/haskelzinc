@@ -7,7 +7,7 @@ License     : GPL-3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
-This module provides an interface of the MiniZinc 2.1 language in Haskell through the definition of an abstract syntax tree of the MiniZinc language.
+This module provides an interface for the MiniZinc 2.1 language in Haskell through the definition of an abstract syntax tree of the MiniZinc language.
 With the use of this module, one can represent MiniZinc models in Haskell code. The abstract syntax tree is based on 
 <http://www.minizinc.org/doc-lib/minizinc-spec.pdf the MiniZinc 2.1 spesification>. 
 
@@ -74,6 +74,13 @@ stripExprOff (AnnExpr e ans) = e
 -- | Completes a declaration with a list of annotations (possibly empty) and maybe a body.
 data Declaration = Declaration DeclarationSignature [Annotation] (Maybe AnnExpr)
   deriving (Show, Eq)
+{-
+data DeclarationG t a = DeclarationG DeclarationSignature [Annotation] (t a)
+  deriving (Show, Eq)
+
+class Foldable t => DeclarationG (t a) where
+  type DS (t a)
+  (=.) ::  -}
 
 -- | Specifies wether the declaration is a variable, predicate, test, function or annotation
 -- declaration. For each case, the arguments hold the signature of the declaration.

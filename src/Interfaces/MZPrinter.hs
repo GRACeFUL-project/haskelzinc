@@ -52,7 +52,7 @@ printItem (Solve s)         = text "solve"
 
 printDeclaration :: Declaration -> Doc
 printDeclaration (Declaration nd ans me) =
-  hang (printDeclarationSig nd) 2 (printBody me)
+  hang (printDeclarationSig nd) 2 (sep [printAnnotations ans, printBody me])
 
 printBody :: Maybe AnnExpr -> Doc
 printBody = maybe empty (\e -> equals <+> (printAnnExpr e))
@@ -184,7 +184,7 @@ printInst Dec = text "var"
 printInst Par = text "par"
 
 printAnnotations :: [Annotation] -> Doc
-printAnnotations ans = hsep $ map (\a -> colon <> colon <+> printAnnotation a) ans
+printAnnotations ans = sep $ map (\a -> colon <> colon <+> printAnnotation a) ans
 
 printAnnotation :: Annotation -> Doc
 printAnnotation (Annotation name args) 
