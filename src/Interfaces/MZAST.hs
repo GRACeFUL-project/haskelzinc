@@ -27,7 +27,6 @@ module Interfaces.MZAST (
 ) where
 
 import Interfaces.MZASTBase
-import Interfaces.MZBuiltIns
 
 -- Items
 
