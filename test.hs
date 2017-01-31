@@ -23,7 +23,6 @@ module HaskelzincTests where
 
 import Interfaces.MZBuiltIns
 import Interfaces.MZinHaskell
-import Interfaces.MZASTBase
 import Interfaces.MZAST
 
 default (Int, Float)
@@ -149,13 +148,13 @@ divisor225 = [
 planning = [
   declare $ variable Par Int "nproducts",
   declare $ variable Par (Set Int) "Products" =. int 1 --. var "nproducts",
-  declare $ variable Par (Array [iSet "Products"] (Par, Int)) "profit",
-  declare $ variable Par (Array [iSet "Products"] (Par, String)) "pname",
+  declare $ variable Par (Array [ACT "Products"] (Par, Int)) "profit",
+  declare $ variable Par (Array [ACT "Products"] (Par, String)) "pname",
   declare $ variable Par Int "nresources",
   declare $ variable Par (Set Int) "Resources" =. int 1 --. var "nresources",
-  declare $ variable Par (Array [iSet "Resources"] (Par, Int)) "capacity",
-  declare $ variable Par (Array [iSet "Resources"] (Par, String)) "rname",
-  declare $ variable Dec (Array [iSet "Products", iSet "Resources"] (Par, Int)) "consumption",
+  declare $ variable Par (Array [ACT "Resources"] (Par, Int)) "capacity",
+  declare $ variable Par (Array [ACT "Resources"] (Par, String)) "rname",
+  declare $ variable Dec (Array [ACT "Products", ACT "Resources"] (Par, Int)) "consumption",
   constraint $
     mz_assert [mz_forall ["consumption"!.[Var "p", Var "r"] >=. int 0 
                          #|. [["r"] @@ var "Resources", ["p"] @@ var "Products"]]
@@ -165,8 +164,8 @@ planning = [
                       #|. [(["r"] @@ var "Resources") 
                           `where_` ("consumption"!.[var "p", var "r"] >=. int 0)]] 
                    #|. [["p"] @@ var "Products"]],
-  declare $ variable Dec (Array [iSet "Products"] (Dec, int 0 ... var "mproducts")) "produce",
-  declare $ variable Dec (Array [iSet "Resources"] (Dec, int 0 ... mz_max[var "capacity"])) "used",
+  declare $ variable Dec (Array [ACT "Products"] (Dec, int 0 ... var "mproducts")) "produce",
+  declare $ variable Dec (Array [ACT "Resources"] (Dec, int 0 ... mz_max[var "capacity"])) "used",
   constraint $ mz_forall [
     ("used"!.[var "r"] =.= mz_sum ["consumption"!.[var "p", var "r"] *. ("produce"!.[var "p"]) #|. [["p"] @@ var "Products"]])
     /\. ("used"!.[var "r"] <=. "capacity"!.[var "r"]) #|. [["r"] @@ var "Resources"]],
@@ -189,10 +188,10 @@ knapsack = [
   declare $ variable Par (Set Int) "Items" =. (int 1) --. (var "n"),
   declare $ variable Par Int "capacity",
   newline,
-  declare $ variable Par (Array [iSet "Items"] (Par, Int)) "profits",
-  declare $ variable Par (Array [iSet "Items"] (Par, Int)) "weights",
+  declare $ variable Par (Array [ACT "Items"] (Par, Int)) "profits",
+  declare $ variable Par (Array [ACT "Items"] (Par, Int)) "weights",
   newline,
-  declare $ variable Dec (Set (iSet "Items")) "knapsack",
+  declare $ variable Dec (Set (ACT "Items")) "knapsack",
   newline,
   constraint $ 
     forall [["i"] @@ var "Items"] "sum" 

@@ -1,6 +1,30 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances #-}
 
-module Interfaces.MZAST where
+module Interfaces.MZAST (
+  include, constraint, output, (%), newline,
+  (=.), declare, variable, predicate, function, test, annotation,
+  solve, satisfy, minimize, maximize, 
+  -- * Types
+  (...), ($$),
+  -- * Expressions
+  -- ** Constants
+  true, false, var, int, float, string,
+  -- ** Conditional
+  if_, then_, elseif_, else_,
+  -- ** Sets
+  intSet, floatSet, stringSet, mapSet, set, (#/.),
+  -- ** Arrays
+  boolArray, intArray, floatArray, stringArray,
+  boolArray2, intArray2, floatArray2, stringArray2,
+  mapArray, mapArray2, array, array2, (#|.), (!.),
+  -- ** Comprehension tail
+  (@@), where_,
+  -- ** Generator calls
+  forall,
+  -- * Annotations
+  (|:),
+  module Interfaces.MZASTBase
+) where
 
 import Interfaces.MZASTBase
 import Interfaces.MZBuiltIns
@@ -102,8 +126,8 @@ float = FConst
 string :: String -> Expr
 string = SConst
 
-boolSet :: [Bool] -> Expr
-boolSet = SetLit . (map BConst)
+-- boolSet :: [Bool] -> Expr
+-- boolSet = SetLit . (map BConst)
 
 intSet :: [Int] -> Expr
 intSet = SetLit . (map IConst)
@@ -114,45 +138,42 @@ floatSet = SetLit . (map FConst)
 stringSet :: [String] -> Expr
 stringSet = SetLit . (map SConst)
 
-class SetClass a where
-  set :: a -> Expr
+mapSet :: (a -> Expr) -> [a] -> Expr
+mapSet f = SetLit . map f
 
-instance SetClass [Expr] where
-  set = SetLit
-
-instance SetClass (Expr, CompTail) where
-  set (e, ct) = SetComp e ct
+set :: [Expr] -> Expr
+set = SetLit
 
 boolArray :: [Bool] -> Expr
-boolArray = arrayMap BConst
+boolArray = mapArray BConst
 
 intArray :: [Int] -> Expr
-intArray = arrayMap IConst
+intArray = mapArray IConst
 
 floatArray :: [Float] -> Expr
-floatArray = arrayMap FConst
+floatArray = mapArray FConst
 
 stringArray :: [String] -> Expr
-stringArray = arrayMap SConst
+stringArray = mapArray SConst
 
 boolArray2 :: [[Bool]] -> Expr
-boolArray2 = arrayMap2 BConst
+boolArray2 = mapArray2 BConst
 
 intArray2 :: [[Int]] -> Expr
-intArray2 = arrayMap2 IConst
+intArray2 = mapArray2 IConst
 
 floatArray2 :: [[Float]] -> Expr
-floatArray2 = arrayMap2 FConst
+floatArray2 = mapArray2 FConst
 
 stringArray2 :: [[String]] -> Expr
-stringArray2 = arrayMap2 SConst
+stringArray2 = mapArray2 SConst
 
 -- Creating one- or two-dimensional arrays by mapping
-arrayMap :: (a -> Expr) -> [a] -> Expr
-arrayMap f = ArrayLit . map f
+mapArray :: (a -> Expr) -> [a] -> Expr
+mapArray f = ArrayLit . map f
 
-arrayMap2 :: (a -> Expr) -> [[a]] -> Expr
-arrayMap2 f = ArrayLit2D . (map (map f))
+mapArray2 :: (a -> Expr) -> [[a]] -> Expr
+mapArray2 f = ArrayLit2D . (map (map f))
 
 array :: [Expr] -> Expr
 array = ArrayLit
@@ -160,7 +181,7 @@ array = ArrayLit
 array2 :: [[Expr]] -> Expr
 array2 = ArrayLit2D
 
--- Array comprehension?
+-- Array comprehension
 
 infix 2 #/., #|.
 
@@ -210,9 +231,6 @@ infix 3 ...
 ($$) :: Ident -> Type
 ($$) = VarType
 
-iSet :: Ident -> Type
-iSet = ACT
-
 -- Auxiliary types for if-then-else expressions
 
 if_ :: Expr -> (Expr -> [(Expr, Expr)])
@@ -226,6 +244,9 @@ elseif_ es e = \e1 -> es ++ [(e, e1)]
 
 else_ :: [(Expr, Expr)] -> Expr -> Expr
 else_ = ITE
+
+-- Let expressions
+let_ = Let
 
 -- Annotations
 
