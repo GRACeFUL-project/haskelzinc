@@ -1,5 +1,3 @@
-{-# LANGUAGE AllowAmbiguousTypes #-}
-
 {-|
 Module      : MZBuiltIns
 Description : MiniZinc built-in predicates, tests and functions
