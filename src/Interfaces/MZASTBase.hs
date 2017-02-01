@@ -19,6 +19,8 @@ module Interfaces.MZASTBase (
   Declaration(..),
   AnnExpr(..),
   Expr(..),
+  stripExprOff,
+  toSimpleExpr,
   Type(..),
   Op(..),
   GArguments(..),
@@ -29,9 +31,7 @@ module Interfaces.MZASTBase (
   Generator,
   Param,
   Ident,
-  Filename,
-  stripExprOff,
-  toSimpleExpr
+  Filename
 ) where 
 
 -- | An abbreviation for the type of a represented MiniZinc model.
@@ -39,7 +39,7 @@ type MZModel = [Item]
 
 -- | Depresents MiniZinc items, the first-class entities of the MiniZinc language.
 -- Variable, function, predicate, test and annotation declaration items are all 
--- represented with the @Declare@ constructor.
+-- represented with the 'Declare' constructor.
 data Item 
   -- | Commented line
   = Comment String
@@ -57,7 +57,7 @@ data Item
   -- | Output item. The use of this item might cause errors in parsing the solution(s) 
   -- of the model. Recommended use for testing purposes only.
   | Output Expr
-  -- | @Empty@ does not translate to a MiniZinc item. It only represents an empty line 
+  -- | 'Empty' does not translate to a MiniZinc item. It only represents an empty line 
   -- in the MiniZinc code.
   | Empty        
   deriving (Show, Eq)
@@ -67,11 +67,11 @@ data Item
 data AnnExpr = AnnExpr Expr [Annotation]
   deriving (Show, Eq)
 
--- | Transforms a @Expr@ to an @AnnExpr@ with an empty list of annotations.
+-- | Transforms a 'Expr' to an 'AnnExpr' with an empty list of annotations.
 toSimpleExpr :: Expr -> AnnExpr
 toSimpleExpr e = AnnExpr e []
 
--- | Takes a annotated expression and returns only the expression.
+-- | Takes an annotated expression and returns only the expression.
 stripExprOff :: AnnExpr -> Expr
 stripExprOff (AnnExpr e ans) = e
 
@@ -116,12 +116,12 @@ data Expr
   -- head expression of the comprehension, while the second represents the comprehension 
   -- tail.
   | SetComp Expr CompTail
-  -- | MiniZinc 1-dimensional arrays defined with literals, similar to the @SetLit@ 
+  -- | MiniZinc 1-dimensional arrays defined with literals, similar to the 'SetLit' 
   -- constructor.
   | ArrayLit [Expr]
   -- | MiniZinc 2-dimensional arrays defined with literals
   | ArrayLit2D [[Expr]]
-  -- | MiniZinc array comprehension. Syntax similar to @SetComp@ constructor.
+  -- | MiniZinc array comprehension. Syntax similar to 'SetComp' constructor.
   | ArrayComp Expr CompTail
   -- | Represents an array element. In @ArrayElem name is@, the argument @name@ is the 
   -- identifier of the array and @is@ is the list of indexes that specify the desired 
@@ -134,7 +134,7 @@ data Expr
   -- @op@ on @exp1@.
   | U Op Expr
   -- | @Call name args@ represents a call to the function, predicate or test @name@ on 
-  -- arguments @args@. A call to an annotation is represented by the @Annotation@ type.
+  -- arguments @args@. A call to an annotation is represented by the 'Annotation' type.
   | Call Ident [AnnExpr]
   -- | The if-then-else conditional. If the first argument of the constructor is an 
   -- empty list, the translation to MiniZinc will fail. @ITE [(cond, expr1)] expr2@,
@@ -143,8 +143,8 @@ data Expr
   -- pairs are inserted before the final @else@ expression.
   | ITE [(Expr, Expr)] Expr
   -- | @let-in@ expression. In @Let items expr@, the elements of @items@ represent the 
-  -- bindings in the @expr@ expression. Although @items@ is of type @[Item]@, only 
-  -- @Item@ values constructed by @Declare@ and @Constraint@ will translate to a 
+  -- bindings in the @expr@ expression. Although @items@ is of type '[Item]', only 
+  -- 'Item' values constructed by 'Declare' and 'Constraint' will translate to a 
   -- syntactically correct MiniZinc let expression.
   | Let [Item] Expr
   -- | A generator call expression.
@@ -182,8 +182,8 @@ newtype Op = Op Ident
   deriving (Show, Eq)
 
 -- | Transforms an operator to a quoted operator (which, in MiniZinc admits prefix 
--- notation). One can represent the application of a quoted operator though the @Call@
--- constructor of type @Item@.
+-- notation). One can represent the application of a quoted operator though the 'Call'
+-- constructor of type 'Item'.
 prefixOp :: Op -> Ident
 prefixOp (Op op) = "`" ++ op ++ "`"
 

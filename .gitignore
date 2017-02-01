@@ -3,6 +3,8 @@
 dist
 
 # Hackage specific
+# Documentation
+htmldocs/*
 
 # My notes
 notes.txt

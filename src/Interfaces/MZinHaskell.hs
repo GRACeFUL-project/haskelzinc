@@ -24,7 +24,6 @@ import Data.List
 import System.Process
 import System.FilePath
 import Interfaces.MZAuxiliary
-import Interfaces.MZASTBase
 import Interfaces.MZAST
 import Interfaces.MZPrinter
 import Interfaces.FZSolutionParser

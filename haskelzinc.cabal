@@ -55,11 +55,11 @@ cabal-version:       >=1.10
 
 library
   -- Modules exported by the library.
-  exposed-modules:  Interfaces.MZASTBase,
+  exposed-modules:  Interfaces.MZinHaskell,
+                    Interfaces.MZASTBase,
                     Interfaces.MZBuiltIns,
                     Interfaces.MZAST,
                     Interfaces.MZPrinter,
-                    Interfaces.MZinHaskell,
                     Interfaces.FZSolutionParser,
                     Interfaces.MZAuxiliary
   
@@ -67,7 +67,7 @@ library
   -- other-modules:       
   
   -- LANGUAGE extensions used by modules in this package.
-  other-extensions:    FlexibleInstances
+  other-extensions:    FlexibleInstances, TypeFamilies
   
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.8 && <5, pretty, process, filepath >=1.2, parsec3 >=1.0.0.8, containers >=0.5 && <0.6

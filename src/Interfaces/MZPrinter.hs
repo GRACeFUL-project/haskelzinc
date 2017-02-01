@@ -7,8 +7,8 @@ License     : BSD3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
-This module provides a pretty-printer of MiniZinc models represented through the "MZAST" module.
-This pretty-printer is based on the "Text.PrettyPrint" module.
+This module provides a pretty-printer of MiniZinc models represented through the 
+"Interfaces.MZASTBase" module. This pretty-printer uses the "Text.PrettyPrint" module.
 -}
 
 module Interfaces.MZPrinter(
