@@ -1,5 +1,5 @@
 {-|
-Module      : MZAST
+Module      : MZASTBase
 Description : MiniZinc abstract syntax tree
 Copyright   : (c) Some Guy, 2013
                   Someone Else, 2014
@@ -8,8 +8,11 @@ Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
 This module provides an interface for the MiniZinc 2.1 language.
-With the use of this module, one can represent MiniZinc models in Haskell code. The syntax is based on 
-<http://www.minizinc.org/doc-lib/minizinc-spec.pdf the MiniZinc 2.1 spesification>.
+With the use of this module, one can represent MiniZinc models in Haskell code. The syntax is based 
+on <http://www.minizinc.org/doc-lib/minizinc-spec.pdf the MiniZinc 2.1 spesification>.
+
+However, this module provides a low-level interface to the MiniZinc language. A more human friendly 
+interface is provided in 'Interfaecs.MZAST'.
 -}
 
 module Interfaces.MZASTBase (
@@ -21,6 +24,7 @@ module Interfaces.MZASTBase (
   Expr(..),
   stripExprOff,
   toSimpleExpr,
+  isAnnotated,
   Type(..),
   Op(..),
   GArguments(..),
@@ -74,6 +78,11 @@ toSimpleExpr e = AnnExpr e []
 -- | Takes an annotated expression and returns only the expression.
 stripExprOff :: AnnExpr -> Expr
 stripExprOff (AnnExpr e ans) = e
+
+-- | Returns false if the given argument has an empty list of 'Annotation's, true otherwise.
+isAnnotated :: AnnExpr -> Bool
+isAnnotated (AnnExpr e []) = False
+isAnnotated _              = True
 
 -- | Completes a declaration with a list of annotations (possibly empty) and maybe a body.
 data Declaration = Declaration DeclarationSignature [Annotation] (Maybe AnnExpr)
