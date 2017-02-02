@@ -24,7 +24,6 @@ module Interfaces.MZASTBase (
   Expr(..),
   stripExprOff,
   toSimpleExpr,
-  isAnnotated,
   Type(..),
   Op(..),
   GArguments(..),
@@ -78,11 +77,6 @@ toSimpleExpr e = AnnExpr e []
 -- | Takes an annotated expression and returns only the expression.
 stripExprOff :: AnnExpr -> Expr
 stripExprOff (AnnExpr e ans) = e
-
--- | Returns false if the given argument has an empty list of 'Annotation's, true otherwise.
-isAnnotated :: AnnExpr -> Bool
-isAnnotated (AnnExpr e []) = False
-isAnnotated _              = True
 
 -- | Completes a declaration with a list of annotations (possibly empty) and maybe a body.
 data Declaration = Declaration DeclarationSignature [Annotation] (Maybe AnnExpr)

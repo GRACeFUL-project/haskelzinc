@@ -22,7 +22,7 @@ module Interfaces.MZAST (
   -- ** Generator calls
   forall,
   -- * Annotations
-  (|:),
+  (|:), isAnnotated,
   module Interfaces.MZASTBase
 ) where
 
@@ -251,14 +251,27 @@ let_ = Let
 
 class Annotatable a where
   (|:) :: a -> [Annotation] -> a
+  -- | Returns false if the given argument has an empty list of 'Annotation's, true otherwise.
+  isAnnotated :: a -> Bool
 
 instance Annotatable AnnExpr where
   (AnnExpr e a1) |: a2 = AnnExpr e (a1 ++ a2)
+  
+  isAnnotated (AnnExpr _ []) = False
+  isAnnotated _              = True
 
 instance Annotatable Declaration where
   (Declaration ds a1 me) |: a2 = Declaration ds (a1 ++ a2) me
+  
+  isAnnotated (Declaration _ [] _) = False
+  isAnnotated _                      = True
 
 instance Annotatable Solve where
   (Satisfy a1)    |: a2 = Satisfy (a1 ++ a2)
   (Minimize a1 e) |: a2 = Minimize (a1 ++ a2) e
   (Maximize a1 e) |: a2 = Maximize (a1 ++ a2) e
+  
+  isAnnotated (Satisfy [])     = False
+  isAnnotated (Minimize [] _) = False
+  isAnnotated (Maximize [] _) = False
+  isAnnotated _                = True
