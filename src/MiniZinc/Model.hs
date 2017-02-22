@@ -20,8 +20,10 @@ module MiniZinc.Model
     , emit
     ) where
 
+import Control.Monad
+import Data.Array hiding (array)
 import Data.Data
-import Data.IORef
+import Data.Unique
 import Data.List
 import Data.Generics.Uniplate.Data
 import qualified Data.Set as S
@@ -128,24 +130,37 @@ data Expr
     | Neg Expr
   deriving (Show, Eq, Data, Ord)
 
-idCount :: IORef Int
-idCount = unsafePerformIO $ newIORef 1
-{-# NOINLINE idCount #-}
-
-newIdent :: (Ident -> Expr) -> Expr
-newIdent f = unsafePerformIO $ do 
-     n <- atomicModifyIORef' idCount $ \i -> (1+i, i)
-     pure $ f ("v" ++ show n)
-
-var :: Domain -> Expr
-var = newIdent . flip Var
+var :: Domain -> IO Expr
+var d = do 
+    n <- fmap (show . hashUnique) newUnique
+    return $ Var ("v" ++ n) d
 
 getId :: Expr -> Maybe Ident
 getId (Var n _) = Just n
 getId _         = Nothing
 
-array :: [Int] -> Domain -> Expr
-array dim d = undefined -- foldl (\x y -> x ++ "_" ++ show y) (show n) dim :- d
+array :: Ix i => (i, i) -> Domain -> IO (i -> Expr)
+array range domain = do 
+    a <- fmap (listArray range) $ replicateM (rangeSize range) $ var domain 
+    return $ \ i -> a ! i
+
+eval :: Expr -> Expr
+eval expr = case expr of
+    Add (EInt n) (EInt m) -> EInt (n + m)
+    Sub (EInt n) (EInt m) -> EInt (n - m)
+    Mul (EInt n) (EInt m) -> EInt (n * m)
+    Neg (EInt n)          -> EInt (-n)
+    
+    Add (EFloat n) (EFloat m) -> EFloat (n + m)
+    Sub (EFloat n) (EFloat m) -> EFloat (n - m)
+    Mul (EFloat n) (EFloat m) -> EFloat (n * m)
+    Div (EFloat n) (EFloat m) -> EFloat (n / m)
+    Neg (EFloat n)            -> EFloat (-n)
+
+    _ -> expr
+
+norm :: Expr -> Expr
+norm = transform eval
 
 instance Num Expr where
     (+) = Add
@@ -184,7 +199,7 @@ class Emit a where
 instance Emit Model where
     emit = render . ppModel
 instance Emit Expr where
-    emit = render . ppExpr
+    emit = render . ppExpr . norm
 
 ppModel :: Model -> Doc
 ppModel (Model vs cs s) = vcat $
