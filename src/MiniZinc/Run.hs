@@ -1,9 +1,10 @@
 module MiniZinc.Run 
     ( -- * Solving 
       solve
-    , Result
+    , Result, getVar, readVar
     ) where
 
+import Data.Maybe
 import qualified Data.Map as M
 import MiniZinc.Model
 import System.Directory
@@ -16,11 +17,17 @@ type Result = Maybe (M.Map Ident String)
 solve :: Model -> IO Result
 solve m = do
     (file, handle) <- openTempFile "." "model.mzn"
-    hPutStr handle $ toString m
+    hPutStr handle $ emit m
     hClose handle
     output <- readProcess "mzn-g12mip" [file] []
     removeFile file 
     return $ parseResult output
+
+getVar :: Result -> Expr -> String
+getVar res e = fromJust $ getId e >>= \n -> res >>= M.lookup n  
+
+readVar :: Read a => Result -> Expr -> a
+readVar res = read . getVar res
 
 parseResult :: String -> Result
 parseResult = either (const Nothing) (Just . M.fromList) . parse p "" 

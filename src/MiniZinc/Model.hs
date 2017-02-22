@@ -8,19 +8,24 @@ module MiniZinc.Model
     , satisfy, maximize
       -- * Constraints
     , (.==.), (./=.), (.>.), (.>=.), (.<.), (.<=.)
-      -- * Domains
-    , Domain, (...)
-      -- * The @Expr@ type
-    , Expr((:::)), int, float, bool, string
+    , (.&.)
+    , forall
+      -- * Domains and types
+    , Domain(..), Type(..), int, float, bool, string, (...)
+      -- * The @Expr@ type, variable decls
+    , Expr, var, array, getId
       -- * Types
     , Ident
       -- * String representation in MiniZinc format
-    , toString
+    , emit
     ) where
 
 import Data.Data
+import Data.IORef
 import Data.List
 import Data.Generics.Uniplate.Data
+import qualified Data.Set as S
+import System.IO.Unsafe (unsafePerformIO)
 import Text.PrettyPrint hiding (int, float)
 import qualified Text.PrettyPrint as P
 
@@ -37,22 +42,19 @@ data Decl
     = DecVar Ident Domain 
     deriving (Show, Eq, Data)
 
-data Domain
-    = Base Type  
-    | Range Expr Expr
-    {-| Set Type [Expr]-}
-    {-| Array Type -}
-    deriving (Show, Eq, Data)
+data Domain 
+    = Base Type
+    | IntRange Int Int
+    | FloatRange Float Float
+    | Set Type Expr
+    deriving (Show, Eq, Data, Ord)
 
 data Type 
     = Boolean
     | Integer
     | Float
     | String
-    deriving (Show, Eq, Data)
-
-(...) :: Expr -> Expr -> Domain
-(...) = Range
+    deriving (Show, Eq, Data, Ord)
 
 int, float, bool, string :: Domain
 int    = Base Integer
@@ -60,14 +62,36 @@ float  = Base Float
 bool   = Base Boolean
 string = Base String
 
+class Range a where
+    (...) :: a -> a -> Domain
+
+instance Range Int where
+    (...) = IntRange
+instance Range Float where
+    (...) = FloatRange
+
 data Constraint 
     = NEQ Expr Expr
     | EQU Expr Expr
     | GTH Expr Expr
     | GTE Expr Expr
-    | LTH Expr Expr
+    | LTH Expr Expr 
     | LTE Expr Expr
-    deriving (Show, Eq, Data)
+    -- Combinators
+    | Constraint :&:   Constraint
+    | Constraint :|:   Constraint
+    | Constraint :->:  Constraint
+    | Constraint :<-:  Constraint
+    | Constraint :<->: Constraint
+    | Not Constraint
+    -- Values
+    | T
+    | F
+    deriving (Show, Eq, Data, Ord)
+
+-- maybe have separate range type
+forall :: [Constraint] -> Constraint
+forall = foldr (.&.) T
 
 (.==.) = EQU
 infix 4 .==.
@@ -82,30 +106,57 @@ infix 4 .<.
 (.<=.) = LTE
 infix 4 .<=.
 
+-- Smart constructors
+T .&. c = c
+c .&. T = c
+F .&. c = F
+c .&. F = F
+c .&. d = c :&: d
+
 data Expr 
-    = Ident ::: Domain
+    -- Variable
+    = Var Ident Domain
+    -- Values
+    | EBool Bool
+    | EInt Int
+    | EFloat Float
+    -- Arithmetic
     | Add Expr Expr
     | Sub Expr Expr
     | Mul Expr Expr
     | Div Expr Expr
     | Neg Expr
-    | I Int
-    | B Bool
-    | F Float
-  deriving (Show, Eq, Data)
+  deriving (Show, Eq, Data, Ord)
 
-infix 3 :::
+idCount :: IORef Int
+idCount = unsafePerformIO $ newIORef 1
+{-# NOINLINE idCount #-}
+
+newIdent :: (Ident -> Expr) -> Expr
+newIdent f = unsafePerformIO $ do 
+     n <- atomicModifyIORef' idCount $ \i -> (1+i, i)
+     pure $ f ("v" ++ show n)
+
+var :: Domain -> Expr
+var = newIdent . flip Var
+
+getId :: Expr -> Maybe Ident
+getId (Var n _) = Just n
+getId _         = Nothing
+
+array :: [Int] -> Domain -> Expr
+array dim d = undefined -- foldl (\x y -> x ++ "_" ++ show y) (show n) dim :- d
 
 instance Num Expr where
     (+) = Add
     (-) = Sub
     (*) = Mul
     negate = Neg
-    fromInteger = I . fromInteger
+    fromInteger = EInt . fromInteger
 
 instance Fractional Expr where
     (/) = Div
-    fromRational = F . fromRational
+    fromRational = EFloat . fromRational
 
 data Problem
     = Satisfy 
@@ -124,49 +175,65 @@ minimize :: Expr -> [Constraint] -> Model
 minimize expr cs = Model (decvars cs) cs (Minimize expr)
 
 decvars :: [Constraint] -> [Decl]
-decvars cs = nub [DecVar n d| n ::: d <- universeBi cs]
+decvars cs = nub [DecVar n d| Var n d <- universeBi cs]
 
 -- | Pretty printing / translate to minizinc
-toString :: Model -> String
-toString = render . ppModel
+class Emit a where
+    emit :: a -> String
+
+instance Emit Model where
+    emit = render . ppModel
+instance Emit Expr where
+    emit = render . ppExpr
 
 ppModel :: Model -> Doc
 ppModel (Model vs cs s) = vcat $
-    [decl n d <> semi | DecVar n d <- vs] ++
+    [decl n d | DecVar n d <- vs] ++
     map ppConstraint cs ++
     [ppProblem s]
   where
-    decl n d = text "var" <+> ppDomain d <> colon <+> text n
+    decl n d = text "var" <+> ppDomain d <> colon <+> text n <> semi 
 
 ppDomain :: Domain -> Doc
-ppDomain (Base t) = case t of
-    Boolean    -> text "boolean"
-    Integer    -> text "int"
-    Float      -> text "float"
 ppDomain d = case d of
-    Range x y -> ppExpr x <+> text ".." <+> ppExpr y
+    Base t         -> ppType t
+    IntRange n m   -> range P.int n m
+    FloatRange n m -> range P.float n m
+    Set t e        -> undefined
+  where
+    range pp x y = pp x <> text ".." <> pp y
+
+ppType :: Type -> Doc
+ppType t = text $ case t of
+    Boolean -> "boolean"
+    Integer -> "int"
+    Float   -> "float"
+    String  -> "string"
 
 ppConstraint :: Constraint -> Doc
-ppConstraint constraint = case constraint of
-    NEQ x y -> binop x y "!="
-    EQU x y -> binop x y "=="
-    GTH x y -> binop x y ">"
-    GTE x y -> binop x y ">="
-    LTH x y -> binop x y "<"
-    LTE x y -> binop x y "<="
+ppConstraint constraint = text "constraint" <+> rec constraint <> semi 
   where
-    binop x y op = text "constraint" <+> ppExpr x <+> text op <+> ppExpr y <> semi
+    rec c = case c of
+      NEQ x y -> binop x y "!="
+      EQU x y -> binop x y "=="
+      GTH x y -> binop x y ">"
+      GTE x y -> binop x y ">="
+      LTH x y -> binop x y "<"
+      LTE x y -> binop x y "<="
+      x :&: y -> rec x <+> text "/\\" <+> rec y 
+
+    binop x y op = ppExpr x <+> text op <+> ppExpr y 
 
 ppExpr :: Expr -> Doc
 ppExpr expr = case expr of
-    n ::: _ -> text n
-    Add x y -> binop x y "+"
-    Sub x y -> binop x y "-"
-    Mul x y -> binop x y "*"
-    Neg x   -> text "-" <> ppExpr x
-    I x     -> P.int x 
-    B x     -> text $ if x then "true" else "false"
-    F x     -> P.float x
+    Var n _  -> text n
+    Add x y  -> binop x y "+"
+    Sub x y  -> binop x y "-"
+    Mul x y  -> binop x y "*"
+    Neg x    -> text "-" <> ppExpr x
+    EInt x   -> P.int x 
+    EBool x  -> text $ if x then "true" else "false"
+    EFloat x -> P.float x
   where
     binop x y op = parens $ ppExpr x <+> text op <+> ppExpr y
 
@@ -177,3 +244,12 @@ ppProblem p = text "solve" <+> problem <> semi
         Satisfy       -> text "satisfy"
         Maximize expr -> text "maximize" <+> ppExpr expr
         Minimize expr -> text "minimize" <+> ppExpr expr
+
+ppArray :: (a -> Doc) -> [a] -> Doc
+ppArray ppElem = brackets . commaSep . map ppElem
+
+ppSet :: (a -> Doc) -> S.Set a -> Doc
+ppSet ppElem = braces . commaSep . map ppElem . S.toList
+
+commaSep :: [Doc] -> Doc
+commaSep = hcat . punctuate comma
