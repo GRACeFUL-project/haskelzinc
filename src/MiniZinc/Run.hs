@@ -1,12 +1,29 @@
+-----------------------------------------------------------------------------
+-- Copyright 2017, GRACeFUL project team. This file is distributed under the
+-- terms of the Apache License 2.0. For more information, see the files
+-- "LICENSE.txt" and "NOTICE.txt", which are included in the distribution.
+-----------------------------------------------------------------------------
+-- |
+-- Maintainer  :  alexg@chalmers.se
+-- Stability   :  experimental
+-- Portability :  portable (depends on ghc)
+--
+-- Run a constraint programming model using a constraint solver.
+--
+-----------------------------------------------------------------------------
+
 module MiniZinc.Run 
     ( -- * Solving 
       solve
+      -- * Querying results
     , Result, getVar, readVar
     ) where
 
+import MiniZinc.Constraint (Ident, Expr, getId)
+import MiniZinc.Model
+
 import Data.Maybe
 import qualified Data.Map as M
-import MiniZinc.Model
 import System.Directory
 import System.IO
 import System.Process
@@ -14,12 +31,14 @@ import Text.Parsec
 
 type Result = Maybe (M.Map Ident String)
 
+solver = "mzn-g12mip"
+
 solve :: Model -> IO Result
 solve m = do
     (file, handle) <- openTempFile "." "model.mzn"
     hPutStr handle $ emit m
     hClose handle
-    output <- readProcess "mzn-g12mip" [file] []
+    output <- readProcess solver [file] []
     removeFile file 
     return $ parseResult output
 

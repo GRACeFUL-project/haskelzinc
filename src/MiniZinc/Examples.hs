@@ -1,7 +1,24 @@
+-----------------------------------------------------------------------------
+-- Copyright 2017, GRACeFUL project team. This file is distributed under the
+-- terms of the Apache License 2.0. For more information, see the files
+-- "LICENSE.txt" and "NOTICE.txt", which are included in the distribution.
+-----------------------------------------------------------------------------
+-- |
+-- Maintainer  :  alexg@chalmers.se
+-- Stability   :  experimental
+-- Portability :  portable (depends on ghc)
+--
+-- Some examples.
+--
+-----------------------------------------------------------------------------
+
 module MiniZinc.Examples where
 
+import MiniZinc.Constraint
+import MiniZinc.Domain
 import MiniZinc.Model
 import MiniZinc.Run
+
 import Text.Printf
 
 aus = do 
@@ -55,6 +72,7 @@ cakes = do
         , "no. of chocolate cakes = " ++ getVar res c
         ]
 
+loan :: Float -> Float -> Float -> IO ()
 loan i' p' r' = do
     let p = fromRational $ toRational p'
         i = fromRational $ toRational i'
@@ -77,7 +95,7 @@ loan i' p' r' = do
     let owing = readVar res b4 :: Float
 
     printf "Borrowing %.2f at %.2f pct interest, and repaying %.2f \n\
-           \per quarter for 1 year leaves %.2f owing" p' (100*i') r' owing
+           \per quarter for 1 year leaves %.2f owing\n" p' (100*i') r' owing
 
 laplace w h = do 
     t <- array ((0, 0), (w, h)) float
