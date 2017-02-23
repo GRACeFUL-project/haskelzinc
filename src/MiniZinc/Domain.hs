@@ -9,7 +9,7 @@
 -- Stability   :  experimental
 -- Portability :  portable (depends on ghc)
 --
--- A small (proof-of-concept) DSL for constraint programming model.
+-- Supported domains for constraint programming.
 --
 -----------------------------------------------------------------------------
 
@@ -23,12 +23,14 @@ import MiniZinc.Pretty
 import Text.PrettyPrint hiding (int, float)
 import qualified Text.PrettyPrint as P
 
+-- | Supported domains
 data Domain 
     = Base Type
     | IntRange Int Int
     | FloatRange Float Float
     deriving (Show, Eq, Data, Ord)
 
+-- | Base types
 data Type 
     = Boolean
     | Integer
@@ -36,12 +38,14 @@ data Type
     | String
     deriving (Show, Eq, Data, Ord)
 
+-- | Smart constructors
 int, float, bool, string :: Domain
 int    = Base Integer
 float  = Base Float
 bool   = Base Boolean
 string = Base String
 
+-- | Range operator
 class Range a where
     (...) :: a -> a -> Domain
 
@@ -51,6 +55,7 @@ instance Range Int where
 instance Range Float where
     (...) = FloatRange
 
+-- | Pretty printing
 instance Pretty Domain where
     pp d = case d of
         Base t         -> pp t

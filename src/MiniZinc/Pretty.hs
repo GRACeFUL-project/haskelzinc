@@ -8,12 +8,12 @@
 -- Stability   :  experimental
 -- Portability :  portable (depends on ghc)
 --
--- Constraints.
+-- Pretty printing.
 --
 -----------------------------------------------------------------------------
 
 module MiniZinc.Pretty 
-    ( -- * String representation in MiniZinc format
+    ( -- * Pretty printing in MiniZinc format
       Pretty, pp
     ) where
 

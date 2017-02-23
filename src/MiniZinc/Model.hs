@@ -42,7 +42,7 @@ data Problem
     | Minimize Expr
     deriving (Show, Eq, Data)
 
--- Building models
+-- | Building models
 satisfy :: [Constraint] -> Model
 satisfy cs = Model (getVars cs) cs Satisfy
 

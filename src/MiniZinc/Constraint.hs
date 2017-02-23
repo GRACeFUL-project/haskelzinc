@@ -10,7 +10,7 @@
 -- Stability   :  experimental
 -- Portability :  portable (depends on ghc)
 --
--- Constraints.
+-- A DSL for expressing constraints.
 --
 -----------------------------------------------------------------------------
 
@@ -36,8 +36,10 @@ import Data.List
 import Data.Unique
 import Text.PrettyPrint 
 
+-- | Identifiers are represented as strings for now
 type Ident = String
 
+-- | Define and combine constraints
 data Constraint 
     = NEQ Expr Expr
     | EQU Expr Expr
@@ -57,9 +59,11 @@ data Constraint
     | F
     deriving (Show, Eq, Data, Ord)
 
+-- | Conjunction of constraints
 forall :: [Constraint] -> Constraint
 forall = foldr (.&.) T
 
+-- | Constructors for constraints
 (.==.) = EQU
 infix 4 .==.
 (./=.) = NEQ
@@ -73,15 +77,20 @@ infix 4 .<.
 (.<=.) = LTE
 infix 4 .<=.
 
--- Smart constructors
+-- | Smart constructors for constraint combinators
 T .&. c = c
 c .&. T = c
 F .&. c = F
 c .&. F = F
 c .&. d = c :&: d
 
+infix 4 .&.
+
 -- TODO add smart constructors for the other combinators
 
+-- | Small expression language for integers, floats and bools. Variables are
+-- annotated with their domains, which allows for a convenient notation. We 
+-- need to extend this with sets, boolean operators, etc.
 data Expr 
     -- Variable
     = Var Ident Domain
@@ -97,23 +106,28 @@ data Expr
     | Neg Expr
   deriving (Show, Eq, Data, Ord)
 
+-- | Create a variable of a particular domain
 var :: Domain -> IO Expr
 var d = do 
     n <- fmap (show . hashUnique) newUnique
     return $ Var ("v" ++ n) d
 
+-- | Return the identifier of a variable
 getId :: Expr -> Maybe Ident
 getId (Var n _) = Just n
 getId _         = Nothing
 
+-- | Retrieve the variables in a model, which we need to declare
 getVars :: Data a => a -> [(Ident, Domain)]
 getVars x = nub [(n, d) | (Var n d) <- universeBi x]
 
+-- | Create an array of variables of a particular domain
 array :: Ix i => (i, i) -> Domain -> IO (i -> Expr)
 array range domain = do 
     a <- fmap (listArray range) $ replicateM (rangeSize range) $ var domain 
     return $ \ i -> a ! i
 
+-- | Simple evaluation of expressions
 eval :: Expr -> Expr
 eval expr = case expr of
     Add (EInt n) (EInt m) -> EInt (n + m)
@@ -129,9 +143,11 @@ eval expr = case expr of
 
     _ -> expr
 
+-- | Try to simplify the expression in a bottom up manner
 norm :: Expr -> Expr
 norm = transform eval
 
+-- | Instances for Num and Fractional allow for convenient notation
 instance Num Expr where
     (+) = Add
     (-) = Sub
@@ -143,6 +159,7 @@ instance Fractional Expr where
     (/) = Div
     fromRational = EFloat . fromRational
 
+-- | Pretty printing
 instance Pretty Constraint where
     pp constraint = text "constraint" <+> rec constraint <> semi 
       where

@@ -29,10 +29,13 @@ import System.IO
 import System.Process
 import Text.Parsec 
 
+-- | Result type 
 type Result = Maybe (M.Map Ident String)
 
+-- | The used solver, needs to be in your PATH
 solver = "mzn-g12mip"
 
+-- | Emit the model, run the solver, and parse the result
 solve :: Model -> IO Result
 solve m = do
     (file, handle) <- openTempFile "." "model.mzn"
@@ -42,12 +45,15 @@ solve m = do
     removeFile file 
     return $ parseResult output
 
+-- | Query the result for the value of a variable (as a string)
 getVar :: Result -> Expr -> String
 getVar res e = fromJust $ getId e >>= \n -> res >>= M.lookup n  
 
+-- | Convert the value of a variable
 readVar :: Read a => Result -> Expr -> a
 readVar res = read . getVar res
 
+-- | Simple parser to parse the result of the solver
 parseResult :: String -> Result
 parseResult = either (const Nothing) (Just . M.fromList) . parse p "" 
   where
