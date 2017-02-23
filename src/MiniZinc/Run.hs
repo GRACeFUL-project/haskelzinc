@@ -30,7 +30,7 @@ import System.Process
 import Text.Parsec 
 
 -- | Result type 
-type Result = Maybe (M.Map Ident String)
+type Result = Either String (M.Map Ident String)
 
 -- | The used solver, needs to be in your PATH
 solver = "mzn-g12mip"
@@ -47,7 +47,10 @@ solve m = do
 
 -- | Query the result for the value of a variable (as a string)
 getVar :: Result -> Expr -> String
-getVar res e = fromJust $ getId e >>= \n -> res >>= M.lookup n  
+getVar res e = fromMaybe (error "No such variable!") $ do
+    n <- getId e 
+    m <- either fail return res 
+    M.lookup n m 
 
 -- | Convert the value of a variable
 readVar :: Read a => Result -> Expr -> a
@@ -55,7 +58,7 @@ readVar res = read . getVar res
 
 -- | Simple parser to parse the result of the solver
 parseResult :: String -> Result
-parseResult = either (const Nothing) (Just . M.fromList) . parse p "" 
+parseResult = bimap show M.fromList . parse p "" 
   where
     p   = keyval `endBy` char '\n' <* suc
     suc = many1 (char '-')  -- a dashed line indicates success
@@ -67,3 +70,7 @@ parseResult = either (const Nothing) (Just . M.fromList) . parse p ""
         v <- val
         char ';'
         return (k, v)
+
+bimap :: (a -> b) -> (c -> d) -> Either a c -> Either b d
+bimap f _ (Left x)  = Left (f x)
+bimap _ g (Right y) = Right (g y)
