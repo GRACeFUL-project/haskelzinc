@@ -8,11 +8,10 @@ Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
 This module provides a pretty-printer of MiniZinc models represented by the 
-'Interfaces.MZASTBase' module.
+"Interfaces.MZASTBase" module.
 -}
 
 module Interfaces.MZPrinter(
-  Interfaces.MZASTBase.MZModel,
   printModel,
   printItem,
   printExpr,
@@ -33,11 +32,7 @@ layout = render . printModel
 printModel :: MZModel -> Doc
 printModel = foldr1 ($+$) . map printItem
 
--- | Prints an 'Item' value. Example:
--- 
--- >>> printItem $ Pred "even" [(Dec, Int, "x")] (Just (Bi Eq (Bi Mod (Var "x") (IConst 2)) (IConst 0)))
--- predicate even(var int: x) =
---   x mod 2 = 0;
+-- | Prints an 'Item' value.
 printItem :: Item -> Doc
 printItem (Empty)           = space
 printItem (Comment str)     = text "%" <+> text str
@@ -45,7 +40,7 @@ printItem (Include file)    = text "include" <+> doubleQuotes (text file) <> sem
 printItem (Declare p)       = printDeclaration p <> semi
 printItem (Constraint c)    = hang (text "constraint") 2 (printAnnExpr c <> semi)
 printItem (Assign var expr) = text var <+> printBody (Just expr) <> semi
-printItem (Output e)        = text "output" <+> printExpr e <> semi
+printItem (Output es)       = text "output" <+> printExpr es <> semi
 printItem (Solve s)         = text "solve" 
                               <+> printSolve s 
                               <> semi

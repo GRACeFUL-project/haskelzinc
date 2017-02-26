@@ -97,7 +97,6 @@ emptyConf = Config { minizinc    = ""
                    }
                 
 confFile = joinPath ["HZconf", "conf.txt"]
--- /Definitions
 
 -- | Parses the configuration file.
 parseConfig = do

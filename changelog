@@ -2,10 +2,10 @@
  - Added support for annotations
  - Changes in the representational system of MiniZinc models
    - Module Interfaces.MZAST renamed to Interfaces.MZASTBase
- - Module Interfaces.MZAST used for a more human friendly interface for building representations of 
-   MiniZinc models.
- - Module Interfaces.MZBuiltIns added. Contains predefined MiniZinc operators, functions, tests,
-   predicates and annotations.
+ - Module Interfaces.MZAST used for a more human friendly interface for building 
+   representations of MiniZinc models.
+ - Module Interfaces.MZBuiltIns added. Contains predefined MiniZinc operators, functions,
+   tests, predicates and annotations.
  - Compatibility with GHC 8 tested (and passed)
 
 0.2.0.0

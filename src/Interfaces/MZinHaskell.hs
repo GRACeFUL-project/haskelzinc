@@ -7,7 +7,8 @@ License     : BSD3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
-This module integrates constraint solving programming through MiniZinc in Haskell.
+This module provides IO functionality for running the Haskell representation of a
+MiniZinc model and getting back the solutions in Haskell values.
 -}
 
 module Interfaces.MZinHaskell (
@@ -49,7 +50,7 @@ testModelWithData model mdata path solver num =
 -- the created FlatZinc file will be named after this. Also asks the user to 
 -- choose between supported solvers and the desired number of solutions. Returns 
 -- either a parse error or a list of solutions of the constraint model. The length 
--- of the list is specified by the number of solutions requested.
+-- of the list is at most equal to the number of solutions requested.
 iTestModel :: MZModel -> IO (Either ParseError [Solution])
 iTestModel m = do
   putStrLn "Enter working directory:"

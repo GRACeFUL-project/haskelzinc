@@ -11,7 +11,7 @@ Stability   : experimental
 
 This module parses the solutions outputed by the specified FlatZinc solver. It supports multiple solutions.
 The parser might fail if there is a show item in the represented MiniZinc model which alters the default 
-format of the solutions' output.
+format of the solver's output.
 -}
 
 module Interfaces.FZSolutionParser (

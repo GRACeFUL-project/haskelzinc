@@ -29,8 +29,8 @@ default (Int, Float)
 
 klara = declare $ 
   variable Dec Int "varname"
-  |: [ mz_int_search[A $ mz_domain[], E $ intArray [1, 2, 3, 4]]
-     , mz_bool_search[A $ mz_domain[], E $ intArray [1, 2, 3, 4]]]
+  |: mz_int_search[A $ mz_domain[], E $ intArray [1, 2, 3, 4]]
+  |: mz_bool_search[A $ mz_domain[], E $ intArray [1, 2, 3, 4]]
   =. int 4;
   
 small = mz_abs [int 3, int 5]
@@ -141,7 +141,7 @@ divisor225 = [
     (var "n" =.= forall [["i"] @@ int 1 --. var "len"] "sum" (mz_pow[int 10, var "len" -. var "i"] *. "a"!.[var "i"])),
     newline,
     solve $ minimize (var "y")
-            |: [mz_int_search[E $ var "x", A $ mz_first_fail[], A $ mz_indomain_min[], A $ mz_complete[]]],
+            |: mz_int_search[E $ var "x", A $ mz_first_fail[], A $ mz_indomain_min[], A $ mz_complete[]],
     constraint $ call "to_num" [var "x", var "y"] /\. (var "y") `_mod_` (int 225) =.= int 0
     ]
 
@@ -273,13 +273,12 @@ cakes = [
   constraint $ int 75 *. var "c" <=. var "cocoa",
   (%) "Maximize our profit",
   solve $ maximize (int 400 *. var "b" +. int 450 *. var "c"),
-  output $ 
-    array [string "no. of banana cakes = "
-          ,mz_show [var "b"]
-          ,string "\n"
-          ,string "no. of chocolate cakes = "
-          ,mz_show [var "c"], string "\n"
-          ]
+  output [ string "no. of banana cakes = "
+         , mz_show [var "b"]
+         , string "\n"
+         , string "no. of chocolate cakes = "
+         , mz_show [var "c"], string "\n"
+         ]
   ]
     
 cakedata =

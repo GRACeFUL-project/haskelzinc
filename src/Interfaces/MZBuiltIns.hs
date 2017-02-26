@@ -5,7 +5,7 @@ License     : BSD3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
-This module uses definitions of Interfaces.MZAST to provide an easy interface to
+This module uses definitions of "Interfaces.MZAST" to provide an easy interface to
 MiniZinc built-in calls. It might be missing built-in calls that have been added
 in recent releases of MiniZinc.
 -}
@@ -26,6 +26,7 @@ module Interfaces.MZBuiltIns (
   -- * MiniZinc built-in calls
   -- | All functions, predicates, tests and annotations are named after their MiniZinc 
   -- name prefixed by 'mz_'. Operators' representation follows a different convention.
+  
   -- ** Arithmetic calls
   mz_abs, mz_arg_max, mz_arg_min, mz_max, mz_min, mz_pow, mz_product, mz_sqrt, mz_sum,
   -- ** Exponential and logarithmic calls
@@ -258,9 +259,7 @@ mz_symmetry_breaking_constraint = call "symmetry_breaking_constraint"
 mz_mzn_compiler_version  = call "mzn_compiler_version"
 mz_mzn_version_to_string = call "mzn_version_to_string"
 
--- MiniZinc unary operators
-
--- MiniZinc binary operators
+-- MiniZinc operators
 
 infixl 3 /\., <->., <-., ->., \/., `_xor_`
 infix 4 <., <=., >., >=., =.=, !=.
@@ -281,12 +280,18 @@ mz_lte = Op "<="
 mz_eq  = Op "=" 
 mz_gt  = Op ">" 
 mz_gte = Op ">="
-(!=.) = Bi mz_neq -- ^ @!=@
-(<.)  = Bi mz_lt  -- ^ @<@
-(<=.) = Bi mz_lte -- ^ @<=@
-(=.=) = Bi mz_eq  -- ^ @=@
-(>.)  = Bi mz_gt  -- ^ @>@
-(>=.) = Bi mz_gte -- ^ @.=@
+-- | @!=@
+(!=.) = Bi mz_neq
+-- | @<@
+(<.)  = Bi mz_lt
+-- | @<=@
+(<=.) = Bi mz_lte
+-- | @=@
+(=.=) = Bi mz_eq
+-- | @>@
+(>.)  = Bi mz_gt
+-- | @>=@
+(>=.) = Bi mz_gte
 
 -- Arithmetic operators
 mz_times = Op "*"  
@@ -295,14 +300,22 @@ mz_minus = Op "-"
 mz_div   = Op "/"  
 mz_idiv  = Op "div"
 mz_mod   = Op "mod"
-(*.)   = Bi mz_times -- ^ @*@
-(+.)   = Bi mz_plus  -- ^ @+@ (the binary operator)
-plus_  = U  mz_plus  -- ^ @+@ (the unary operator)
-(-.)   = Bi mz_minus -- ^ @-@ (the binary operator)
-minus_ = U  mz_minus -- ^ @-@ (the unary operator)
-(/.)   = Bi mz_div   -- ^ @/@
-_div_  = Bi mz_idiv  -- ^ @div@
-_mod_  = Bi mz_mod   -- ^ @mod@
+-- | @*@
+(*.)   = Bi mz_times
+-- | @+@ (the binary operator)
+(+.)   = Bi mz_plus
+-- | @+@ (the unary operator)
+plus_  = U  mz_plus
+-- | @-@ (the binary operator)
+(-.)   = Bi mz_minus
+-- | @-@ (the unary operator)
+minus_ = U  mz_minus
+-- | @/@
+(/.)   = Bi mz_div
+-- | @div@
+_div_  = Bi mz_idiv
+-- | @mod@
+_mod_  = Bi mz_mod
 
 -- Logical operators
 mz_rarrow  = Op "->"  
@@ -311,36 +324,52 @@ mz_larrow  = Op "<-"
 mz_lrarrow = Op "<->" 
 mz_not     = Op "not" 
 mz_or      = Op "\\/" 
-mz_xor     = Op "xor" 
-(->.)  = Bi mz_rarrow  -- ^ @->@
-(/\.)  = Bi mz_and     -- ^ @/\@
-(<-.)  = Bi mz_larrow  -- ^ @<-@
-(<->.) = Bi mz_lrarrow -- ^ @<->@
-not_   = U  mz_not     -- ^ @not@
-(\/.)  = Bi mz_or      -- ^ @\/@
-_xor_  = Bi mz_xor     -- ^ @xor@
+mz_xor     = Op "xor"
+-- | @->@
+(->.)  = Bi mz_rarrow
+-- | @\/\\@
+(/\.)  = Bi mz_and 
+-- | @<-@
+(<-.)  = Bi mz_larrow
+-- | @<->@
+(<->.) = Bi mz_lrarrow
+-- | @not@
+not_   = U  mz_not
+-- | @\\\/@
+(\/.)  = Bi mz_or
+-- | @xor@
+_xor_  = Bi mz_xor
 
 -- Set operators
-mz_range     = Op ".."       
-mz_diff      = Op "diff"     
-mz_in        = Op "in"       
+mz_range     = Op ".."
+mz_diff      = Op "diff"
+mz_in        = Op "in"
 mz_intersect = Op "intersect"
-mz_subset    = Op "subset"   
-mz_superset  = Op "superset" 
-mz_symdiff   = Op "symdiff"  
-mz_union     = Op "union"    
-(--.)        = Bi mz_range      -- ^ @..@
-_diff_       = Bi mz_diff       -- ^ @diff@
-_in_         = Bi mz_in         -- ^ @in@
-_intersect_  = Bi mz_intersect  -- ^ @intersect@
-_subset_     = Bi mz_subset     -- ^ @subset@
-_superset_   = Bi mz_superset   -- ^ @superset@
-_symdiff_    = Bi mz_symdiff    -- ^ @symdiff@
-_union_      = Bi mz_union      -- ^ @union@
+mz_subset    = Op "subset"
+mz_superset  = Op "superset"
+mz_symdiff   = Op "symdiff"
+mz_union     = Op "union"
+-- | @..@
+(--.)        = Bi mz_range
+-- | @diff@
+_diff_       = Bi mz_diff
+-- | @in@
+_in_         = Bi mz_in
+-- | @intersect@
+_intersect_  = Bi mz_intersect
+-- | @subset@
+_subset_     = Bi mz_subset
+-- | @superset@
+_superset_   = Bi mz_superset
+-- | @symdiff@
+_symdiff_    = Bi mz_symdiff
+-- | @union@
+_union_      = Bi mz_union
 
 -- Array operators
 mz_pp = Op "++"
-(++.) = Bi mz_pp -- ^ @++@
+-- | @++@
+(++.) = Bi mz_pp
 
 -- | Returns the precedence of certain defined operators. This function is used for 
 -- reducing the parentheses when printing an expression.

@@ -12,7 +12,7 @@ With the use of this module, one can represent MiniZinc models in Haskell code. 
 on <http://www.minizinc.org/doc-lib/minizinc-spec.pdf the MiniZinc 2.1 spesification>.
 
 However, this module provides a low-level interface to the MiniZinc language. A more human friendly 
-interface is provided in 'Interfaecs.MZAST'.
+interface is provided in "Interfaces.MZAST".
 -}
 
 module Interfaces.MZASTBase (
@@ -40,16 +40,20 @@ module Interfaces.MZASTBase (
 -- | An abbreviation for the type of a represented MiniZinc model.
 type MZModel = [Item]
 
--- | Depresents MiniZinc items, the first-class entities of the MiniZinc language.
--- Variable, function, predicate, test and annotation declaration items are all 
--- represented with the 'Declare' constructor.
+-- | Represents MiniZinc items, the first-class entities of the MiniZinc language.
+-- Correspondence between MiniZinc items and the constructors of 'Item' values is not
+-- one-to-one:
+-- * Variable, function, predicate, test and annotation declaration items are all 
+--   represented with the 'Declare' constructor.
+-- * Extra 'Item' constructors for the representation of MiniZinc comments and empty
+--   lines.
 data Item 
   -- | Commented line
   = Comment String
   -- | Include item
   | Include Filename
   -- | A declaration item. Can represent a MiniZinc variable, predicate, test, function 
-  -- or annotation declaration. This is specified by the constructor's argument.
+  -- or annotation declaration. This is specified by the constructor\'s argument.
   | Declare Declaration
   -- | Assignment item. @Assign name exp@ represents the assignment of @exp@ to the variable @name@.
   | Assign Ident AnnExpr
@@ -70,7 +74,7 @@ data Item
 data AnnExpr = AnnExpr Expr [Annotation]
   deriving (Show, Eq)
 
--- | Transforms a 'Expr' to an 'AnnExpr' with an empty list of annotations.
+-- | Transforms an 'Expr' to an 'AnnExpr' with an empty list of annotations.
 toSimpleExpr :: Expr -> AnnExpr
 toSimpleExpr e = AnnExpr e []
 
@@ -81,15 +85,8 @@ stripExprOff (AnnExpr e ans) = e
 -- | Completes a declaration with a list of annotations (possibly empty) and maybe a body.
 data Declaration = Declaration DeclarationSignature [Annotation] (Maybe AnnExpr)
   deriving (Show, Eq)
-{-
-data DeclarationG t a = DeclarationG DeclarationSignature [Annotation] (t a)
-  deriving (Show, Eq)
 
-class Foldable t => DeclarationG (t a) where
-  type DS (t a)
-  (=.) ::  -}
-
--- | Builds the representation of the signature of a variable, function, predicate, test
+-- | Used for the representation of the signature of a variable, function, predicate, test
 -- or annotation declaration.
 data DeclarationSignature = Variable Param 
                           | Predicate Ident [Param]
@@ -102,18 +99,18 @@ data DeclarationSignature = Variable Param
 data Expr
   -- | Represents the MiniZinc special variable @_@.
   = AnonVar
-  -- | A MiniZinc variable
+  -- | A MiniZinc variable.
   | Var Ident
-  -- | MiniZinc boolean value
+  -- | MiniZinc boolean value.
   | BConst Bool
-  -- | MiniZinc integer value
+  -- | MiniZinc integer value.
   | IConst Int
-  -- | MiniZinc float value
+  -- | MiniZinc float value.
   | FConst Float
-  -- | MiniZinc string value
+  -- | MiniZinc string value.
   | SConst String
-  -- | @SetLit literals@ translates to a MiniZinc set the elements of which are the 
-  -- represented expressions in the @literals@ list.
+  -- | @SetLit ls@ translates to a MiniZinc set the elements of which are the represented
+  -- expressions in the @ls@ list.
   | SetLit [Expr]
   -- | MiniZinc set comprehension. The first argument of the constructor represents the
   -- head expression of the comprehension, while the second represents the comprehension 
@@ -122,19 +119,19 @@ data Expr
   -- | MiniZinc 1-dimensional arrays defined with literals, similar to the 'SetLit' 
   -- constructor.
   | ArrayLit [Expr]
-  -- | MiniZinc 2-dimensional arrays defined with literals
+  -- | MiniZinc 2-dimensional arrays defined with literals.
   | ArrayLit2D [[Expr]]
   -- | MiniZinc array comprehension. Syntax similar to 'SetComp' constructor.
   | ArrayComp Expr CompTail
-  -- | Represents an array element. In @ArrayElem name is@, the argument @name@ is the 
-  -- identifier of the array and @is@ is the list of indexes that specify the desired 
-  -- element. The length of @is@ must be equal to the number of dimensions of the array.
+  -- | Represents an array element. In @ArrayElem name js@, the argument @name@ is the 
+  -- identifier of the array and @js@ is the list of indexes that specify the desired 
+  -- element. The length of @js@ must be equal to the number of dimensions of the array.
   | ArrayElem Ident [Expr]
-  -- | @Bi op exp1 exp2@ represents the MiniZinc expression that applies the binary 
-  -- operator @op@ on @exp1@ and @exp2@.
+  -- | @Bi op exp1 exp2@ represents the MiniZinc expression of the binary operator @op@
+  -- applied on @exp1@ and @exp2@.
   | Bi Op Expr Expr
-  -- | @U op exp1@ represents the MiniZinc expression that applies the unary operator 
-  -- @op@ on @exp1@.
+  -- | @U op exp@ represents the MiniZinc application of the unary operator (represented
+  -- by) @op@ on the expression (represented by) @exp@.
   | U Op Expr
   -- | @Call name args@ represents a call to the function, predicate or test @name@ on 
   -- arguments @args@. A call to an annotation is represented by the 'Annotation' type.
@@ -146,7 +143,7 @@ data Expr
   -- pairs are inserted before the final @else@ expression.
   | ITE [(Expr, Expr)] Expr
   -- | @let-in@ expression. In @Let items expr@, the elements of @items@ represent the 
-  -- bindings in the @expr@ expression. Although @items@ is of type '[Item]', only 
+  -- bindings in the @expr@ expression. Although @items@ is of type @[Item]@, only 
   -- 'Item' values constructed by 'Declare' and 'Constraint' will translate to a 
   -- syntactically correct MiniZinc let expression.
   | Let [Item] Expr
@@ -196,7 +193,7 @@ data GArguments = A Annotation
   deriving (Show, Eq)
 
 -- | Represents a call to a MiniZinc annotation. First argument represents the 
--- annotation's name and second argument contains the annotation's arguments, if any.
+-- annotation\'s name and second argument contains the annotation's arguments, if any.
 data Annotation = Annotation Ident [GArguments]
   deriving (Show, Eq)
 
