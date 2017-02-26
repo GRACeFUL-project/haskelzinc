@@ -16,3 +16,7 @@ cabal.sandbox.config
 # MiniZinc models
 *.mzn
 *.dzn
+*.fzn
+
+# Local specific
+HZconf/*
