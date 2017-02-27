@@ -146,21 +146,24 @@ printParensExpr n e@(Bi op _ _)
 printParensExpr _ e  = printExpr e
 
 printType :: Type -> Doc
-printType Bool           = text "bool"
-printType Float          = text "float"
-printType Int            = text "int"
-printType String         = text "string"
-printType (Set t)        = text "set of" <+> printType t
-printType (Array ts ti)  = text "array" <> brackets (commaSep printType ts) 
-                           <+> text "of" <+> printTypeInst ti
-printType (List ti)      = text "list of" <+> printTypeInst ti
-printType (Opt t)        = text "opt" <+> printType t
-printType (Ann)          = text "ann"
+printType Bool            = text "bool"
+printType Float           = text "float"
+printType Int             = text "int"
+printType String          = text "string"
+printType (Set t)         = text "set of" <+> printType t
+printType (Array ts i ty) = text "array" <> brackets (commaSep printType ts) 
+                            <+> text "of" <+> printTypeInst (i, ty)
+printType (List i ty)     = text "list of" <+> printTypeInst (i, ty)
+printType (Opt t)         = text "opt" <+> printType t
+printType (Ann)           = text "ann"
+printType (CT expr)       = printExpr expr
+{-
 printType (Range e1 e2)  = printParensExpr (opPrec (Op "..")) e1 
                            <+> text ".." 
                            <+> printParensExpr (opPrec (Op "..")) e2
 printType (Elems es)     = braces $ commaSepExprs es
 printType (ACT name)     = text name
+-}
 printType (VarType name) = text "$" <> text name
 
 printCompTail :: CompTail -> Doc
@@ -218,10 +221,10 @@ printParam (i, t, n) = printTypeInst (i, t) <> colon <+> text n
 -- type is Array or String, it does not print the inst, since these types are of fixed
 -- inst. Same with @Ann@ type, but for other reasons.
 printTypeInst :: (Inst, Type) -> Doc
-printTypeInst (_, t@(Array _ _)) = printType t
-printTypeInst (_, String)        = printType String
-printTypeInst (_, Ann)           = printType Ann
-printTypeInst (i, t)             = printInst i <+> printType t
+printTypeInst (_, t@(Array _ _ _)) = printType t
+printTypeInst (_, String)          = printType String
+printTypeInst (_, Ann)             = printType Ann
+printTypeInst (i, t)               = printInst i <+> printType t
 
 -- Horizontally concatinates Docs while also putting a comma-space (", ") in between
 commaSepDoc :: [Doc] -> Doc

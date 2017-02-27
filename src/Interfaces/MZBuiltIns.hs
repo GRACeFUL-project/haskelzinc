@@ -20,7 +20,7 @@ module Interfaces.MZBuiltIns (
   -- ** Logical operators
   not_, (->.), (/\.), (<-.), (<->.), (\/.), _xor_,
   -- ** Set operators
-  (--.), _diff_, _in_, _intersect_, _subset_, _superset_, _symdiff_, _union_,
+  (...), _diff_, _in_, _intersect_, _subset_, _superset_, _symdiff_, _union_,
   -- ** Array operators
   (++.),
   -- * MiniZinc built-in calls
@@ -94,7 +94,10 @@ module Interfaces.MZBuiltIns (
 
 import Interfaces.MZASTBase
 
-call :: Ident -> [Expr] -> Expr
+-- | Used to represent a call to a funtion, test or predicate.
+call :: Ident  -- ^ The name of the called operation
+     -> [Expr] -- ^ A representation of the arguments
+     -> Expr
 call name = Call name . map toSimpleExpr
 
 -- MiniZinc calls
@@ -264,7 +267,7 @@ mz_mzn_version_to_string = call "mzn_version_to_string"
 infixl 3 /\., <->., <-., ->., \/., `_xor_`
 infix 4 <., <=., >., >=., =.=, !=.
 infix 5 `_in_`, `_subset_`, `_superset_`
-infixl 6 `_union_`, `_diff_`, `_symdiff_`, --.
+infixl 6 `_union_`, `_diff_`, `_symdiff_`, ...
 infixl 7 +., -.
 infixl 8 *., /., `_div_`, `_mod_`, `_intersect_`, ++.
 
@@ -350,7 +353,7 @@ mz_superset  = Op "superset"
 mz_symdiff   = Op "symdiff"
 mz_union     = Op "union"
 -- | @..@
-(--.)        = Bi mz_range
+(...)        = Bi mz_range
 -- | @diff@
 _diff_       = Bi mz_diff
 -- | @in@

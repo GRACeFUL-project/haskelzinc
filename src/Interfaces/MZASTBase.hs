@@ -159,20 +159,24 @@ data Type
   | String
   -- | @Set t@ translates to @set of t@.
   | Set Type
-  -- | @Array ts ti@ translates to @array [ts] of ti@. 
-  | Array [Type] TypeInst
+  -- | @Array ts inst ty@ translates to @array [ts] of inst ty@. 
+  | Array [Type] Inst Type
   -- | The list type
-  | List TypeInst
+  | List Inst Type
   -- | Option type
   | Opt Type
   -- | Annotation type
   | Ann
+  -- | A constrainted type. The 'Expr' argument should represent a MiniZinc finite set.
+  | CT Expr
+  {-
   -- | A constrained type using the integer range. @Range a b@ translates to @a .. b@.
   | Range Expr Expr
   -- | A constrained type using set literals.
   | Elems [Expr]
   -- | A constrained type using a previously defined set parameter.
   | ACT Ident
+  -}
   -- | Type variable
   | VarType Ident
   deriving (Show, Eq)

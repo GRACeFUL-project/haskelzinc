@@ -1,6 +1,5 @@
 *.swo
 *.swp
-dist
 
 # Hackage specific
 # Documentation
@@ -12,6 +11,7 @@ notes.txt
 # Cabal
 .cabal-sandbox/
 cabal.sandbox.config
+dist
 
 # MiniZinc models
 *.mzn
@@ -19,4 +19,4 @@ cabal.sandbox.config
 *.fzn
 
 # Local specific
-HZconf/*
+HZconf/conf.txt

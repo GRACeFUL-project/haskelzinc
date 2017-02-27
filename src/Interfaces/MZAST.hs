@@ -21,9 +21,9 @@ module Interfaces.MZAST (
   -- ** Generator calls
   forall,
   -- * Types
-  (...), ($$),
+  ctvar, ($$),
   -- * Annotations
-  (|:), isAnnotated,
+  (|:),
   module Interfaces.MZASTBase
 ) where
 
@@ -60,16 +60,23 @@ output = Output . ArrayLit
 constraint :: Expr -> Item
 constraint e = Constraint $ AnnExpr e []
 
--- Represents a solve item in the MiniZinc model.
+-- | Represents a solve item in the MiniZinc model. Used together with one of 'satisfy',
+-- 'minimize' or 'maximize' functions.
 solve :: Solve -> Item
 solve = Solve
 
+-- | Finilizes the representation of a non-annotated solve item. Use '|:' operator to
+-- annotate it.
 satisfy :: Solve
 satisfy = Satisfy []
 
+-- | Finilizes the representation of a non-annotated solve item. Use '|:' operator to
+-- annotate it.
 minimize :: Expr -> Solve
 minimize = Minimize []
 
+-- | Finilizes the representation of a non-annotated solve item. Use '|:' operator to
+-- annotate it.
 maximize :: Expr -> Solve
 maximize = Maximize []
 
@@ -186,15 +193,15 @@ string = SConst
 
 -- | Used to represent a MiniZinc set of integers.
 intSet :: [Int] -> Expr
-intSet = SetLit . (map IConst)
+intSet = mapSet IConst
 
 -- | Used to represent a MiniZinc set of floats.
 floatSet :: [Float] -> Expr
-floatSet = SetLit . (map FConst)
+floatSet = mapSet FConst
 
 -- | Used to represent a MiniZinc set of strings.
 stringSet :: [String] -> Expr
-stringSet = SetLit . (map SConst)
+stringSet = mapSet SConst
 
 -- | Used to represent a MiniZinc set. In @mapSet f ls@, the elements of the MiniZinc 
 -- set are represented by the resulting 'Expr's after applying @f@ on the elements of 
@@ -255,23 +262,42 @@ array = ArrayLit
 array2 :: [[Expr]] -> Expr
 array2 = ArrayLit2D
 
--- Array comprehension
+-- Comprehension
 
 infix 2 #/., #|.
-
+-- | Creates the representation of a MiniZinc set comprehension. In @expr #/. cts@, 
+-- @expr@ represents the head expression of the set comprehension and @cts@ is a list of 
+-- its generator expressions' representations.
+-- 
+-- Example: 
+-- 
+-- >>> int 2 *. var "i" #/. [["i"] @@ int 0 ... int 5]
+-- {2 * i | i in 0 .. 5}
 (#/.) :: Expr -> [CompTail] -> Expr
 e #/. cts = SetComp e (mergeCompTails cts)
 
+-- | Similar to '#/.' for array comprehensions.
 (#|.) :: Expr -> [CompTail] -> Expr
 e #|. cts = ArrayComp e (mergeCompTails cts)
 
 infix 9 !.
-(!.) :: Ident -> [Expr] -> Expr
+-- | Represents a MiniZinc array access.
+-- 
+-- Exaamples:
+-- 
+-- >>> "array"!.[int 1]
+-- array[1]
+-- 
+-- >>> "matrix"!.[var "i", var "j"]
+-- matrix[i,j]
+(!.) :: Ident  -- ^ Array's name
+     -> [Expr] -- ^ Indexes of the desired element
+     -> Expr
 (!.) = ArrayElem
 
--- Comprehension
--- comprehension tail "i in expr"
-infix 4 @@
+-- | Represents a comprehension tail with a single generator expression. See the example 
+-- in the documentation for '#/.'.
+infix 5 @@
 (@@) :: [Ident] -> Expr -> CompTail
 (@@) vars e = ([(vars, e)], Nothing)
 
@@ -288,34 +314,70 @@ decideWhere Nothing   (Just e)  = Just e
 decideWhere (Just e)  Nothing   = Just e
 decideWhere (Just e1) (Just e2) = Just $ Bi (Op "/\\") e1 e2
 
-infix 6 `where_`
+infix 4 `where_`
+-- | Adds a representation for a MiniZinc @where@ clause in a generator expression.
+--
+-- Example:
+--
+-- >>> var "i" *. var "j" #/. [["i", "j"] @@ int 0 ... int 5 `where_` (var "i" !=. var "j")]
+-- {i * j | i, j in 0 .. 5 where i != j}
 where_ :: CompTail -> Expr -> CompTail
 where_ (gs, _) e = (gs, Just e)
 
 -- Generator calls
 -- CompTail list makes no sense to be empty
-forall :: [CompTail] -> Ident -> Expr -> Expr
+-- | Used for the representation of a generator call.
+--
+-- Examples:
+--
+-- >>> forall [["i"] @@ var "S", ["j"] @@ var "S"] "sum" ("x"!.[var"i", var "j"]) =.= var "y"
+-- sum(i in S, j in S) (x[i, j]) = y
+--
+-- >>> forall [["c"] @@ var "C"] "forall" (
+-- >>>     forall [["s"] @@ var "S"] "sum" (mz_bool2int["bs"!.[var "s"] =.= var "c"])
+-- >>> =.= "result"!.[var "c"])
+-- forall(c in C) (sum(s in S) (bool2int(bs[s] = c)) = result[c])
+
+forall :: [CompTail] -- ^ Generator expressions' representation
+       -> Ident      -- ^ The name of the called operation
+       -> Expr       -- ^ The head expression of the underlying array comprehension
+       -> Expr
 forall cts name e = GenCall name (mergeCompTails cts) e
 
--- Types
-infix 3 ...
-(...) :: Expr -> Expr -> Type
-(...) = Range
+-- Constrained types
+-- | Represents a constrained type defined by a set parameter.
+--
+-- Example:
+--
+-- >>> declare $ variable Dec Int "onetwothree" =. intSet [1, 2, 3]
+-- var int: onetwothree = {1, 2, 3};
+-- 
+-- >>> declare $ variable Dec (ctvar "onetwothree") "x"
+-- var onetwothree: x;
+ctvar :: Ident -> Type
+ctvar = CT . var
 
+-- | Represents a type variable.
 ($$) :: Ident -> Type
 ($$) = VarType
 
 -- Auxiliary types for if-then-else expressions
 
+-- | Used together with 'then_' and 'elseif_' \/ 'else_' to represent an if-then-else 
+-- MiniZinc expression. In case of multiple alternatives, use 'elseif_', but the last 
+-- alternative should be represented with the use of 'else_'.
 if_ :: Expr -> (Expr -> [(Expr, Expr)])
 if_ e = \e1 -> [(e, e1)]
 
+-- | cf. 'if_'
 then_ :: (Expr -> [(Expr, Expr)]) -> Expr -> [(Expr, Expr)]
 then_ f e = f e
 
+-- | cf. 'if_'
 elseif_ :: [(Expr, Expr)] -> Expr -> (Expr -> [(Expr, Expr)])
 elseif_ es e = \e1 -> es ++ [(e, e1)]
 
+-- | cf. 'if_'
 else_ :: [(Expr, Expr)] -> Expr -> Expr
 else_ = ITE
 
