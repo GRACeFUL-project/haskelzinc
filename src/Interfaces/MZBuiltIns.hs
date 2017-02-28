@@ -25,7 +25,7 @@ module Interfaces.MZBuiltIns (
   (++.),
   -- * MiniZinc built-in calls
   -- | All functions, predicates, tests and annotations are named after their MiniZinc 
-  -- name prefixed by 'mz_'. Operators' representation follows a different convention.
+  -- name prefixed by @mz_@. Operators' representation follows a different convention.
   
   -- ** Arithmetic calls
   mz_abs, mz_arg_max, mz_arg_min, mz_max, mz_min, mz_pow, mz_product, mz_sqrt, mz_sum,

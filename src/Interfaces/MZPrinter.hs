@@ -1,8 +1,6 @@
 {-|
 Module      : MZPrinter
 Description : MiniZinc pretty-printer
-Copyright   : (c) Some Guy, 2013
-                  Someone Else, 2014
 License     : BSD3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
@@ -14,8 +12,8 @@ This module provides a pretty-printer of MiniZinc models represented by the
 module Interfaces.MZPrinter(
   printModel,
   printItem,
-  printExpr,
-  printAnnExpr,
+--  printAnnExpr,
+--  printExpr,
   layout
 ) where
 
@@ -25,7 +23,13 @@ import Interfaces.MZASTBase
 import Interfaces.MZBuiltIns (opPrec)
 
 layout :: MZModel -> String
-layout = render . printModel
+layout = renderStyle myStyle . printModel
+
+myStyle = Style {
+  mode = PageMode,
+  lineLength = 500,
+  ribbonsPerLine = 1.5
+}
   
 -- | Prints the represented MiniZinc model. Essentially, this function applies 
 -- 'printItem' on each element of the specified model.
@@ -68,7 +72,9 @@ printDeclarationSig (Annotation' name ps) = text "annotation"
                                             <+> text name
                                             <> parens (printParams ps)
 
--- Taking precedence into account
+-- | Translates the representation of an annotated MiniZinc expression into MiniZinc 
+-- code. Takes into account MiniZinc operators' precedence to avoid unnecessary 
+-- parentheses.
 printAnnExpr :: AnnExpr -> Doc
 printAnnExpr (AnnExpr e [])             = printExpr e
 printAnnExpr (AnnExpr e@(Bi _ _ _) ans) = parens (printExpr e) 
@@ -78,7 +84,9 @@ printAnnExpr (AnnExpr e@(U _ _) ans)    = parens (printExpr e)
 printAnnExpr (AnnExpr e ans)            = printExpr e 
                                           <+> printAnnotations ans
 
--- | Prints a represented MiniZinc expression. Examples:
+-- | Prints a represented MiniZinc expression. Takes into account MiniZinc operators' precedence to avoid unnecessary parentheses.
+-- 
+-- Examples:
 -- 
 -- >>> printExpr $ SetComp (Bi Times (IConst 2) (Var "i")) ([(["i"], Range (IConst 1) (IConst 5))], Nothing)
 -- {2 * i | i in 1..5}
@@ -101,6 +109,7 @@ printExpr (SetComp e ct)      = braces ( printExpr e
                                 <+> text "|" 
                                 <+> printCompTail ct )
 printExpr (ArrayLit es)       = brackets $ commaSepExprs es
+-- printExpr (ArrayLit es)       = printArrayElems printExpr es
 printExpr (ArrayLit2D ess)    = 
   brackets (foldl1 ($+$) (map (\x -> text "|" <+> commaSepExprs x) ess) <> text "|")
 printExpr (ArrayComp e ct)    = brackets (hang (printExpr e <+> text "|") 0 (printCompTail ct))
@@ -192,7 +201,10 @@ printAnnotation (Annotation name args)
        xs -> printArgs printGArg args
 
 printArgs :: (a -> Doc) -> [a] -> Doc
-printArgs f args = cat $ putParens (punctuateBefore comma (map f args))
+printArgs f args = fcat $ putParens (punctuateBefore comma (map f args))
+
+printArrayElems :: (a -> Doc) -> [a] -> Doc
+printArrayElems f args = fcat $ putBrackets (punctuateBefore comma (map f args))
 
 printGArg :: GArguments -> Doc
 printGArg (A a) = printAnnotation a
@@ -228,7 +240,7 @@ printTypeInst (i, t)               = printInst i <+> printType t
 
 -- Horizontally concatinates Docs while also putting a comma-space (", ") in between
 commaSepDoc :: [Doc] -> Doc
-commaSepDoc = hsep . punctuate comma
+commaSepDoc = fsep . punctuate comma
 
 -- First, map a function to a list and produce a list of Docs and then apply commaSepDoc
 commaSep :: (a -> Doc) -> [a] -> Doc
@@ -267,11 +279,17 @@ escapeChar '\a' = "\\a"
 escapeChar c = [c]
 
 putParens :: [Doc] -> [Doc]
-putParens []  = []
-putParens [x] = [parens x]
-putParens xs  = let f = head xs
-                    l = last xs
-                in text "(" <> f : (init (tail xs)) ++ [l <> text ")"]
+putParens = putBeforeAfter "(" ")"
+
+putBrackets :: [Doc] -> [Doc]
+putBrackets = putBeforeAfter "[" "]"
+
+putBeforeAfter :: String -> String -> [Doc] -> [Doc]
+putBeforeAfter s t []  = []
+putBeforeAfter s t [x] = [text s <> parens x <> text t]
+putBeforeAfter s t xs  = let f = head xs
+                             l = last xs
+                         in text s <> f : (init (tail xs)) ++ [l <> text t]
 
 punctuateBefore :: Doc -> [Doc] -> [Doc]
 punctuateBefore _ []     = []

@@ -6,6 +6,9 @@
    representations of MiniZinc models.
  - Module Interfaces.MZBuiltIns added. Contains predefined MiniZinc operators, functions,
    tests, predicates and annotations.
+ - Module Interfaces.FZSolutionParser provides parsers to be used in creating custom
+   solutions' parsers, in case a MiniZinc output item alters the default format of the
+   solutions.
  - Compatibility with GHC 8 tested (and passed)
 
 0.2.0.0

@@ -12,12 +12,10 @@ MiniZinc model and getting back the solutions in Haskell values.
 -}
 
 module Interfaces.MZinHaskell (
-  module Interfaces.MZAST,
-  module Interfaces.FZSolutionParser,
-  module Interfaces.MZPrinter,
   iTestModel,
   testModel,
   testModelWithData,
+  testModelWithParser,
   writeData
 ) where
 
@@ -25,10 +23,11 @@ import Data.List
 import System.Process
 import System.FilePath
 import Interfaces.MZAuxiliary
-import Interfaces.MZAST
+import Interfaces.MZASTBase (MZModel, Item(Empty, Comment))
 import Interfaces.MZPrinter
-import Interfaces.FZSolutionParser
+import Interfaces.FZSolutionParser (Solution, tryDefaultSolutions, getSolutions)
 import Text.Parsec.Error
+import Text.Parsec.String (Parser)
 
 -- | Same as `testModel` but accepts one more argument for the data of the model.
 testModelWithData
@@ -66,32 +65,50 @@ iTestModel m = do
       path = joinPath [dirpath, name]
   testModel m path solver ns
 
--- | Runs a model and parses its solution(s).
+-- | Runs a model and parses its solution(s). Use this function if the model contains no
+-- @Output@ item, so that the solutions have the default format.
 testModel :: MZModel -- ^ The model
   -> FilePath        -- ^ The path of the file in which the FlatZinc translation will be printed (without ".fzn" extension)
   -> Int             -- ^ The chosen solver (@1@ for the G12/FD built-in solver or @2@ for choco3)
   -> Int             -- ^ The number of solutions to be returned
   -> IO (Either ParseError [Solution])
-testModel m mpath s n = do
+testModel = testModelWithParser tryDefaultSolutions
+
+-- | Runs a model and parses its solution(s) with the use of the specified parser. Use
+-- this function if the model outputs its solutions in a different format than the 
+-- default.
+testModelWithParser :: (Int -> Parser [Solution]) -- ^ The parser with which solutions will be
+                                         -- parsed
+                    -> MZModel
+                    -> FilePath          -- ^ The path of the file in which the FlatZinc 
+                                         -- translation will be printed (without ".fzn" 
+                                         -- extension)
+                    -> Int               -- ^ The chosen solver (@1@ for the G12/FD 
+                                         -- built-in solver or @2@ for choco3)
+                    -> Int               -- ^ The number of solutions to be returned
+                    -> IO (Either ParseError [Solution])
+testModelWithParser p m mpath s n = do
   configuration <- parseConfig
   let mz_dir = case minizinc configuration of
                 ""  -> addTrailingPathSeparator "."
                 str -> addTrailingPathSeparator str
   let mfzn = (spaceFix $ mz_dir ++ "mzn2fzn") ++ " -O- - -o " ++ (spaceFix (mpath ++ ".fzn"))
   let flatzinc = spaceFix $ mz_dir ++ "flatzinc"
-  -- Uncomment line below for debugging only
-  -- writeFile (mpath ++ ".mzn") (Prelude.show $ printModel m)
+  -- Uncomment line below for debugging
+  writeFile (mpath ++ ".mzn") (Prelude.show $ printModel m)
   readCreateProcess (shell mfzn) (layout m)
   res <- case s of
            1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn") ""
-           --1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn > " ++ mpath ++ ".fzn.results.txt") ""
+           -- 1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn > " ++ mpath ++ ".results.txt") ""
            2 -> let antlr       = antlr_path configuration
                     chocoParser = chocoparser configuration
                     chocoSolver = chocosolver configuration
                 in readCreateProcess (shell $ "java -cp ." ++ (intercalate [searchPathSeparator] [chocoSolver, chocoParser, antlr]) ++ " org.chocosolver.parser.flatzinc.ChocoFZN -a " ++ mpath ++ ".fzn") ""
-                --in readCreateProcess (shell $ "java -cp ." ++ (intercalate [searchPathSeparator] [chocoSolver, chocoParser, antlr]) ++ " org.chocosolver.parser.flatzinc.ChocoFZN -a " ++ mpath ++ ".fzn > " ++ mpath ++ ".fzn.results.txt") ""
-  return $ getSolution n res
-  --getSolutionFromFile (mpath ++ ".fzn.results.txt") n
+                -- in readCreateProcess (shell $ "java -cp ." ++ (intercalate [searchPathSeparator] [chocoSolver, chocoParser, antlr]) ++ " org.chocosolver.parser.flatzinc.ChocoFZN -a " ++ mpath ++ ".fzn > " ++ mpath ++ ".results.txt") ""
+  -- Uncomment lines below for debugging
+  -- writeFile (mpath ++ ".results.txt") res
+  -- getSolutionsFromFile (mpath ++ ".fzn.results.txt") n
+  return $ getSolutions p n res
 
 -- | Writes the model's data file. The 'MZModel' of the argument must contain
 -- only `Assignment` items.

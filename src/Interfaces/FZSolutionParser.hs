@@ -15,12 +15,18 @@ format of the solver's output.
 -}
 
 module Interfaces.FZSolutionParser (
-  getSolution,
-  printSolution,
-  getSolutionFromFile,
-  printSolutionFromFile,
-  Solution,
-  MValue(..)
+  MValue(..),
+  -- * Parsing values
+  valueM,
+  intM, boolM, floatM, stringM, setM,
+  setRange, arrayM,
+  -- * Solutions
+  simpleVarName, quotedVarName, varName,
+  nameValuePair, defaultNameValuePair,
+  unsat, defaultSolution, defaultSolutions,
+  trySolutions, tryDefaultSolutions,
+  getSolutions, getDefaultSolutions, getDefaultSolutionsFromFile,
+  Solution
 ) where
 
 import Data.Char
@@ -48,31 +54,24 @@ data MValue = MError String
   deriving Show
   --deriving (Show, Generic, NFData)
 
--- | Returns either a parse error or a list of solutions of the constraint model, parsed from 
--- the file where they are printed. The length of the list is specified by the second argument 
--- of the function.
-getSolutionFromFile :: FilePath -> Int -> IO (Either P.ParseError [Solution])
-getSolutionFromFile path n = do
+-- | Returns either a parse error or a list of solutions of the constraint model, parsed 
+-- from the file where they are printed. The length of the list is specified by the 
+-- second argument of the function.
+getDefaultSolutionsFromFile :: FilePath -> Int -> IO (Either P.ParseError [Solution])
+getDefaultSolutionsFromFile path n = do
   output <- readFile path
-  return $ runParser (trySolutions n) output
+  return $ runParser (tryDefaultSolutions n) output
 
--- | Prints either a parse error or a list of solutions of the constraint model parsed from 
--- a file where they are printed. The length of the list is sepcified by the second argument 
--- of the function.
-printSolutionFromFile :: Int -> FilePath -> IO ()
-printSolutionFromFile n path = do
-  output <- readFile path
-  print $ runParser (trySolutions n) output
-
--- | Same as @getSolutionFromFile@ but parses the string argument of the function instead
+-- | Same as 'getSolutionFromFile' but parses the string argument of the function instead
 -- of the contents of a file.
-getSolution :: Int -> String -> Either P.ParseError [Solution]
-getSolution n = runParser (trySolutions n)
+getDefaultSolutions :: Int -> String -> Either P.ParseError [Solution]
+getDefaultSolutions = getSolutions tryDefaultSolutions
 
--- | Same as @printSolutionFromFile@ but parses the string argument of the function instead
--- of the contents of a file.
-printSolution :: Int -> String -> IO ()
-printSolution n = print . runParser (trySolutions n)
+-- | A custom version of 'getDefaultSolutions'. This function accepts a custom parser to 
+-- parse the solutions. Used when a MiniZinc @output@ item is present in the model, which
+-- alters the default output format of the solver.
+getSolutions :: (Int -> Parser [Solution]) -> Int -> String -> Either P.ParseError [Solution]
+getSolutions p n = runParser (p n)
 
 -- Auxiliary definitions
 digit :: Parser Char
@@ -120,54 +119,118 @@ try :: Parser a -> Parser a
 try = P.try
 -----------------------
 
+-- Defaults
+unsatMSG = "=====UNSATISFIABLE====="  -- Unsatisfiable-model message
+eoSMSG = "=========="                 -- End-of-solutions message
+eosMSG = "----------"                 -- End-of-solution message
+-----------------------
+
 runParser :: Parser a -> String -> Either P.ParseError a
 runParser p = parse (p <* eof) ""
 
-trySolutions :: Int -> Parser [Solution]
-trySolutions n = (try (takeSolutions n) <|> (unsat >> return [[]]))
+-- | @tryDefaultSolutions n@ tries to parse the first @n@ solutions. If it succeeds, 
+-- then it returns them in a list. Else, tries 'unsat' and returns an empty list.
+tryDefaultSolutions :: Int -> Parser [Solution]
+tryDefaultSolutions = trySolutions defaultSolutions unsat
 
+-- | @trySolutions p1 p2 n@ tries to parse the first @n@ solutions (by applying parser 
+-- @p1@) and return them in a list. If it fails, tries to parse an /Unsatisfiable/ message
+-- (by applying @p2@) and returns an empty list. 
+-- 
+-- @trySolutions p1 p2 0@ will try to parse and return all solutions.
+trySolutions :: Parser [Solution] -- Custom FlatZinc solutions parser
+             -> Parser String     -- Custom /Unsatisfiable/ message parser
+             -> Int               -- Number of solutions to be returned
+             -> Parser [Solution]
+trySolutions p1 p2 0 = try $ p1 <|> (p2 >> return [[]])
+trySolutions p1 p2 n = try $ (take n <$> p1) <|> (p2 >> return [[]])
+
+-- | Parses the default message for a model with no solutions.
+--
+-- @=====UNSATISFIABLE=====@
 unsat :: Parser String
-unsat = skipMany comment *> (string "=====UNSATISFIABLE=====") <* endOfLine <* many comment
+unsat = skipMany comment *> (string unsatMSG) <* endOfLine <* many comment
 
 takeSolutions :: Int -> Parser [Solution]
-takeSolutions n = take n <$> (solutions)
+takeSolutions n = take n <$> defaultSolutions
 
-solutions :: Parser [Solution]
-solutions = manyTill solution (string "==========" >> endOfLine)
+-- | Parses the returned solutions.
+defaultSolutions :: Parser [Solution]
+defaultSolutions = manyTill defaultSolution (string eoSMSG *> endOfLine)
 
-solution :: Parser [(String, MValue)]
-solution = (many $ (skipMany comment) *> (assigned >>= return)) 
-                   <* string "----------" <* endOfLine
+-- | Parses a solution with the default output format from the set of returned solutions.
+defaultSolution :: Parser Solution
+defaultSolution =  P.many (comments *> defaultNameValuePair)
+                   <* string eosMSG <* endOfLine
 
+-- | Parses a comment in the returned solutions and returns the content.
 comment :: Parser String
-comment = char '%' *> (manyTill anyToken endOfLine) *> return ""
+comment = char '%' *> spaces *> (manyTill anyToken endOfLine)
 
-assigned :: Parser (String, MValue)
-assigned = do
+-- | Parses a sequence of commented lines in the returned solutions and returns their
+-- content.
+comments :: Parser String
+comments = unlines <$> P.many comment
+
+-- | Parses a MiniZinc variable name-value pair in a solution with the default output
+-- format.
+defaultNameValuePair :: Parser (String, MValue)
+defaultNameValuePair =  nameValuePair (spaces *> (string "=") <* spaces) 
+                     <* ((: []) <$> (char ';' *> endOfLine))
+
+-- | Used to parse a MiniZinc variable name-value pair in a solution.
+-- @nameValuePair s@ parses succesfully if sequential parsing of 'varName', @s@ and 
+-- 'valueM' is succesfull. Returns the MiniZinc name-value pair in a Haskell pair and 
+-- /forgets/ the result of parser @s@.
+nameValuePair :: Parser String -- ^ Value-name separator
+              -> Parser (String, MValue)
+nameValuePair p1 = do
   name <- varName
-  value <- valueParser
-  char ';'
-  endOfLine
+  p1
+  value <- valueM
   return (name, value)
 
+-- | Parses a conventional MiniZinc variable identifier. That is, a string of the form 
+-- @[A-Za-z][A-Za-z0-9_]*@.
+simpleVarName :: Parser String
+simpleVarName = do
+  first <- C.letter
+  rest <- P.many (C.alphaNum <|> char '_')
+  return (first : rest)
+
+-- | Parses a quoted MiniZinc identifier.
+quotedVarName :: Parser String
+quotedVarName = do
+  lq <- char '\''
+  name <- manyTill anyChar (char '\'')
+  return (lq : (name ++ "\'"))
+
+-- | Parses a MiniZinc variable name.
 varName :: Parser String
-varName = manyTill (C.noneOf "-=%") ((C.space >> char '=' >> C.space) <|> char '=')
+varName = simpleVarName <|> quotedVarName
 
-valueParser :: Parser MValue
-valueParser = try floatM <|> intM <|> boolM <|> (setM scalar) <|> (array scalar) <|> stringM
+-- | Parses a MiniZinc value. Tries 'floatM', 'intM', 'boolM', 'setM', 'arrayM' and
+-- 'stringM' in this order.
+valueM :: Parser MValue
+valueM = try floatM <|> intM <|> boolM <|> (setM scalar) <|> (arrayM scalar) <|> stringM
 
+-- | Parses a MiniZinc integer value.
 intM :: Parser MValue
 intM = MInt <$> int
 
+-- | Parses a MiniZinc boolean value.
 boolM :: Parser MValue
 boolM = MBool <$> bool
 
+-- | Parses a MiniZinc float value.
 floatM :: Parser MValue
 floatM = MFloat <$> float
 
+-- | Parses a MiniZinc string value.
 stringM :: Parser MValue
-stringM = MString <$> (many anyChar)
+stringM = MString <$> (string "\"" *> manyTill anyChar (string "\""))
 
+-- | Parses a MiniZinc set value.
 setM :: Parser MValue -> Parser MValue
 setM p = (MSet <$> S.fromDistinctAscList <$> (set p)) <|> setRange
 
@@ -188,6 +251,8 @@ float = do
 set :: Parser a -> Parser [a]
 set p = between (char '{') (char '}') (sepBy p (string "," >> spaces))
 
+-- | Parses a MiniZinc set value defined with the use of the MiniZinc range operator 
+-- (@..@).
 setRange :: Parser MValue
 setRange = MSet <$> S.fromDistinctAscList <$> do
   v1 <- int
@@ -195,8 +260,9 @@ setRange = MSet <$> S.fromDistinctAscList <$> do
   v2 <- int
   return (map MInt (take (v2 - v1 + 1) (iterate ((+) 1) v1)))
 
-array :: Parser MValue -> Parser MValue
-array p = do
+-- | Parses MiniZinc 1-dimensional or multi-dimensional array values.
+arrayM :: Parser MValue -> Parser MValue
+arrayM p = do
   string "array"
   manyTill anyChar (char '(')
   ls <- arraySizes 

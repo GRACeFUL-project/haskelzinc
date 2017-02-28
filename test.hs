@@ -24,14 +24,15 @@ module HaskelzincTests where
 import Interfaces.MZBuiltIns
 import Interfaces.MZinHaskell
 import Interfaces.MZAST
+import Interfaces.MZPrinter
 
 default (Int, Float)
 
 klara = declare $ 
   variable Dec Int "varname"
   |: mz_int_search[A $ mz_domain[], E $ intArray [1, 2, 3, 4]]
-  |: mz_bool_search[A $ mz_domain[], E $ intArray [1, 2, 3, 4]]
-  =. int 4;
+  |: mz_bool_search[A $ mz_domain[], E $ intArray [1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0]]
+  =. int 4
   
 small = mz_abs [int 3, int 5]
 big   =
@@ -45,6 +46,7 @@ unsatisfiable = [
   ]
   
 car = [
+  klara,
   (%) "Example taken from http://hakank.org/minizinc/car.mzn",
   newline,
   declare $ variable Par Int "nbCars" =. int 6,

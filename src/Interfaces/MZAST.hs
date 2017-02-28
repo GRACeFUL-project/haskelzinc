@@ -1,4 +1,21 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances #-}
+
+{-|
+Module      : MZAST
+Description : More human-friendly interface for "Interfaces.MZASTBase"
+Copyright   : (c) Some Guy, 2013
+                  Someone Else, 2014
+License     : GPL-3
+Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
+Stability   : experimental
+
+This module provides an interface for the MiniZinc 2.1 language.
+With the use of this module, one can represent MiniZinc models in Haskell code. The syntax is based 
+on <http://www.minizinc.org/doc-lib/minizinc-spec.pdf the MiniZinc 2.1 spesification>.
+
+However, this module provides a low-level interface to the MiniZinc language. A more human friendly 
+interface is provided in "Interfaces.MZAST".
+-}
  
 module Interfaces.MZAST (
   -- * Items
@@ -387,6 +404,7 @@ let_ = Let
 -- Annotations
 infixl 4 |:
 class Annotatable a where
+  -- | Adds a representation of an annotation to components that can be annotated.
   (|:) :: a -> Annotation -> a
   -- | Returns false if the given argument has an empty list of 'Annotation's, true otherwise.
   isAnnotated :: a -> Bool

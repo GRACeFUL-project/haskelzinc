@@ -1,35 +1,32 @@
 {-|
 Module      : MZASTBase
 Description : MiniZinc abstract syntax tree
-Copyright   : (c) Some Guy, 2013
-                  Someone Else, 2014
-License     : GPL-3
+License     : BSD3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
-This module provides an interface for the MiniZinc 2.1 language.
-With the use of this module, one can represent MiniZinc models in Haskell code. The syntax is based 
-on <http://www.minizinc.org/doc-lib/minizinc-spec.pdf the MiniZinc 2.1 spesification>.
-
-However, this module provides a low-level interface to the MiniZinc language. A more human friendly 
-interface is provided in "Interfaces.MZAST".
+This module defines a more human-friendly interface for the MiniZinc 2.1 language, on top
+of "Interfaces.MZASTBase". With the use of this module, one can represent MiniZinc models in Haskell code.
 -}
 
 module Interfaces.MZASTBase (
   MZModel,
+  -- * Items representation
   Item(..),
   DeclarationSignature(..),
   Declaration(..),
+  Solve(..),
+  Inst(..),
+  Type(..),
+  -- * Expressions representation
   AnnExpr(..),
   Expr(..),
   stripExprOff,
   toSimpleExpr,
-  Type(..),
   Op(..),
   GArguments(..),
   Annotation(..),
-  Inst(..),
-  Solve(..),
+  -- * Abbreviations
   CompTail,
   Generator,
   Param,
