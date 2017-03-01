@@ -46,19 +46,15 @@ unsatisfiable = [
   ]
   
 car = [
-  klara,
   (%) "Example taken from http://hakank.org/minizinc/car.mzn",
-  newline,
   declare $ variable Par Int "nbCars" =. int 6,
   declare $ variable Par Int "nbOptions" =. int 5,
   declare $ variable Par Int "nbSlots" =. int 10,
   declare $ variable Par (Set Int) "Cars" =. int 1 ... var "nbCars",
   declare $ variable Par (Set Int) "Options" =. int 1 ... var "nbOptions",
   declare $ variable Par (Set Int) "Slots" =. int 1 ... var "nbSlots",
-  newline,
   declare $ variable Par (Array[ctvar "Cars"] Dec Int) "demand"
     =. intArray [1, 1, 2, 2, 2, 2],
-  newline,
   declare $ variable Par (Array[ctvar "Options", ctvar "Cars"] Dec Int) "option"
     =. mz_array2d[var "Options", var "Cars", intArray [ 1, 0, 0, 0, 1, 1
                                                       , 0, 0, 1, 1, 0, 1
@@ -69,18 +65,13 @@ car = [
          ],
   declare $ variable Par (Array[ctvar "Options", CT $ int 1 ... int 2] Dec Int) "capacity"
     =. mz_array2d[var "Options", int 1 ... int 2, intArray [1, 2, 2, 3, 1, 3, 2, 5, 1, 5]],
-  newline,
   declare $ variable Dec (Array[ctvar "Options"] Dec Int) "optionDemand"
     =. forall [["j"] @@ var "Cars"] "sum" ("demand"!.[var "j"] *. "option"!.[var "i", var "j"]) #|. [["i"] @@ var "Options"],
-  newline,
   (%) "decision variables",
-  newline,
   declare $ variable Dec (Array[ctvar "Slots"] Dec (ctvar "Cars")) "slot",
   declare $ variable Dec (Array[ctvar "Options", ctvar "Slots"] Dec (CT $ int 0 ... int 1)) "setup",
-  newline,
   declare $ variable Dec Int "z" 
     =. forall [["s"] @@ var "Cars"] "sum" (var "s" *. "slot"!.[var "s"]),
-  newline,
   solve $ minimize (var "z"),
   constraint $
     forall [["c"] @@ var "Cars"] "forall" (
@@ -106,17 +97,13 @@ car = [
   
 evens = [
   (%) "Example taken from http://hakank.org/minizinc/evens.mzn",
-  newline,
   declare $ variable Par Int "square" =. int 4,
   declare $ variable Par Int "coin" =. int 10,
-  newline,
   declare $ variable Par (Set $ CT (int 1 ... var "square")) "S" =. int 1 ... var "square",
   declare $ variable Dec (Array [ctvar "S", ctvar "S"] Dec (CT $ int 0 ... int 1)) "x",
   declare $ variable Dec (Array [ctvar "S"] Dec Int) "n",
   declare $ variable Dec (Array [ctvar "S"] Dec Int) "m",
-  newline,
   solve $ satisfy,
-  newline,
   constraint $ 
     (forall [["i"] @@ var "S", ["j"] @@ var "S"] "sum" ("x"!.[var"i", var "j"]) =.= var "coin")
     /\. forall [["i"] @@ var "S"] "forall" (
@@ -128,20 +115,16 @@ evens = [
 
 divisor225 = [
   (%) "Example taken from http://hakank.org/minizinc/225_divisor.mzn",
-  newline,
   include "globals.mzn",
   declare $ variable Par Int "n" =. int 11,
-  newline,
   (%) "decision variables",
   declare $ variable Dec (Array [CT $ int 1 ... var "n"] Dec (CT $ int 0 ... int 1)) "x",
   declare $ variable Dec (CT $ int 1 ... mz_pow[int 10, var "n"] -. int 1) "y",
-  newline,
   declare $ predicate "to_num"[(Dec, Array [Int] Dec Int, "a"), (Dec, Int, "n")]
     =. Let [
       declare $ variable Dec Int "len" =. mz_length[var "a"]
     ]
     (var "n" =.= forall [["i"] @@ int 1 ... var "len"] "sum" (mz_pow[int 10, var "len" -. var "i"] *. "a"!.[var "i"])),
-    newline,
     solve $ minimize (var "y")
             |: mz_int_search[E $ var "x", A $ mz_first_fail[], A $ mz_indomain_min[], A $ mz_complete[]],
     constraint $ call "to_num" [var "x", var "y"] /\. (var "y") `_mod_` (int 225) =.= int 0
@@ -189,17 +172,13 @@ knapsack = [
   declare $ variable Par Int "n",
   declare $ variable Par (Set Int) "Items" =. int 1 ... var "n",
   declare $ variable Par Int "capacity",
-  newline,
   declare $ variable Par (Array [ctvar "Items"] Par Int) "profits",
   declare $ variable Par (Array [ctvar "Items"] Par Int) "weights",
-  newline,
   declare $ variable Dec (Set (ctvar "Items")) "knapsack",
-  newline,
   constraint $ 
     forall [["i"] @@ var "Items"] "sum" 
       (mz_bool2int[var "i" `_in_` var "knapsack"] *. "weights"!.[var "i"]) 
     <=. var "capacity",
-  newline,
   solve $ maximize 
     (forall [["i"] @@ var "Items"] "sum" 
       (mz_bool2int [var "i" `_in_` var "knapsack"] *. "profits"!.[Var "i"]))

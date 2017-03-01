@@ -22,12 +22,21 @@ import Data.List
 import Interfaces.MZASTBase
 import Interfaces.MZBuiltIns (opPrec)
 
+-- | The main function that is used to pretty print the MiniZinc model. The 'Text.PrettyPrint.Style' used is the following.
+-- 
+-- @
+-- Style {
+--   mode = PageMode,
+--   lineLength = 100,
+--   ribbonsPerLine = 1.5
+-- }
+-- @
 layout :: MZModel -> String
 layout = renderStyle myStyle . printModel
 
 myStyle = Style {
   mode = PageMode,
-  lineLength = 500,
+  lineLength = 100,
   ribbonsPerLine = 1.5
 }
   
@@ -38,7 +47,7 @@ printModel = foldr1 ($+$) . map printItem
 
 -- | Prints an 'Item' value.
 printItem :: Item -> Doc
-printItem (Empty)           = space
+-- printItem (Empty)           = space
 printItem (Comment str)     = text "%" <+> text str
 printItem (Include file)    = text "include" <+> doubleQuotes (text file) <> semi
 printItem (Declare p)       = printDeclaration p <> semi

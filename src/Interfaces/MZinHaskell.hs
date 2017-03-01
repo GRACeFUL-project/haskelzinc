@@ -23,7 +23,7 @@ import Data.List
 import System.Process
 import System.FilePath
 import Interfaces.MZAuxiliary
-import Interfaces.MZASTBase (MZModel, Item(Empty, Comment))
+import Interfaces.MZASTBase (MZModel, Item(Comment))
 import Interfaces.MZPrinter
 import Interfaces.FZSolutionParser (Solution, tryDefaultSolutions, getSolutions)
 import Text.Parsec.Error
@@ -38,7 +38,7 @@ testModelWithData
   -> Int      -- ^ Number of solutions to be returned
   -> IO (Either ParseError [Solution])
 testModelWithData model mdata path solver num = 
-  let fdata = [Comment "Model\'s data"] ++ mdata ++ [Empty]
+  let fdata = [Comment "Model\'s data"] ++ mdata ++ [Comment "End of model\'s data"]
   in testModel (fdata ++ model) path solver num
 
 -- | Same as `testModel`, but interactive.
@@ -66,7 +66,7 @@ iTestModel m = do
   testModel m path solver ns
 
 -- | Runs a model and parses its solution(s). Use this function if the model contains no
--- @Output@ item, so that the solutions have the default format.
+-- @output@ item, so that the solutions have the default format.
 testModel :: MZModel -- ^ The model
   -> FilePath        -- ^ The path of the file in which the FlatZinc translation will be printed (without ".fzn" extension)
   -> Int             -- ^ The chosen solver (@1@ for the G12/FD built-in solver or @2@ for choco3)
@@ -79,7 +79,7 @@ testModel = testModelWithParser tryDefaultSolutions
 -- default.
 testModelWithParser :: (Int -> Parser [Solution]) -- ^ The parser with which solutions will be
                                          -- parsed
-                    -> MZModel
+                    -> MZModel           -- ^ The model
                     -> FilePath          -- ^ The path of the file in which the FlatZinc 
                                          -- translation will be printed (without ".fzn" 
                                          -- extension)
@@ -95,8 +95,8 @@ testModelWithParser p m mpath s n = do
   let mfzn = (spaceFix $ mz_dir ++ "mzn2fzn") ++ " -O- - -o " ++ (spaceFix (mpath ++ ".fzn"))
   let flatzinc = spaceFix $ mz_dir ++ "flatzinc"
   -- Uncomment line below for debugging
-  writeFile (mpath ++ ".mzn") (Prelude.show $ printModel m)
-  readCreateProcess (shell mfzn) (layout m)
+  -- writeFile (mpath ++ ".mzn") (layout m)
+  -- readCreateProcess (shell mfzn) (layout m)
   res <- case s of
            1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn") ""
            -- 1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn > " ++ mpath ++ ".results.txt") ""
@@ -111,7 +111,7 @@ testModelWithParser p m mpath s n = do
   return $ getSolutions p n res
 
 -- | Writes the model's data file. The 'MZModel' of the argument must contain
--- only `Assignment` items.
+-- only 'Interfaces.MZASTBase.Assign' items.
 writeData :: MZModel -> IO ()
 writeData m = do
   putStrLn "Enter datafile's filepath:"

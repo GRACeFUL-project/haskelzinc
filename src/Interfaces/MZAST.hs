@@ -9,17 +9,14 @@ License     : GPL-3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
-This module provides an interface for the MiniZinc 2.1 language.
-With the use of this module, one can represent MiniZinc models in Haskell code. The syntax is based 
-on <http://www.minizinc.org/doc-lib/minizinc-spec.pdf the MiniZinc 2.1 spesification>.
 
-However, this module provides a low-level interface to the MiniZinc language. A more human friendly 
-interface is provided in "Interfaces.MZAST".
+This module defines a more human-friendly interface for the MiniZinc 2.1 language, on top
+of "Interfaces.MZASTBase". With the use of this module, one can represent MiniZinc models in Haskell code.
 -}
  
 module Interfaces.MZAST (
   -- * Items
-  include, constraint, output, (%), newline,
+  include, constraint, output, (%),
   (=.), declare, variable, predicate, function, test, annotation,
   solve, satisfy, minimize, maximize,
   -- * Expressions
@@ -47,9 +44,11 @@ module Interfaces.MZAST (
 import Interfaces.MZASTBase
 
 -- Items
+{-
 -- | Represents an empty line in the MiniZinc code.
 newline :: Item
 newline = Empty
+-}
 
 -- | Represents a comment in the MiniZinc model.
 -- Example:
@@ -70,6 +69,10 @@ include = Include
 --  
 -- >>> output [string "x = ", mz_show[var "x"]]
 -- output ["x = ", show(x)];
+--
+-- If the represented model contains an @output@ item that changes the default format of
+-- the solver's solutions, then a custom parser will be needed to get the solver's results
+-- back in Haskell. See "Interfaces.FZSolutionParser".
 output :: [Expr] -> Item
 output = Output . ArrayLit
 
@@ -104,9 +107,12 @@ infix 1 =.
 class Assignable a where
   type Assigned a
   
-  -- | The operator that represents assignment in MiniZinc code. One can assign an
-  -- expression to a variable, predicate, test or function.
+  -- | The operator that represents assignment in MiniZinc code. One can assign a non-
+  -- annotated expression to a variable, predicate, test or function either on declaration
+  -- or later.
   -- 
+  -- To annotate the expression, use haskelzinc operator '|:'.
+  --
   -- Examples:
   -- 
   -- To assign to an already declared variable, predicate, test or function 
@@ -117,8 +123,6 @@ class Assignable a where
   -- To assign a value to a variable on declaration, use:
   -- 
   -- >>> declare $ variable "x" Par Int =. int 1
-  -- 
-  -- To annotate the expression, use haskelzinc operator '|:'.
   -- 
   -- Not to be confused with the equality operator, represented in haskelzinc by '=.='.
   (=.) :: a -> Expr -> Assigned a
@@ -312,8 +316,8 @@ infix 9 !.
      -> Expr
 (!.) = ArrayElem
 
--- | Represents a comprehension tail with a single generator expression. See the example 
--- in the documentation for '#/.'.
+-- | Used to construct the representation of a comprehension tail with a single generator 
+-- expression. See the example in the documentation for '#/.'.
 infix 5 @@
 (@@) :: [Ident] -> Expr -> CompTail
 (@@) vars e = ([(vars, e)], Nothing)
@@ -366,11 +370,11 @@ forall cts name e = GenCall name (mergeCompTails cts) e
 --
 -- Example:
 --
--- >>> declare $ variable Dec Int "onetwothree" =. intSet [1, 2, 3]
--- var int: onetwothree = {1, 2, 3};
+-- >>> declare $ variable Dec Int "one2three" =. intSet [1, 2, 3]
+-- var int: one2three = {1, 2, 3};
 -- 
--- >>> declare $ variable Dec (ctvar "onetwothree") "x"
--- var onetwothree: x;
+-- >>> declare $ variable Dec (ctvar "one2three") "x"
+-- var one2three: x;
 ctvar :: Ident -> Type
 ctvar = CT . var
 
@@ -383,6 +387,11 @@ ctvar = CT . var
 -- | Used together with 'then_' and 'elseif_' \/ 'else_' to represent an if-then-else 
 -- MiniZinc expression. In case of multiple alternatives, use 'elseif_', but the last 
 -- alternative should be represented with the use of 'else_'.
+-- 
+-- Example:
+--
+-- >>> if_ true `then_` int 1 `else_` int 0
+-- if true then 1 else 0 endif;
 if_ :: Expr -> (Expr -> [(Expr, Expr)])
 if_ e = \e1 -> [(e, e1)]
 

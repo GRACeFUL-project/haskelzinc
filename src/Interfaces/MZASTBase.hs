@@ -5,16 +5,23 @@ License     : BSD3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
-This module defines a more human-friendly interface for the MiniZinc 2.1 language, on top
-of "Interfaces.MZASTBase". With the use of this module, one can represent MiniZinc models in Haskell code.
+
+This module provides an interface for the MiniZinc 2.1 language.
+With the use of this module, one can represent MiniZinc models in Haskell code. The 
+syntax is based on 
+<http://www.minizinc.org/doc-lib/minizinc-spec.pdf the MiniZinc 2.1 spesification>. 
+However, this module provides a low-level interface to the MiniZinc language. A more 
+human friendly interface is provided in "Interfaces.MZAST".
+
+Enumerated types are not supported yet.
 -}
 
 module Interfaces.MZASTBase (
   MZModel,
   -- * Items representation
   Item(..),
-  DeclarationSignature(..),
   Declaration(..),
+  DeclarationSignature(..),
   Solve(..),
   Inst(..),
   Type(..),
@@ -40,10 +47,10 @@ type MZModel = [Item]
 -- | Represents MiniZinc items, the first-class entities of the MiniZinc language.
 -- Correspondence between MiniZinc items and the constructors of 'Item' values is not
 -- one-to-one:
+-- 
 -- * Variable, function, predicate, test and annotation declaration items are all 
 --   represented with the 'Declare' constructor.
--- * Extra 'Item' constructors for the representation of MiniZinc comments and empty
---   lines.
+-- * Extra 'Comment' constructor for the representation of MiniZinc comments.
 data Item 
   -- | Commented line
   = Comment String
@@ -61,9 +68,11 @@ data Item
   -- | Output item. The use of this item might cause errors in parsing the solution(s) 
   -- of the model. Recommended use for testing purposes only.
   | Output Expr
+  {-
   -- | 'Empty' does not translate to a MiniZinc item. It only represents an empty line 
   -- in the MiniZinc code.
-  | Empty        
+  | Empty
+  -}
   deriving (Show, Eq)
 
 -- | Represents a MiniZinc expression (first argument) annotated with the annotations 
@@ -79,7 +88,8 @@ toSimpleExpr e = AnnExpr e []
 stripExprOff :: AnnExpr -> Expr
 stripExprOff (AnnExpr e ans) = e
 
--- | Completes a declaration with a list of annotations (possibly empty) and maybe a body.
+-- | Represents a complete variable, predicate, test or function declaration with a list
+-- of annotations (possibly empty) and maybe a body.
 data Declaration = Declaration DeclarationSignature [Annotation] (Maybe AnnExpr)
   deriving (Show, Eq)
 

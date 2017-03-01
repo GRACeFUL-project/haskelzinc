@@ -3,30 +3,38 @@
 {-|
 Module      : FZSolutionParser
 Description : FlatZinc solutions parser
-Copyright   : (c) Some Guy, 2013
-                  Someone Else, 2014
 License     : GPL-3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
-This module parses the solutions outputed by the specified FlatZinc solver. It supports multiple solutions.
-The parser might fail if there is a show item in the represented MiniZinc model which alters the default 
-format of the solver's output.
+This module defines a parser for the default format of the output of the two solvers 
+integrated in haskelzinc (G12/FD and choco3). It also provides modular parsers for 
+entities that constitute a solution, such as MiniZinc variable names and values, 
+solutions' separator in case of multiple solutions, etc. These modular parsers can be 
+used in building a parser for a solver's output, the format of which is specified by a 
+MiniZinc @output@ item differs from the default one.
 -}
 
 module Interfaces.FZSolutionParser (
-  MValue(..),
+  MValue(..), Solution,
   -- * Parsing values
   valueM,
   intM, boolM, floatM, stringM, setM,
   setRange, arrayM,
   -- * Solutions
-  simpleVarName, quotedVarName, varName,
-  nameValuePair, defaultNameValuePair,
-  unsat, defaultSolution, defaultSolutions,
-  trySolutions, tryDefaultSolutions,
-  getSolutions, getDefaultSolutions, getDefaultSolutionsFromFile,
-  Solution
+  varName, simpleVarName, quotedVarName,
+  comment, comments,
+  -- ** Default parsers
+  defaultNameValuePair,
+  defaultUnsat, defaultSolution, defaultSolutions,
+  tryDefaultSolutions,
+  getDefaultSolutions, getDefaultSolutionsFromFile,
+  -- ** Custom
+  -- | The following functions can be used when a MiniZinc @output@ item, which alters the 
+  -- default output format of the solver, is present in the model.
+  
+  nameValuePair,
+  trySolutions, getSolutions
 ) where
 
 import Data.Char
@@ -39,8 +47,8 @@ import Text.Parsec.String (Parser)
 --import GHC.Generics
 --import Control.DeepSeq
 
--- | A Solution consists of a list of pairs. Each pair represents an assignment of a value to
--- a decision variable of the constraint model.
+-- | A Solution consists of a list of pairs. Each pair represents an assignment of a 
+-- value to a decision variable of the constraint model.
 type Solution = [(String, MValue)]
 
 -- | Representation of returned values.
@@ -68,8 +76,8 @@ getDefaultSolutions :: Int -> String -> Either P.ParseError [Solution]
 getDefaultSolutions = getSolutions tryDefaultSolutions
 
 -- | A custom version of 'getDefaultSolutions'. This function accepts a custom parser to 
--- parse the solutions. Used when a MiniZinc @output@ item is present in the model, which
--- alters the default output format of the solver.
+-- parse the solutions. The custom parser must be parametrized by an integer, for 
+-- specifying the number of solutions to be returned.
 getSolutions :: (Int -> Parser [Solution]) -> Int -> String -> Either P.ParseError [Solution]
 getSolutions p n = runParser (p n)
 
@@ -128,47 +136,44 @@ eosMSG = "----------"                 -- End-of-solution message
 runParser :: Parser a -> String -> Either P.ParseError a
 runParser p = parse (p <* eof) ""
 
--- | @tryDefaultSolutions n@ tries to parse the first @n@ solutions. If it succeeds, 
--- then it returns them in a list. Else, tries 'unsat' and returns an empty list.
+-- | @tryDefaultSolutions n@ tries to parse the solutions and, if it succeeds, returns 
+-- the first @n@. Else, tries 'defaultUnsat' and returns an empty list.
 tryDefaultSolutions :: Int -> Parser [Solution]
-tryDefaultSolutions = trySolutions defaultSolutions unsat
+tryDefaultSolutions = trySolutions takeSolutions defaultUnsat
 
--- | @trySolutions p1 p2 n@ tries to parse the first @n@ solutions (by applying parser 
--- @p1@) and return them in a list. If it fails, tries to parse an /Unsatisfiable/ message
--- (by applying @p2@) and returns an empty list. 
--- 
--- @trySolutions p1 p2 0@ will try to parse and return all solutions.
-trySolutions :: Parser [Solution] -- Custom FlatZinc solutions parser
-             -> Parser String     -- Custom /Unsatisfiable/ message parser
-             -> Int               -- Number of solutions to be returned
+-- | @trySolutions f p n@ applies @f n@ and returns the solutions. If that fails, tries 
+-- to parse an /Unsatisfiable/ message by applying @p@ and returns an empty list. The 
+-- custom parser must be parametrized by an integer, for specifying the number of 
+-- solutions to be returned.
+trySolutions :: (Int -> Parser [Solution]) -- Custom solutions parser
+             -> Parser String              -- Custom /Unsatisfiable/ message parser
+             -> Int                        -- Number of solutions to be returned
              -> Parser [Solution]
-trySolutions p1 p2 0 = try $ p1 <|> (p2 >> return [[]])
-trySolutions p1 p2 n = try $ (take n <$> p1) <|> (p2 >> return [[]])
+trySolutions p u n = try $ (p n) <|> (u >> return [[]])
 
--- | Parses the default message for a model with no solutions.
---
--- @=====UNSATISFIABLE=====@
-unsat :: Parser String
-unsat = skipMany comment *> (string unsatMSG) <* endOfLine <* many comment
+-- | Parses the default message for a model with no solutions: @=====UNSATISFIABLE=====@, 
+-- surrounded by commented lines before and after.
+defaultUnsat :: Parser String
+defaultUnsat = skipMany comment *> (string unsatMSG) <* endOfLine <* many comment
 
 takeSolutions :: Int -> Parser [Solution]
 takeSolutions n = take n <$> defaultSolutions
 
--- | Parses the returned solutions.
+-- | Parses all the returned solutions.
 defaultSolutions :: Parser [Solution]
 defaultSolutions = manyTill defaultSolution (string eoSMSG *> endOfLine)
 
--- | Parses a solution with the default output format from the set of returned solutions.
+-- | Parses a single solution with the default output format from the set of returned 
+-- solutions.
 defaultSolution :: Parser Solution
 defaultSolution =  P.many (comments *> defaultNameValuePair)
                    <* string eosMSG <* endOfLine
 
--- | Parses a comment in the returned solutions and returns the content.
+-- | Parses a comment in the solutions and returns the content.
 comment :: Parser String
 comment = char '%' *> spaces *> (manyTill anyToken endOfLine)
 
--- | Parses a sequence of commented lines in the returned solutions and returns their
--- content.
+-- | Parses a sequence of commented lines in the solutions and returns their content.
 comments :: Parser String
 comments = unlines <$> P.many comment
 
@@ -205,7 +210,7 @@ quotedVarName = do
   name <- manyTill anyChar (char '\'')
   return (lq : (name ++ "\'"))
 
--- | Parses a MiniZinc variable name.
+-- | Parses a MiniZinc variable name by trying 'simpleVarName' and 'quotedVarName'.
 varName :: Parser String
 varName = simpleVarName <|> quotedVarName
 
