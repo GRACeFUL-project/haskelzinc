@@ -96,7 +96,7 @@ testModelWithParser p m mpath s n = do
   let flatzinc = spaceFix $ mz_dir ++ "flatzinc"
   -- Uncomment line below for debugging
   -- writeFile (mpath ++ ".mzn") (layout m)
-  -- readCreateProcess (shell mfzn) (layout m)
+  readCreateProcess (shell mfzn) (layout m)
   res <- case s of
            1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn") ""
            -- 1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn > " ++ mpath ++ ".results.txt") ""
@@ -105,7 +105,7 @@ testModelWithParser p m mpath s n = do
                     chocoSolver = chocosolver configuration
                 in readCreateProcess (shell $ "java -cp ." ++ (intercalate [searchPathSeparator] [chocoSolver, chocoParser, antlr]) ++ " org.chocosolver.parser.flatzinc.ChocoFZN -a " ++ mpath ++ ".fzn") ""
                 -- in readCreateProcess (shell $ "java -cp ." ++ (intercalate [searchPathSeparator] [chocoSolver, chocoParser, antlr]) ++ " org.chocosolver.parser.flatzinc.ChocoFZN -a " ++ mpath ++ ".fzn > " ++ mpath ++ ".results.txt") ""
-  -- Uncomment lines below for debugging
+  -- Uncomment two lines below for debugging
   -- writeFile (mpath ++ ".results.txt") res
   -- getSolutionsFromFile (mpath ++ ".fzn.results.txt") n
   return $ getSolutions p n res

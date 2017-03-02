@@ -1,15 +1,14 @@
 0.3.0.0
  - Added support for annotations
- - Changes in the representational system of MiniZinc models
-   - Module Interfaces.MZAST renamed to Interfaces.MZASTBase
+ - Structural changes in the representational system of MiniZinc models
+ - Module Interfaces.MZAST renamed to Interfaces.MZASTBase
  - Module Interfaces.MZAST used for a more human friendly interface for building 
    representations of MiniZinc models.
- - Module Interfaces.MZBuiltIns added. Contains predefined MiniZinc operators, functions,
-   tests, predicates and annotations.
- - Module Interfaces.FZSolutionParser provides parsers to be used in creating custom
-   solutions' parsers, in case a MiniZinc output item alters the default format of the
-   solutions.
- - Compatibility with GHC 8 tested (and passed)
+ - Module Interfaces.MZBuiltIns added. Contains haskelzinc represenatation of predefined MiniZinc 
+   operators, functions, tests, predicates and annotations.
+ - Module Interfaces.FZSolutionParser provides parsers useful for building custom solutions' 
+   parsers, in case a MiniZinc output item alters the default format of the solutions.
+ - Compatibility with GHC 8.0.1 tested (and passed)
 
 0.2.0.0
  - Added support for returning specified number of solutions

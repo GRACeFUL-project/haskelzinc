@@ -42,7 +42,7 @@ author:              Klara Marntirosian
 -- patches.
 maintainer:          klara.mar@cs.kuleuven.be
 
-stability:           provisional
+stability:           experimental
 
 -- A copyright notice.
 -- copyright:           
@@ -53,7 +53,7 @@ build-type:          Simple
 
 -- Extra files to be distributed with the package, such as examples or a 
 -- README.
-extra-source-files:  changelog, README.md, test.hs
+extra-source-files:  changelog, README.md, Examples.hs, HZconf/conf.txt
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
@@ -70,7 +70,7 @@ library
                     Interfaces.MZAuxiliary
   
   -- Modules included in this library but not exported.
-  -- other-modules:       
+  -- other-modules: Examples      
   
   -- LANGUAGE extensions used by modules in this package.
   other-extensions:    FlexibleInstances, TypeFamilies

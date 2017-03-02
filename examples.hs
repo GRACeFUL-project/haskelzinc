@@ -18,6 +18,8 @@
     The script will ask you for the desired path of the file.
   -}
 
+module Examples where
+
 import Interfaces.MZBuiltIns
 import Interfaces.MZinHaskell
 import Interfaces.MZAST
