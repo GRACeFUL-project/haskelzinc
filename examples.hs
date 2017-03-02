@@ -1,7 +1,6 @@
-{-# LANGUAGE ExtendedDefaultRules #-}
   {- 
       === INSTRUCTIONS ===
-    Below are provided some models in the Haskell abstract syntax tree for MiniZinc,
+    Below are provided the haskelzinc representations models of some MiniZinc constraint models
     together with their data files (for the models that need one).
     
       == Models without a datafile ==
@@ -19,12 +18,9 @@
     The script will ask you for the desired path of the file.
   -}
 
-module HaskelzincTests where
-
 import Interfaces.MZBuiltIns
 import Interfaces.MZinHaskell
 import Interfaces.MZAST
-import Interfaces.MZPrinter
 
 default (Int, Float)
 

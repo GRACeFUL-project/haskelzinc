@@ -39,7 +39,7 @@ module Interfaces.FZSolutionParser (
 
 import Data.Char
 import Control.Applicative
-import qualified Data.Set as S
+import Data.Set (Set, fromDistinctAscList)
 import qualified Text.Parsec as P
 import qualified Text.Parsec.Char as C
 import Text.Parsec.String (Parser)
@@ -58,7 +58,7 @@ data MValue = MError String
             | MBool Bool
             | MString String
             | MArray [MValue]
-            | MSet (S.Set MValue)
+            | MSet (Set MValue)
   deriving Show
   --deriving (Show, Generic, NFData)
 
@@ -237,7 +237,7 @@ stringM = MString <$> (string "\"" *> manyTill anyChar (string "\""))
 
 -- | Parses a MiniZinc set value.
 setM :: Parser MValue -> Parser MValue
-setM p = (MSet <$> S.fromDistinctAscList <$> (set p)) <|> setRange
+setM p = (MSet <$> fromDistinctAscList <$> (set p)) <|> setRange
 
 int :: Parser Int
 int = (char '-' >> opposite ) <|> natural
@@ -259,7 +259,7 @@ set p = between (char '{') (char '}') (sepBy p (string "," >> spaces))
 -- | Parses a MiniZinc set value defined with the use of the MiniZinc range operator 
 -- (@..@).
 setRange :: Parser MValue
-setRange = MSet <$> S.fromDistinctAscList <$> do
+setRange = MSet <$> fromDistinctAscList <$> do
   v1 <- int
   string ".."
   v2 <- int
