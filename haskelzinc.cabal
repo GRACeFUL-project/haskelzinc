@@ -10,20 +10,21 @@ name:                haskelzinc
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.3.0.0
+version:             0.3.0.9
 
 -- A short (one-line) description of the package.
 synopsis:         CP in Haskell through MiniZinc 
 
 -- A longer description of the package.
 description:      
-    This package was created in the context of the [GRACeFUL project](https://www.graceful-project.eu/).
+    This package was created in the context of the <https://www.graceful-project.eu GRACeFUL project>.
     .
     The haskelzinc library defines an interface to the MiniZinc 2.1 constraint proramming
     language. It provides a Haskell abstract syntax tree for the MiniZinc language, with 
     which one can represent MiniZinc models in Haskell, a pretty printer to print the 
-    representation of a MiniZinc model in MiniZinc and a parser that returns a 
-    representation of the solutions obtained by running the MiniZinc model.
+    representation of a MiniZinc model in MiniZinc, a parser that returns a 
+    representation of the solutions obtained by running the MiniZinc model and a set of 
+    functions useful for building a custom FlatZinc solutions parser.
     .
     An additional module gives the possibility to directly get the solutions of a 
     MiniZinc finite domain model. Option for interactive interface is provided, as well 
@@ -53,10 +54,16 @@ build-type:          Simple
 
 -- Extra files to be distributed with the package, such as examples or a 
 -- README.
-extra-source-files:  changelog, README.md, Examples.hs, HZconf/conf.txt
+extra-source-files:  Examples.hs
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
+
+data-dir:            HZconf
+data-files:          conf.txt
+
+extra-doc-files:     README.md,
+                     changelog
 
 
 library
@@ -66,11 +73,10 @@ library
                     Interfaces.MZBuiltIns,
                     Interfaces.MZAST,
                     Interfaces.MZPrinter,
-                    Interfaces.FZSolutionParser,
-                    Interfaces.MZAuxiliary
+                    Interfaces.FZSolutionParser
   
   -- Modules included in this library but not exported.
-  -- other-modules: Examples      
+  other-modules: Interfaces.MZAuxiliary
   
   -- LANGUAGE extensions used by modules in this package.
   other-extensions:    FlexibleInstances, TypeFamilies
@@ -88,4 +94,7 @@ library
   
   -- Base language which the package is written in.
   default-language:    Haskell2010
-  
+
+source-repository head
+  type:     git
+  location: https://github.com/GRACeFUL-project/haskelzinc.git
