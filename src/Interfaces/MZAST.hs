@@ -18,7 +18,8 @@ module Interfaces.MZAST (
   -- * Items
   include, constraint, output, (%),
   (=.), declare, variable, predicate, function, test, annotation,
-  solve, satisfy, minimize, maximize,
+  solve, satisfy, minimize, maximize, declareVar, declarePar,
+  assignPar, assignVar,
   -- * Expressions
   -- ** Constants
   true, false, var, int, float, string,
@@ -409,6 +410,42 @@ else_ = ITE
 
 -- Let expressions
 let_ = Let
+
+-- | shorter syntax to declare a parameter
+--
+-- Example:
+--
+-- >>> declarePar Int "n"
+-- par int: n;
+declarePar :: Type -> Ident -> Item
+declarePar t i = declare $ variable Par t i
+
+-- | shorter syntax to declare a decision variable
+--
+-- Example:
+--
+-- >>> declareVar Int "n"
+-- var int: n;
+declareVar :: Type -> Ident -> Item
+declareVar t i = declare $ variable Dec t i
+
+-- | shorter syntax to declare and assign a parameter
+--
+-- Example:
+--
+-- >>> assignVar Int "n" $ int 1
+-- par int: n = 1;
+assignPar :: Type -> Ident -> Expr -> Item
+assignPar t i a = declare $ variable Par t i =. a
+
+-- | shorter syntax to declare and assign a decision variable
+--
+-- Example:
+--
+-- >>> assignVar Int "n" $ int 1
+-- var int: n = 1;
+assignVar :: Type -> Ident -> Expr -> Item
+assignVar t i a = declare $ variable Dec t i =. a
 
 -- Annotations
 infixl 4 |:

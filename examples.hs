@@ -270,10 +270,10 @@ cakedata =
 
 euler1 = [
   (%) "Example taken from http://www.hakank.org/minizinc/euler_1.mzn",
-  declare $ variable Par Int "n" =. int 999,
-  declare $ variable Par (Array [CT $ int 1 ... var "n"] Dec (CT $ int 0 ... int 1)) "x",
-  declare $ variable Dec Int "s"
-    =. forall [["i"] @@ int 1 ... var "n"] "sum" ("x"!.[var "i"] *. var "i"),
+  assignPar Int "n" $ int 999,
+  declarePar (Array [CT $ int 1 ... var "n"] Dec (CT $ int 0 ... int 1)) "x",
+  assignVar Int "s"
+    $ forall [["i"] @@ int 1 ... var "n"] "sum" ("x"!.[var "i"] *. var "i"),
 
   solve satisfy,
 
@@ -289,13 +289,13 @@ euler1 = [
 
 euler2 = [
   (%) "Example taken from http://www.hakank.org/minizinc/euler_2.mzn",
-  declare $ variable Par Int "n" =. int 46,
+  assignPar Int "n" $ int 46,
 
-  declare $ variable Par (Array [CT $ int 1 ... var "n"] Dec Int) "f",
-  declare $ variable Par (Array [CT $ int 1 ... var "n"] Dec (CT $ int 0 ... int 1)) "x",
+  declarePar (Array [CT $ int 1 ... var "n"] Dec Int) "f",
+  declarePar (Array [CT $ int 1 ... var "n"] Dec (CT $ int 0 ... int 1)) "x",
 
-  declare $ variable Dec (CT $ int 0 ... int 10000000) "res"
-    =. forall [["i"] @@ int 1 ... var "n"] "sum" ("x"!.[var "i"] *. "f"!.[var "i"]),
+  assignVar (CT $ int 0 ... int 10000000) "res"
+    $ forall [["i"] @@ int 1 ... var "n"] "sum" ("x"!.[var "i"] *. "f"!.[var "i"]),
 
   solve satisfy,
 
