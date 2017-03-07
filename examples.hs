@@ -267,3 +267,22 @@ cakedata =
   ,"butter"  =. int 500
   ,"cocoa"   =. int 500
   ]
+
+euler1 = [
+  (%) "Example taken from http://www.hakank.org/minizinc/euler_1.mzn",
+  declare $ variable Par Int "n" =. int 999,
+  declare $ variable Par (Array [CT $ int 1 ... var "n"] Dec (CT $ int 0 ... int 1)) "x",
+  declare $ variable Dec Int "s"
+    =. forall [["i"] @@ int 1 ... var "n"] "sum" ("x"!.[var "i"] *. var "i"),
+
+  solve satisfy,
+
+  constraint $
+    forall [["i"] @@ int 1 ... var "n"] "forall" (
+      if_ (var "i" `_mod_` int 3 =.= int 0 \/. var "i" `_mod_` int 5 =.= int 0)
+      `then_` ("x"!.[var "i"] =.= int 1)
+      `else_` ("x"!.[var "i"] =.= int 0)
+  ),
+
+  output [ mz_show [var "s"] ]
+  ]
