@@ -13,10 +13,11 @@ notes.txt
 cabal.sandbox.config
 dist
 
-# MiniZinc models
+# MiniZinc models and results
 *.mzn
 *.dzn
 *.fzn
+*.results.txt
 
 # Local specific
 HZconf/conf.txt
