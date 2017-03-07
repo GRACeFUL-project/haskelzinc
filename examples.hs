@@ -286,3 +286,37 @@ euler1 = [
 
   output [ mz_show [var "s"] ]
   ]
+
+euler2 = [
+  (%) "Example taken from http://www.hakank.org/minizinc/euler_2.mzn",
+  declare $ variable Par Int "n" =. int 46,
+
+  declare $ variable Par (Array [CT $ int 1 ... var "n"] Dec Int) "f",
+  declare $ variable Par (Array [CT $ int 1 ... var "n"] Dec (CT $ int 0 ... int 1)) "x",
+
+  declare $ variable Dec (CT $ int 0 ... int 10000000) "res"
+    =. forall [["i"] @@ int 1 ... var "n"] "sum" ("x"!.[var "i"] *. "f"!.[var "i"]),
+
+  solve satisfy,
+
+  constraint $
+    "f"!.[int 1] =.= int 1 /\.
+    "f"!.[int 2] =.= int 1 /\.
+    forall [["i"] @@ int 3 ... var "n"] "forall" (
+      "f"!.[var "i"] =.= "f"!.[var "i" -. int 1] +. "f"!.[var "i" -. int 2]
+    ),
+
+  constraint $
+    forall [["i"] @@ int 1 ... var "n"] "forall" (
+      "f"!.[var "i"] >. int 0 /\.
+      ("f"!.[var "i"] `_mod_` int 2 =.= int 1 /\. "f"!.[var "i"] <. int 4000000) <->. ("x"!.[var "i"] =.= int 1)
+    ),
+
+  output [ mz_show [var "f"]
+         ++. string "\n"
+         ++. mz_show [var "x"]
+         ++. string "\n"
+         ++. string "res: "
+         ++. mz_show [var "res"]
+         ]
+  ]
