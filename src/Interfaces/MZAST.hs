@@ -134,7 +134,7 @@ instance Assignable [Char] Item where
   name =. e = Assign name $ AnnExpr e []
 
 instance Assignable Declaration Declaration where
-  (Declaration ds ans _) =. e = Declaration ds ans (Just (AnnExpr e []))
+  (Declaration ds ans _) =. e = Declaration ds ans (Just $ toSimpleExpr e)
 
 -- | Used to represent declaration items of MiniZinc. These are variable, function, 
 -- predicate, test and annotation declaration items.
