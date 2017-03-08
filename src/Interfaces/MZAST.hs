@@ -487,5 +487,8 @@ instance Num Expr where
   (+) = (+.)
   (*) = (*.)
   (-) = (-.)
-  abs = undefined
-  signum = undefined
+  abs a = mz_abs [a]
+  signum a =
+    if_ (a <. 0) `then_` (-1)
+    `elseif_` (a >. 0) `then_` 1
+    `else_` 0
