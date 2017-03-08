@@ -106,14 +106,10 @@ maximize = Maximize []
 
 -- Declaring and assigning
 
---type family X a
-
-
 infix 1 =.
 
-class {-(X b ~ a) => -} Assignable a b | a -> b, b -> a where
-  type Assigned a
-  
+class Assignable a b | a -> b, b -> a where
+
   -- | The operator that represents assignment in MiniZinc code. One can assign a non-
   -- annotated expression to a variable, predicate, test or function either on declaration
   -- or later.
@@ -132,19 +128,13 @@ class {-(X b ~ a) => -} Assignable a b | a -> b, b -> a where
   -- >>> declare $ variable "x" Par Int =. int 1
   -- 
   -- Not to be confused with the equality operator, represented in haskelzinc by '=.='.
-  (=.) :: a -> Expr -> b --Assigned a
+  (=.) :: a -> Expr -> b
 
 instance Assignable [Char] Item where
-  type Assigned [Char] = Item
   name =. e = Assign name $ AnnExpr e []
 
---type instance X Item = [Char]
-
 instance Assignable Declaration Declaration where
-  type Assigned Declaration = Declaration
   (Declaration ds ans _) =. e = Declaration ds ans (Just (AnnExpr e []))
-
---type instance X Declaration = Declaration
 
 -- | Used to represent declaration items of MiniZinc. These are variable, function, 
 -- predicate, test and annotation declaration items.

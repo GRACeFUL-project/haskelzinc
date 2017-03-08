@@ -273,53 +273,53 @@ cakedata =
 
 euler1 = [
   (%) "Example taken from http://www.hakank.org/minizinc/euler_1.mzn",
-  assignPar Int "n" $ int 999,
-  declarePar (Array [CT $ int 1 ... var "n"] Dec (CT $ int 0 ... int 1)) "x",
+  assignPar Int "n" $ 999,
+  declarePar (Array [CT $ 1 ... "n"] Dec (CT $ 0 ... 1)) "x",
   assignVar Int "s"
-    $ forall [["i"] @@ int 1 ... var "n"] "sum" ("x"!.[var "i"] *. var "i"),
+    $ forall [["i"] @@ 1 ... "n"] "sum" ("x"!.["i"] * "i"),
 
   solve satisfy,
 
   constraint $
-    forall [["i"] @@ int 1 ... var "n"] "forall" (
-      if_ (var "i" `_mod_` int 3 =.= int 0 \/. var "i" `_mod_` int 5 =.= int 0)
-      `then_` ("x"!.[var "i"] =.= int 1)
-      `else_` ("x"!.[var "i"] =.= int 0)
+    forall [["i"] @@ 1 ... "n"] "forall" (
+      if_ ("i" `_mod_` 3 =.= 0 \/. "i" `_mod_` 5 =.= 0)
+      `then_` ("x"!.["i"] =.= 1)
+      `else_` ("x"!.["i"] =.= 0)
   ),
 
-  output [ mz_show [var "s"] ]
+  output [ mz_show ["s"] ]
   ]
 
 euler2 = [
   (%) "Example taken from http://www.hakank.org/minizinc/euler_2.mzn",
-  assignPar Int "n" $ int 46,
+  assignPar Int "n" 46,
 
-  declarePar (Array [CT $ int 1 ... var "n"] Dec Int) "f",
-  declarePar (Array [CT $ int 1 ... var "n"] Dec (CT $ int 0 ... int 1)) "x",
+  declarePar (Array [CT $ 1 ... "n"] Dec Int) "f",
+  declarePar (Array [CT $ 1 ... "n"] Dec (CT $ 0 ... 1)) "x",
 
-  assignVar (CT $ int 0 ... int 10000000) "res"
-    $ forall [["i"] @@ int 1 ... var "n"] "sum" ("x"!.[var "i"] *. "f"!.[var "i"]),
+  assignVar (CT $ 0 ... 10000000) "res"
+    $ forall [["i"] @@ 1 ... "n"] "sum" ("x"!.["i"] *. "f"!.["i"]),
 
   solve satisfy,
 
   constraint $
-    "f"!.[int 1] =.= int 1 /\.
-    "f"!.[int 2] =.= int 1 /\.
-    forall [["i"] @@ int 3 ... var "n"] "forall" (
-      "f"!.[var "i"] =.= "f"!.[var "i" -. int 1] +. "f"!.[var "i" -. int 2]
+    "f"!.[1] =.= 1 /\.
+    "f"!.[2] =.= 1 /\.
+    forall [["i"] @@ 3 ... "n"] "forall" (
+      "f"!.["i"] =.= "f"!.["i" - 1] + "f"!.["i" - 2]
     ),
 
   constraint $
-    forall [["i"] @@ int 1 ... var "n"] "forall" (
-      "f"!.[var "i"] >. int 0 /\.
-      ("f"!.[var "i"] `_mod_` int 2 =.= int 1 /\. "f"!.[var "i"] <. int 4000000) <->. ("x"!.[var "i"] =.= int 1)
+    forall [["i"] @@ 1 ... "n"] "forall" (
+      "f"!.["i"] >. 0 /\.
+      ("f"!.["i"] `_mod_` 2 =.= 1 /\. "f"!.["i"] <. 4000000) <->. ("x"!.["i"] =.= 1)
     ),
 
-  output [ mz_show [var "f"]
+  output [ mz_show ["f"]
          ++. string "\n"
-         ++. mz_show [var "x"]
+         ++. mz_show ["x"]
          ++. string "\n"
          ++. string "res: "
-         ++. mz_show [var "res"]
+         ++. mz_show ["res"]
          ]
   ]
