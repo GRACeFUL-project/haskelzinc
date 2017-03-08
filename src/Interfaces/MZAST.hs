@@ -447,6 +447,15 @@ assignPar t i a = declare $ variable Par t i =. a
 assignVar :: Type -> Ident -> Expr -> Item
 assignVar t i a = declare $ variable Dec t i =. a
 
+-- | allows you to declare multiple parameters at once
+declarePars :: Type -> [Ident] -> [Item]
+declarePars t li = map (declareVar t) li
+
+-- | allows you to declare multiple decision variables at once
+declareVars :: Type -> [Ident] -> [Item]
+declareVars t li = map (declarePar t) li
+
+
 -- Annotations
 infixl 4 |:
 class Annotatable a where
