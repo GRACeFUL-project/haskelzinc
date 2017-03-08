@@ -492,3 +492,8 @@ instance Num Expr where
     if_ (a <. 0) `then_` (-1)
     `elseif_` (a >. 0) `then_` 1
     `else_` 0
+
+instance Fractional Expr where
+  fromRational = float . fromRational
+  (/) = undefined
+  recip = undefined
