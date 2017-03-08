@@ -18,6 +18,8 @@
     The script will ask you for the desired path of the file.
   -}
 
+{-# LANGUAGE OverloadedStrings #-}
+
 module Examples where
 
 import Interfaces.MZBuiltIns
@@ -45,116 +47,117 @@ unsatisfiable = [
   
 car = [
   (%) "Example taken from http://hakank.org/minizinc/car.mzn",
-  declare $ variable Par Int "nbCars" =. int 6,
-  declare $ variable Par Int "nbOptions" =. int 5,
-  declare $ variable Par Int "nbSlots" =. int 10,
-  declare $ variable Par (Set Int) "Cars" =. int 1 ... var "nbCars",
-  declare $ variable Par (Set Int) "Options" =. int 1 ... var "nbOptions",
-  declare $ variable Par (Set Int) "Slots" =. int 1 ... var "nbSlots",
-  declare $ variable Par (Array[ctvar "Cars"] Dec Int) "demand"
-    =. intArray [1, 1, 2, 2, 2, 2],
-  declare $ variable Par (Array[ctvar "Options", ctvar "Cars"] Dec Int) "option"
-    =. mz_array2d[var "Options", var "Cars", intArray [ 1, 0, 0, 0, 1, 1
+  assignPar Int "nbCars" 6,
+  assignPar Int "nbOptions" 5,
+  assignPar Int "nbSlots" 10,
+  assignPar (Set Int) "Cars" $ 1 ... "nbCars",
+  assignPar (Set Int) "Options" $ 1 ... "nbOptions",
+  assignPar (Set Int) "Slots" $ 1 ... "nbSlots",
+  assignPar (Array[ctvar "Cars"] Dec Int) "demand"
+    $ intArray [1, 1, 2, 2, 2, 2],
+  assignPar (Array[ctvar "Options", ctvar "Cars"] Dec Int) "option"
+    $ mz_array2d[var "Options", var "Cars", intArray [ 1, 0, 0, 0, 1, 1
                                                       , 0, 0, 1, 1, 0, 1
                                                       , 1, 0, 0, 0, 1, 0
                                                       , 1, 1, 0, 1, 0, 0
                                                       , 0, 0, 1, 0, 0, 0
                                                       ]
          ],
-  declare $ variable Par (Array[ctvar "Options", CT $ int 1 ... int 2] Dec Int) "capacity"
-    =. mz_array2d[var "Options", int 1 ... int 2, intArray [1, 2, 2, 3, 1, 3, 2, 5, 1, 5]],
-  declare $ variable Dec (Array[ctvar "Options"] Dec Int) "optionDemand"
-    =. forall [["j"] @@ var "Cars"] "sum" ("demand"!.[var "j"] *. "option"!.[var "i", var "j"]) #|. [["i"] @@ var "Options"],
+  assignPar (Array[ctvar "Options", CT $ 1 ... 2] Dec Int) "capacity"
+    $ mz_array2d[var "Options", 1 ... 2, intArray [1, 2, 2, 3, 1, 3, 2, 5, 1, 5]],
+  assignPar (Array[ctvar "Options"] Dec Int) "optionDemand"
+    $ forall [["j"] @@ var "Cars"] "sum" ("demand"!.["j"] *. "option"!.["i", "j"]) #|. [["i"] @@ var "Options"],
   (%) "decision variables",
-  declare $ variable Dec (Array[ctvar "Slots"] Dec (ctvar "Cars")) "slot",
-  declare $ variable Dec (Array[ctvar "Options", ctvar "Slots"] Dec (CT $ int 0 ... int 1)) "setup",
-  declare $ variable Dec Int "z" 
-    =. forall [["s"] @@ var "Cars"] "sum" (var "s" *. "slot"!.[var "s"]),
-  solve $ minimize (var "z"),
+  declareVar (Array[ctvar "Slots"] Dec (ctvar "Cars")) "slot",
+  declareVar (Array[ctvar "Options", ctvar "Slots"] Dec (CT $ 0 ... 1)) "setup",
+  assignVar Int "z"
+    $ forall [["s"] @@ "Cars"] "sum" ("s" *. "slot"!.["s"]),
+  solve $ minimize ("z"),
   constraint $
-    forall [["c"] @@ var "Cars"] "forall" (
-      forall [["s"] @@ var "Slots"] "sum" (mz_bool2int["slot"!.[var "s"] =.= var "c"])
-      =.= "demand"!.[var "c"]
+    forall [["c"] @@ "Cars"] "forall" (
+      forall [["s"] @@ "Slots"] "sum" (mz_bool2int["slot"!.["s"] =.= "c"])
+      =.= "demand"!.["c"]
     ) /\.
-    forall [["o"] @@ var "Options"
-           ,["s"] @@ int 1 ... var "nbSlots" -. "capacity"!.[var "o", int 2] +. int 1]
+    forall [["o"] @@ "Options"
+           ,["s"] @@ 1 ... "nbSlots" -. "capacity"!.["o", 2] +. 1]
            "forall" (
-      forall [["j"] @@ var "s" ... (var "s" +. "capacity"!.[var "o", int 2] -. int 1)] "sum" ("setup"!.[var "o", var "j"]) <=. "capacity"!.[var "o", int 1]
+      forall [["j"] @@ "s" ... ("s" +. "capacity"!.["o", 2] -. 1)] "sum" ("setup"!.["o", "j"]) <=. "capacity"!.["o", 1]
     ) /\.
-    forall [["o"] @@ var "Options", ["s"] @@ var "Slots"] "forall" (
-      "setup"!.[var "o", var "s"] =.= "option"!.[var "o", "slot"!.[var "s"]]
+    forall [["o"] @@ "Options", ["s"] @@ "Slots"] "forall" (
+      "setup"!.["o", "s"] =.= "option"!.["o", "slot"!.["s"]]
     ) /\.
-    forall [["o"] @@ var "Options", ["i"] @@ int 1 ... "optionDemand"!.[var "o"]]
+    forall [["o"] @@ "Options", ["i"] @@ 1 ... "optionDemand"!.["o"]]
     "forall" (
-      forall [["s"] @@ int 1 ... var "nbSlots" -. var "i" *. "capacity"!.[var "o", int 2]]
+      forall [["s"] @@ 1 ... "nbSlots" -. "i" *. "capacity"!.["o", 2]]
       "sum" (
-        "setup"!.[var "o", var "s"]
-      ) >=. ("optionDemand"!.[var "o"] -. var "i" *. "capacity"!.[var "o", int 1])
+        "setup"!.["o", "s"]
+      ) >=. ("optionDemand"!.["o"] -. "i" *. "capacity"!.["o", 1])
     )
   ]
   
 evens = [
   (%) "Example taken from http://hakank.org/minizinc/evens.mzn",
-  declare $ variable Par Int "square" =. int 4,
-  declare $ variable Par Int "coin" =. int 10,
-  declare $ variable Par (Set $ CT (int 1 ... var "square")) "S" =. int 1 ... var "square",
-  declare $ variable Dec (Array [ctvar "S", ctvar "S"] Dec (CT $ int 0 ... int 1)) "x",
-  declare $ variable Dec (Array [ctvar "S"] Dec Int) "n",
-  declare $ variable Dec (Array [ctvar "S"] Dec Int) "m",
+  assignPar Int "square" 4,
+  assignPar Int "coin" 10,
+  assignPar (Set $ CT (1 ... "square")) "S" $ 1 ... "square",
+  declareVar (Array [ctvar "S", ctvar "S"] Dec (CT $ 0 ... 1)) "x",
+  declareVar (Array [ctvar "S"] Dec Int) "n",
+  declareVar (Array [ctvar "S"] Dec Int) "m",
   solve $ satisfy,
-  constraint $ 
-    (forall [["i"] @@ var "S", ["j"] @@ var "S"] "sum" ("x"!.[var"i", var "j"]) =.= var "coin")
-    /\. forall [["i"] @@ var "S"] "forall" (
-      forall [["j"] @@ var "S"] "sum" ("x"!.[var"i", var "j"]) =.= int 2 *. "n"!.[var "i"]
+  constraint $
+    (forall [["i"] @@ "S", ["j"] @@ "S"] "sum" ("x"!.["i", "j"]) =.= "coin")
+    /\. forall [["i"] @@ "S"] "forall" (
+      forall [["j"] @@ "S"] "sum" ("x"!.["i", "j"]) =.= 2 *. "n"!.["i"]
     )
-    /\. forall [["j"] @@ var "S"] "forall" (
-      forall [["i"] @@ var "S"] "sum" ("x"!.[var "i", var "j"]) =.= int 2 *. "m"!.[var "j"])
+    /\. forall [["j"] @@ "S"] "forall" (
+      forall [["i"] @@ "S"] "sum" ("x"!.["i", "j"]) =.= 2 *. "m"!.["j"])
   ]
 
 divisor225 = [
   (%) "Example taken from http://hakank.org/minizinc/225_divisor.mzn",
   include "globals.mzn",
-  declare $ variable Par Int "n" =. int 11,
+  assignPar Int "n" 11,
   (%) "decision variables",
-  declare $ variable Dec (Array [CT $ int 1 ... var "n"] Dec (CT $ int 0 ... int 1)) "x",
-  declare $ variable Dec (CT $ int 1 ... mz_pow[int 10, var "n"] -. int 1) "y",
+  declareVar (Array [CT $ 1 ... "n"] Dec (CT $ 0 ... 1)) "x",
+  declareVar (CT $ int 1 ... mz_pow[10, "n"] -. 1) "y",
   declare $ predicate "to_num"[(Dec, Array [Int] Dec Int, "a"), (Dec, Int, "n")]
     =. Let [
-      declare $ variable Dec Int "len" =. mz_length[var "a"]
+      declare $ variable Dec Int "len" =. mz_length["a"]
     ]
-    (var "n" =.= forall [["i"] @@ int 1 ... var "len"] "sum" (mz_pow[int 10, var "len" -. var "i"] *. "a"!.[var "i"])),
-    solve $ minimize (var "y")
-            |: mz_int_search[E $ var "x", A $ mz_first_fail[], A $ mz_indomain_min[], A $ mz_complete[]],
-    constraint $ call "to_num" [var "x", var "y"] /\. (var "y") `_mod_` (int 225) =.= int 0
+    ("n" =.= forall [["i"] @@ 1 ... "len"] "sum" (mz_pow[10, "len" -. "i"] *. "a"!.["i"])),
+    solve $ minimize "y"
+            |: mz_int_search[E $ "x", A $ mz_first_fail[], A $ mz_indomain_min[], A $ mz_complete[]],
+    constraint $ call "to_num" ["x", "y"] /\. "y" `_mod_` 225 =.= 0
     ]
 
 planning = [
-  declare $ variable Par Int "nproducts",
-  declare $ variable Par (Set Int) "Products" =. int 1 ... var "nproducts",
-  declare $ variable Par (Array [ctvar "Products"] Par Int) "profit",
-  declare $ variable Par (Array [ctvar "Products"] Par String) "pname",
-  declare $ variable Par Int "nresources",
-  declare $ variable Par (Set Int) "Resources" =. int 1 ... var "nresources",
-  declare $ variable Par (Array [ctvar "Resources"] Par Int) "capacity",
-  declare $ variable Par (Array [ctvar "Resources"] Par String) "rname",
-  declare $ variable Dec (Array [ctvar "Products", ctvar "Resources"] Par Int) "consumption",
+  declarePar Int "nproducts",
+  assignPar (Set Int) "Products" $ 1 ... "nproducts",
+  declarePar (Array [ctvar "Products"] Par Int) "profit",
+  declarePar (Array [ctvar "Products"] Par String) "pname",
+  declarePar Int "nresources",
+  assignPar (Set Int) "Resources" $ 1 ... "nresources",
+  declarePar (Array [ctvar "Resources"] Par Int) "capacity",
+  declarePar (Array [ctvar "Resources"] Par String) "rname",
+  declarePar (Array [ctvar "Products", ctvar "Resources"] Par Int) "consumption",
   constraint $
-    mz_assert [mz_forall ["consumption"!.[Var "p", Var "r"] >=. int 0 
-                         #|. [["r"] @@ var "Resources", ["p"] @@ var "Products"]]
+    mz_assert [mz_forall ["consumption"!.["p", "r"] >=. 0
+                         #|. [["r"] @@ "Resources", ["p"] @@ "Products"]]
               , string "Error: Negative consumption"],
-  declare $ variable Par Int "mproducts" =.
-    mz_max [mz_min [("capacity"!.[Var "r"] `_div_` "consumption"!.[var "p", var "r"]) 
-                      #|. [(["r"] @@ var "Resources") 
-                          `where_` ("consumption"!.[var "p", var "r"] >=. int 0)]] 
-                   #|. [["p"] @@ var "Products"]],
-  declare $ variable Dec (Array [ctvar "Products"] Dec (CT $ int 0 ... var "mproducts")) "produce",
-  declare $ variable Dec (Array [ctvar "Resources"] Dec (CT $ int 0 ... mz_max[var "capacity"])) "used",
+  assignPar Int "mproducts" $
+    mz_max [mz_min [("capacity"!.["r"] `_div_` "consumption"!.["p", "r"])
+                      #|. [(["r"] @@ "Resources")
+                          `where_` ("consumption"!.["p", "r"] >=. 0)]]
+                   #|. [["p"] @@ "Products"]],
+  declareVar (Array [ctvar "Products"] Dec (CT $ 0 ... "mproducts")) "produce",
+  declareVar (Array [ctvar "Resources"] Dec (CT $ 0 ... mz_max["capacity"])) "used",
   constraint $ mz_forall [
-    ("used"!.[var "r"] =.= mz_sum ["consumption"!.[var "p", var "r"] *. ("produce"!.[var "p"]) #|. [["p"] @@ var "Products"]])
-    /\. ("used"!.[var "r"] <=. "capacity"!.[var "r"]) #|. [["r"] @@ var "Resources"]],
-  solve $ maximize (mz_sum [("profit"!.[Var "p"] *. "produce"!.[var "p"]) #|. [["p"] @@ var "Products"]])
+    ("used"!.["r"] =.= mz_sum ["consumption"!.["p", "r"] *. ("produce"!.["p"]) #|. [["p"] @@ "Products"]])
+    /\. ("used"!.["r"] <=. "capacity"!.["r"]) #|. [["r"] @@ "Resources"]],
+  solve $ maximize (mz_sum [("profit"!.["p"] *. "produce"!.["p"]) #|. [["p"] @@ "Products"]])
   ]
 
+planningData :: [Item]
 planningData = [
   "nproducts" =. int 2,
   "profit" =. intArray [400, 450],
@@ -167,21 +170,22 @@ planningData = [
   ]
 
 knapsack = [
-  declare $ variable Par Int "n",
-  declare $ variable Par (Set Int) "Items" =. int 1 ... var "n",
-  declare $ variable Par Int "capacity",
-  declare $ variable Par (Array [ctvar "Items"] Par Int) "profits",
-  declare $ variable Par (Array [ctvar "Items"] Par Int) "weights",
-  declare $ variable Dec (Set (ctvar "Items")) "knapsack",
-  constraint $ 
-    forall [["i"] @@ var "Items"] "sum" 
-      (mz_bool2int[var "i" `_in_` var "knapsack"] *. "weights"!.[var "i"]) 
-    <=. var "capacity",
-  solve $ maximize 
-    (forall [["i"] @@ var "Items"] "sum" 
-      (mz_bool2int [var "i" `_in_` var "knapsack"] *. "profits"!.[Var "i"]))
+  declarePar Int "n",
+  assignPar (Set Int) "Items" $ 1 ... "n",
+  declarePar Int "capacity",
+  declarePar (Array [ctvar "Items"] Par Int) "profits",
+  declarePar (Array [ctvar "Items"] Par Int) "weights",
+  declareVar (Set (ctvar "Items")) "knapsack",
+  constraint $
+    forall [["i"] @@ "Items"] "sum"
+      (mz_bool2int["i" `_in_` "knapsack"] *. "weights"!.["i"])
+    <=. "capacity",
+  solve $ maximize
+    (forall [["i"] @@ "Items"] "sum"
+      (mz_bool2int ["i" `_in_` "knapsack"] *. "profits"!.["i"]))
   ]
 
+knapdata :: [Item]
 knapdata = [
   "n" =. int 6,
   "capacity" =. int 13,
@@ -191,79 +195,133 @@ knapdata = [
 australia = [
   (%) "Colouring Australia using nc colours",
   -- Variable (Par, Int, "nc") =. int 3,
-  declare $ variable Par Int "nc" =. int 3,
-  declare $ variable Dec (CT $ int 1 ... var "nc") "wa",
-  declare $ variable Dec (CT $ int 1 ... var "nc") "nsw",
-  declare $ variable Dec (CT $ int 1 ... var "nc") "nt",
-  declare $ variable Dec (CT $ int 1 ... var "nc") "v",
-  declare $ variable Dec (CT $ int 1 ... var "nc") "sa",
-  declare $ variable Dec (CT $ int 1 ... var "nc") "t",
-  declare $ variable Dec (CT $ int 1 ... var "nc") "q",
-  constraint $ var "wa" !=. var "nt",
-  constraint $ var "wa" !=. var "sa",
-  constraint $ var "nt" !=. var "sa",
-  constraint $ var "nt" !=. var "q",
-  constraint $ var "sa" !=. var "q",
-  constraint $ var "sa" !=. var "nsw",
-  constraint $ var "sa" !=. var "v",
-  constraint $ var "q"  !=. var "nsw",
-  constraint $ var "nsw" !=. var "v",
+  assignPar Int "nc" 3,
+  declareVar (CT $ 1 ... "nc") "wa",
+  declareVar (CT $ 1 ... "nc") "nsw",
+  declareVar (CT $ 1 ... "nc") "nt",
+  declareVar (CT $ 1 ... "nc") "v",
+  declareVar (CT $ 1 ... "nc") "sa",
+  declareVar (CT $ 1 ... "nc") "t",
+  declareVar (CT $ 1 ... "nc") "q",
+  constraint $ "wa" !=. "nt",
+  constraint $ "wa" !=. "sa",
+  constraint $ "nt" !=. "sa",
+  constraint $ "nt" !=. "q",
+  constraint $ "sa" !=. "q",
+  constraint $ "sa" !=. "nsw",
+  constraint $ "sa" !=. "v",
+  constraint $ "q"  !=. "nsw",
+  constraint $ "nsw" !=. "v",
   solve satisfy,
   Output (ArrayLit [
-    string "wa=", mz_show [var "wa"],
-    string "\t nt=", mz_show [var "nt"],
-    string "\t sa=", mz_show [var "sa"],
+    string "wa=", mz_show ["wa"],
+    string "\t nt=", mz_show ["nt"],
+    string "\t sa=", mz_show ["sa"],
     string "\n",
-    string "q=", mz_show [var "q"],
-    string "\t nsw=", mz_show [var "nsw"],
-    string "\t v=", mz_show [var "v"],
+    string "q=", mz_show ["q"],
+    string "\t nsw=", mz_show ["nsw"],
+    string "\t v=", mz_show ["v"],
     string "\n",
-    string "t=", mz_show [var "t"],
+    string "t=", mz_show ["t"],
     string "\n"])]
 
 cakes = [
   (%) "Baking cakes for the school fete (with data file)",
-  declare $ variable Par Int "flour",
-  declare $ variable Par Int "banana",
-  declare $ variable Par Int "sugar",
-  declare $ variable Par Int "butter",
-  declare $ variable Par Int "cocoa",
-  constraint $ 
-    mz_assert [var "flour" >=. int 0
+  declarePar Int "flour",
+  declarePar Int "banana",
+  declarePar Int "sugar",
+  declarePar Int "butter",
+  declarePar Int "cocoa",
+  constraint $
+    mz_assert ["flour" >=. 0
              ,string "mz_invalid datafile: Ammount of flour is non-negative"],
   constraint $
-    mz_assert [var "banana" >=. int 0
+    mz_assert ["banana" >=. 0
              ,string "mz_invalid datafile: Ammount of banana is non-negative"],
   constraint $
-    mz_assert [var "sugar" >=. int 0
+    mz_assert ["sugar" >=. 0
               ,string "mz_invalid datafile: Ammount of sugar is non-negative"],
   constraint $
-    mz_assert [var "butter" >=. int 0
+    mz_assert ["butter" >=. 0
               ,string "mz_invalid datafile: Ammount of butter is non-negative"],
   constraint $
-    mz_assert [var "cocoa" >=. int 0
+    mz_assert ["cocoa" >=. 0
               ,string "mz_invalid datafile: Ammount of cocoa is non-negative"],
-  declare $ variable Dec (CT $ int 0 ... int 100) "b",
-  declare $ variable Dec (CT $ int 0 ... int 100) "c",
-  constraint $ int 250 *. var "b" +. int 200 *. var "c" <=. var "flour",
-  constraint $ int 2 *. var "b" <=. var "banana",
-  constraint $ int 75 *. var "b" +. int 150 *. var "c" <=. var "sugar",
-  constraint $ int 100 *. var "b" +. int 150 *. var "c" <=. var "butter",
-  constraint $ int 75 *. var "c" <=. var "cocoa",
+  declareVar (CT $ 0 ... 100) "b",
+  declareVar (CT $ 0 ... 100) "c",
+  constraint $ 250 *. "b" +. 200 *. "c" <=. "flour",
+  constraint $ 2 *. "b" <=. "banana",
+  constraint $ 75 *. "b" +. 150 *. "c" <=. "sugar",
+  constraint $ 100 *. "b" +. 150 *. "c" <=. "butter",
+  constraint $ 75 *. "c" <=. "cocoa",
   (%) "Maximize our profit",
-  solve $ maximize (int 400 *. var "b" +. int 450 *. var "c"),
+  solve $ maximize (400 *. "b" +. 450 *. "c"),
   output [ string "no. of banana cakes = "
-         , mz_show [var "b"]
+         , mz_show ["b"]
          , string "\n"
          , string "no. of chocolate cakes = "
-         , mz_show [var "c"], string "\n"
+         , mz_show ["c"], string "\n"
          ]
   ]
-    
+
+cakedata :: [Item]
 cakedata =
   ["flour"   =. int 4000
   ,"banana"  =. int 6
   ,"sugar"   =. int 2000
   ,"butter"  =. int 500
   ,"cocoa"   =. int 500
+  ]
+
+euler1 = [
+  (%) "Example taken from http://www.hakank.org/minizinc/euler_1.mzn",
+  assignPar Int "n" $ 999,
+  declarePar (Array [CT $ 1 ... "n"] Dec (CT $ 0 ... 1)) "x",
+  assignVar Int "s"
+    $ forall [["i"] @@ 1 ... "n"] "sum" ("x"!.["i"] * "i"),
+
+  solve satisfy,
+
+  constraint $
+    forall [["i"] @@ 1 ... "n"] "forall" (
+      if_ ("i" `_mod_` 3 =.= 0 \/. "i" `_mod_` 5 =.= 0)
+      `then_` ("x"!.["i"] =.= 1)
+      `else_` ("x"!.["i"] =.= 0)
+  ),
+
+  output [ mz_show ["s"] ]
+  ]
+
+euler2 = [
+  (%) "Example taken from http://www.hakank.org/minizinc/euler_2.mzn",
+  assignPar Int "n" 46,
+
+  declarePar (Array [CT $ 1 ... "n"] Dec Int) "f",
+  declarePar (Array [CT $ 1 ... "n"] Dec (CT $ 0 ... 1)) "x",
+
+  assignVar (CT $ 0 ... 10000000) "res"
+    $ forall [["i"] @@ 1 ... "n"] "sum" ("x"!.["i"] *. "f"!.["i"]),
+
+  solve satisfy,
+
+  constraint $
+    "f"!.[1] =.= 1 /\.
+    "f"!.[2] =.= 1 /\.
+    forall [["i"] @@ 3 ... "n"] "forall" (
+      "f"!.["i"] =.= "f"!.["i" -. 1] +. "f"!.["i" -. 2]
+    ),
+
+  constraint $
+    forall [["i"] @@ 1 ... "n"] "forall" (
+      "f"!.["i"] >. 0 /\.
+      ("f"!.["i"] `_mod_` 2 =.= 1 /\. "f"!.["i"] <. 4000000) <->. ("x"!.["i"] =.= 1)
+    ),
+
+  output [ mz_show ["f"]
+         ++. string "\n"
+         ++. mz_show ["x"]
+         ++. string "\n"
+         ++. string "res: "
+         ++. mz_show ["res"]
+         ]
   ]

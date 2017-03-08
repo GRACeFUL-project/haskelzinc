@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances #-}
-
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-|
 Module      : MZAST
 Description : More human-friendly interface for "Interfaces.MZASTBase"
@@ -13,12 +14,13 @@ Stability   : experimental
 This module defines a more human-friendly interface for the MiniZinc 2.1 language, on top
 of "Interfaces.MZASTBase". With the use of this module, one can represent MiniZinc models in Haskell code.
 -}
- 
+
 module Interfaces.MZAST (
   -- * Items
   include, constraint, output, (%),
   (=.), declare, variable, predicate, function, test, annotation,
-  solve, satisfy, minimize, maximize,
+  solve, satisfy, minimize, maximize, declareVar, declarePar,
+  assignPar, assignVar,
   -- * Expressions
   -- ** Constants
   true, false, var, int, float, string,
@@ -42,6 +44,8 @@ module Interfaces.MZAST (
 ) where
 
 import Interfaces.MZASTBase
+import Interfaces.MZBuiltIns
+import Data.String
 
 -- Items
 {-
@@ -104,9 +108,8 @@ maximize = Maximize []
 
 infix 1 =.
 
-class Assignable a where
-  type Assigned a
-  
+class Assignable a b | a -> b, b -> a where
+
   -- | The operator that represents assignment in MiniZinc code. One can assign a non-
   -- annotated expression to a variable, predicate, test or function either on declaration
   -- or later.
@@ -125,15 +128,13 @@ class Assignable a where
   -- >>> declare $ variable "x" Par Int =. int 1
   -- 
   -- Not to be confused with the equality operator, represented in haskelzinc by '=.='.
-  (=.) :: a -> Expr -> Assigned a
+  (=.) :: a -> Expr -> b
 
-instance Assignable [Char] where
-  type Assigned [Char] = Item
+instance Assignable [Char] Item where
   name =. e = Assign name $ AnnExpr e []
 
-instance Assignable Declaration where
-  type Assigned Declaration = Declaration
-  (Declaration ds ans _) =. e = Declaration ds ans (Just (AnnExpr e []))
+instance Assignable Declaration Declaration where
+  (Declaration ds ans _) =. e = Declaration ds ans (Just $ toSimpleExpr e)
 
 -- | Used to represent declaration items of MiniZinc. These are variable, function, 
 -- predicate, test and annotation declaration items.
@@ -410,6 +411,42 @@ else_ = ITE
 -- Let expressions
 let_ = Let
 
+-- | shorter syntax to declare a parameter
+--
+-- Example:
+--
+-- >>> declarePar Int "n"
+-- par int: n;
+declarePar :: Type -> Ident -> Item
+declarePar t i = declare $ variable Par t i
+
+-- | shorter syntax to declare a decision variable
+--
+-- Example:
+--
+-- >>> declareVar Int "n"
+-- var int: n;
+declareVar :: Type -> Ident -> Item
+declareVar t i = declare $ variable Dec t i
+
+-- | shorter syntax to declare and assign a parameter
+--
+-- Example:
+--
+-- >>> assignVar Int "n" $ int 1
+-- par int: n = 1;
+assignPar :: Type -> Ident -> Expr -> Item
+assignPar t i a = declare $ variable Par t i =. a
+
+-- | shorter syntax to declare and assign a decision variable
+--
+-- Example:
+--
+-- >>> assignVar Int "n" $ int 1
+-- var int: n = 1;
+assignVar :: Type -> Ident -> Expr -> Item
+assignVar t i a = declare $ variable Dec t i =. a
+
 -- Annotations
 infixl 4 |:
 class Annotatable a where
@@ -439,3 +476,24 @@ instance Annotatable Solve where
   isAnnotated (Minimize [] _) = False
   isAnnotated (Maximize [] _) = False
   isAnnotated _                = True
+
+-- Ranges
+
+instance IsString Expr where
+  fromString = var
+
+instance Num Expr where
+  fromInteger = int . fromIntegral
+  (+) = (+.)
+  (*) = (*.)
+  (-) = (-.)
+  abs a = mz_abs [a]
+  signum a =
+    if_ (a <. 0) `then_` (-1)
+    `elseif_` (a >. 0) `then_` 1
+    `else_` 0
+
+instance Fractional Expr where
+  fromRational = float . fromRational
+  (/) = undefined
+  recip = undefined
