@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances #-}
-
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-|
 Module      : MZAST
 Description : More human-friendly interface for "Interfaces.MZASTBase"
@@ -13,7 +13,7 @@ Stability   : experimental
 This module defines a more human-friendly interface for the MiniZinc 2.1 language, on top
 of "Interfaces.MZASTBase". With the use of this module, one can represent MiniZinc models in Haskell code.
 -}
- 
+
 module Interfaces.MZAST (
   -- * Items
   include, constraint, output, (%),
@@ -43,6 +43,8 @@ module Interfaces.MZAST (
 ) where
 
 import Interfaces.MZASTBase
+import Interfaces.MZBuiltIns
+import Data.String
 
 -- Items
 {-
@@ -476,3 +478,16 @@ instance Annotatable Solve where
   isAnnotated (Minimize [] _) = False
   isAnnotated (Maximize [] _) = False
   isAnnotated _                = True
+
+-- Ranges
+
+instance IsString Expr where
+  fromString = var
+
+instance Num Expr where
+  fromInteger = int . fromIntegral
+  (+) = (+.)
+  (*) = (*.)
+  (-) = (-.)
+  abs = undefined
+  signum = undefined
