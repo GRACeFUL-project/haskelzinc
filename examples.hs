@@ -155,6 +155,7 @@ planning = [
   solve $ maximize (mz_sum [("profit"!.[Var "p"] *. "produce"!.[var "p"]) #|. [["p"] @@ var "Products"]])
   ]
 
+planningData :: [Item]
 planningData = [
   "nproducts" =. int 2,
   "profit" =. intArray [400, 450],
@@ -182,6 +183,7 @@ knapsack = [
       (mz_bool2int [var "i" `_in_` var "knapsack"] *. "profits"!.[Var "i"]))
   ]
 
+knapdata :: [Item]
 knapdata = [
   "n" =. int 6,
   "capacity" =. int 13,
@@ -259,7 +261,8 @@ cakes = [
          , mz_show [var "c"], string "\n"
          ]
   ]
-    
+
+cakedata :: [Item]
 cakedata =
   ["flour"   =. int 4000
   ,"banana"  =. int 6

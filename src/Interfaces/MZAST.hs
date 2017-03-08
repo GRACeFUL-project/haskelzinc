@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeFamilies, FlexibleInstances #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-|
 Module      : MZAST
 Description : More human-friendly interface for "Interfaces.MZASTBase"
@@ -105,9 +106,12 @@ maximize = Maximize []
 
 -- Declaring and assigning
 
+--type family X a
+
+
 infix 1 =.
 
-class Assignable a where
+class {-(X b ~ a) => -} Assignable a b | a -> b, b -> a where
   type Assigned a
   
   -- | The operator that represents assignment in MiniZinc code. One can assign a non-
@@ -128,15 +132,19 @@ class Assignable a where
   -- >>> declare $ variable "x" Par Int =. int 1
   -- 
   -- Not to be confused with the equality operator, represented in haskelzinc by '=.='.
-  (=.) :: a -> Expr -> Assigned a
+  (=.) :: a -> Expr -> b --Assigned a
 
-instance Assignable [Char] where
+instance Assignable [Char] Item where
   type Assigned [Char] = Item
   name =. e = Assign name $ AnnExpr e []
 
-instance Assignable Declaration where
+--type instance X Item = [Char]
+
+instance Assignable Declaration Declaration where
   type Assigned Declaration = Declaration
   (Declaration ds ans _) =. e = Declaration ds ans (Just (AnnExpr e []))
+
+--type instance X Declaration = Declaration
 
 -- | Used to represent declaration items of MiniZinc. These are variable, function, 
 -- predicate, test and annotation declaration items.
