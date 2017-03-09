@@ -20,7 +20,7 @@ module Interfaces.MZAST (
   include, constraint, output, (%),
   (=.), declare, variable, predicate, function, test, annotation,
   solve, satisfy, minimize, maximize, declareVar, declarePar,
-  assignPar, assignVar,
+  assignPar, assignVar, declarePars, declareVars,
   -- * Expressions
   -- ** Constants
   true, false, var, int, float, string,
@@ -446,6 +446,27 @@ assignPar t i a = declare $ variable Par t i =. a
 -- var int: n = 1;
 assignVar :: Type -> Ident -> Expr -> Item
 assignVar t i a = declare $ variable Dec t i =. a
+
+-- | allows you to declare multiple parameters at once
+--
+-- Example:
+--
+-- >>> declarePars Int ["a", "b"]
+-- par int: a;
+-- par int: b;
+declarePars :: Type -> [Ident] -> [Item]
+declarePars t li = map (declarePar t) li
+
+-- | allows you to declare multiple decision variables at once
+--
+-- Example:
+--
+-- >>> declareVars Int ["a", "b"]
+-- var int: a;
+-- var int: b;
+declareVars :: Type -> [Ident] -> [Item]
+declareVars t li = map (declareVar t) li
+
 
 -- Annotations
 infixl 4 |:
