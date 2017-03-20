@@ -325,3 +325,55 @@ euler2 = [
          ++. mz_show ["res"]
          ]
   ]
+
+nineDigitArrangement = [
+  (%) "Example taken from http://www.hakank.org/minizinc/nine_digit_arrangement.mzn",
+  include "globals.mzn",
+  declare $ variable Par (Set $ CT $ int 1 ... int 9) "d" =. int 1 ... int 9,
+  declare $ variable Dec (ctvar "d") "A",
+  declare $ variable Dec (ctvar "d") "B",
+  declare $ variable Dec (ctvar "d") "C",
+  declare $ variable Dec (ctvar "d") "D",
+  declare $ variable Dec (ctvar "d") "E",
+  declare $ variable Dec (ctvar "d") "F",
+  declare $ variable Dec (ctvar "d") "G",
+  declare $ variable Dec (ctvar "d") "H",
+  declare $ variable Dec (ctvar "d") "I",
+
+  declare $ variable Dec Int "s",
+
+  declare $ variable Par (Array[ctvar "d"] Dec (ctvar "d")) "x",
+
+  solve $ satisfy |: mz_int_search[E $ var "x", A $ mz_first_fail[], A $ mz_indomain_min[],A $ mz_complete[]],
+  constraint $
+    call "all_different" [var "x"]
+    /\.
+    var "s" =.= (int 100 *. var "A" +. int 10 *. var "B" +. var "C") *.
+                  (int 10 *. var "D" +. var "E")
+    /\.
+    var "s" =.= (int 10 *. var "F" +. var "G") *. (int 10 *. var "H" +. var "I")
+    /\.
+    (int 10 *. var "F" +. var "G") <=. (int 10 *. var "H" +. var "I")
+    /\.
+    var "s" =.= int 7448,
+
+  output [ string "Solution\n"
+         ++. mz_show [var "A"]
+         ++. mz_show [var "B"]
+         ++. mz_show [var "C"]
+         ++. string "\n*  "
+         ++. mz_show [var "D"]
+         ++. mz_show [var "E"]
+         ++. string "\n-----\n "
+         ++. mz_show [var "s"]
+         ++. string "\n\n   "
+         ++. mz_show [var "F"]
+         ++. mz_show [var "G"]
+         ++. string "\n * "
+         ++. mz_show [var "H"]
+         ++. mz_show [var "I"]
+         ++. string "\n-----\n "
+         ++. mz_show [var "s"]
+         ++. string "\n"
+         ]
+  ]
