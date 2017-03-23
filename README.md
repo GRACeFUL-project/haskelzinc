@@ -68,4 +68,8 @@ Right [[("A",MInt 5),("B",MInt 3),("C",MInt 2),("D",MInt 1),("E",MInt 4),("F",MI
 The script first asks for a working directory. This is where related files will be stored. Next, a name for the model should be given, which will be used for naming the files that will be stored in the working directory. After a name is chosen, the user is presented with a list of supported solvers from which (s)he can choose by entering the corresponding number of the solver. Last, the user is prompted to specify the desired number of solutions. The number of returned solutions will be at most of the user given number. They will be less in case there are no more solutions.
 
 ## Noninteractive
-The same functionality can be triggered in a noninteractive manner, with the use of `testGModel`. The user input in `iTestGModel` is entered as arguments (in the same order) of `testGModel`. Make sure to escape special characters in string of the working directory path.
+The same functionality can be triggered in a noninteractive manner, with the use of `testGModel`. The user input in `iTestGModel` is entered as arguments (in the same order) of `testGModel`. Make sure to escape special characters in the string of the working directory path.
+
+```
+testGModel nineDigitArrangement "/path/to/desired/directory" "nine" 1 1
+```
