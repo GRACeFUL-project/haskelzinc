@@ -12,11 +12,12 @@ MiniZinc model and getting back the solutions in Haskell values.
 -}
 
 module Interfaces.MZinHaskell (
-  iTestModel,
+--  iTestModel,
   iTestGModel,
-  testModel,
-  testModelWithData,
-  testModelWithParser,
+  testGModel,
+--  testModel,
+--  testModelWithData,
+--  testModelWithParser,
   writeData
 ) where
 
@@ -43,9 +44,27 @@ testModelWithData model mdata path solver num =
   let fdata = [Comment "Model\'s data"] ++ mdata ++ [Comment "End of model\'s data"]
   in testModel (fdata ++ model) path solver num
 
-  
+-- | Same as `testGModel`, but interactive.
+-- 
+-- Interactively runs a constraint model and outputs its solution(s). The 
+-- function first prompts the user for the working directory: the FlatZinc file 
+-- will be created in that directory. Then, for a name for the constraint model: 
+-- the created FlatZinc file will be named after this. Also asks the user to 
+-- choose between supported solvers and the desired number of solutions. Returns 
+-- either a parse error or a list of solutions of the constraint model. The length 
+-- of the list is at most equal to the number of solutions requested.
 iTestGModel :: [ModelData] -> IO (Either ParseError [Solution])
 iTestGModel gm = iTestModel (map turnToItem gm)
+
+-- | Runs (noninteractively) a model and parses its solution(s). Use this function if 
+-- the model contains no @output@ item, so that the solutions have the default format.
+testGModel :: [ModelData] -- ^ The model
+           -> FilePath    -- ^ The path of the file in which the FlatZinc translation will be printed (without ".fzn" extension)
+           -> Int         -- ^ The chosen solver (@1@ for the G12/FD built-in solver or @2@ for choco3)
+           -> Int         -- ^ The number of solutions to be returned
+           -> IO (Either ParseError [Solution])
+testGModel model = testModelWithParser tryDefaultSolutions (map turnToItem model)
+
 -- | Same as `testModel`, but interactive.
 -- 
 -- Interactively runs a constraint model and outputs its solution(s). The 
@@ -69,6 +88,8 @@ iTestModel m = do
       ns = read str_ns
       path = joinPath [dirpath, name]
   testModel m path solver ns
+
+
 
 -- | Runs a model and parses its solution(s). Use this function if the model contains no
 -- @output@ item, so that the solutions have the default format.

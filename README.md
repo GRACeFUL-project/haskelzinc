@@ -44,3 +44,28 @@ Example:
 # Not yet supported
  * MiniZinc enumerated types
  * Set constraints with the choco solver
+
+# Running a model
+Let `nineDigitArrangement` be the haskelzinc representation of a MiniZinc model.
+
+## Interactive
+To run the model interactively, use `iTestGModel` and follow the instructions. An example is given below. 
+
+```
+> iTestGModel nineDigitArrangement
+Enter working directory:
+/path/to/desired/directory
+Enter model's name: nine
+Choose a solver from the list below:
+        1. G12/FD
+        2. choco3
+
+Integer value associated with the solver: 1
+Number of solutions to be returned: 1
+Right [[("A",MInt 5),("B",MInt 3),("C",MInt 2),("D",MInt 1),("E",MInt 4),("F",MInt 7),("G",MInt 6),("H",MInt 9),("I",MInt 8),("s",MInt 7448)]]
+```
+
+The script first asks for a working directory. This is where related files will be stored. Next, a name for the model should be given, which will be used for naming the files that will be stored in the working directory. After a name is chosen, the user is presented with a list of supported solvers from which (s)he can choose by entering the corresponding number of the solver. Last, the user is prompted to specify the desired number of solutions. The number of returned solutions will be at most of the user given number. They will be less in case there are no more solutions.
+
+## Noninteractive
+The same functionality can be triggered in a noninteractive manner, with the use of `testGModel`. The user input in `iTestGModel` is entered as arguments (in the same order) of `testGModel`. Make sure to escape special characters in string of the working directory path.
