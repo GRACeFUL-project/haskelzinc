@@ -48,15 +48,15 @@ printModel = foldr1 ($+$) . map printItem
 -- | Prints an 'Item' value.
 printItem :: Item -> Doc
 -- printItem (Empty)           = space
-printItem (Comment str)     = text "%" <+> text str
-printItem (Include file)    = text "include" <+> doubleQuotes (text file) <> semi
-printItem (Declare p)       = printDeclaration p <> semi
-printItem (Constraint c)    = hang (text "constraint") 2 (printAnnExpr c <> semi)
-printItem (Assign var expr) = text var <+> printBody (Just expr) <> semi
-printItem (Output es)       = text "output" <+> printExpr es <> semi
-printItem (Solve s)         = text "solve" 
-                              <+> printSolve s 
-                              <> semi
+printItem (Comment str)   = text "%" <+> text str
+printItem (Include file)  = text "include" <+> doubleQuotes (text file) <> semi
+printItem (Declare p)     = printDeclaration p <> semi
+printItem (Constraint c)  = hang (text "constraint") 2 (printAnnExpr c <> semi)
+printItem (Assign x expr) = printIdent x <+> printBody (Just expr) <> semi
+printItem (Output es)     = text "output" <+> printExpr es <> semi
+printItem (Solve s)       = text "solve" 
+                            <+> printSolve s 
+                            <> semi
 
 printDeclaration :: Declaration -> Doc
 printDeclaration (Declaration nd ans me) =
@@ -64,15 +64,14 @@ printDeclaration (Declaration nd ans me) =
 
 printBody :: Maybe AnnExpr -> Doc
 printBody = maybe empty (\e -> equals <+> (printAnnExpr e))
-  
 
 printDeclarationSig :: DeclarationSignature -> Doc
 printDeclarationSig (Variable p)          = printParam p
 printDeclarationSig (Predicate name ps)   = text "predicate"
-                                            <+> text name
+                                            <+> printIdent name
                                             <> parens (printParams ps)
 printDeclarationSig (Test name ps)        = text "test"
-                                            <+> text name
+                                            <+> printIdent name
                                             <> parens (printParams ps)
 printDeclarationSig (Function p ps)       = text "function"
                                             <+> printParam p
@@ -106,7 +105,7 @@ printAnnExpr (AnnExpr e ans)            = printExpr e
 -- in x + y
 printExpr :: Expr -> Doc
 printExpr AnonVar             = text "_"
-printExpr (Var v)             = text v
+printExpr (Var v)             = printIdent v
 printExpr (BConst b)
   | b                         = text "true"
   | otherwise                 = text "false"
@@ -122,7 +121,7 @@ printExpr (ArrayLit es)       = brackets $ commaSepExprs es
 printExpr (ArrayLit2D ess)    = 
   brackets (foldl1 ($+$) (map (\x -> text "|" <+> commaSepExprs x) ess) <> text "|")
 printExpr (ArrayComp e ct)    = brackets (hang (printExpr e <+> text "|") 0 (printCompTail ct))
-printExpr (ArrayElem v es)    = text v <> brackets (commaSepExprs es)
+printExpr (ArrayElem v es)    = printIdent v <> brackets (commaSepExprs es)
 printExpr (U op e)            = printOp op 
                                      <+> (
                                        if isAtomic e 
@@ -132,14 +131,14 @@ printExpr (U op e)            = printOp op
 printExpr (Bi op e1 e2)       = sep [printParensExpr (opPrec op) e1 
                                     , printOp op 
                                     , printParensExpr (opPrec op) e2]
-printExpr (Call name args)    = text name 
+printExpr (Call name args)    = printIdent name
                                 <> printArgs printAnnExpr args
 printExpr (ITE (pe:pes) e)    = sep (listIT pe ++ listEIT pes ++ listEI e)
 printExpr (Let is e)          = text "let" 
                                 <+> braces (nest 4 (vcat (map printItem is))) 
                                 $+$ text "in" <+> printExpr e
 printExpr (GenCall name ct e) = 
-  hang (text name <> parens (printCompTail ct)) 2 (parens (printExpr e))
+  hang (printIdent name <> parens (printCompTail ct)) 2 (parens (printExpr e))
 
 listIT :: (Expr, Expr) -> [Doc]
 listIT (e1, e2) = [ text "if" <+> printExpr e1
@@ -191,7 +190,7 @@ printCompTail (gs, Just wh) = commaSep printGenerator gs
                               <+> printExpr wh
 
 printGenerator :: Generator -> Doc
-printGenerator (es, r) = text (intercalate ", " es) 
+printGenerator (es, r) = hsep (punctuate (text ", ") (map printIdent es))
                          <+> text "in" 
                          <+> printExpr r
 
@@ -220,7 +219,7 @@ printGArg (A a) = printAnnotation a
 printGArg (E e) = printExpr e
 
 printOp :: Op -> Doc
-printOp (Op op)  = text op
+printOp (Op op) = printIdent op
 
 printSolve :: Solve -> Doc
 printSolve (Satisfy  ans  ) = printAnnotations ans <+> text "satisfy"
@@ -234,9 +233,13 @@ printSolve (Maximize ans e) = printAnnotations ans
 printParams :: [Param] -> Doc
 printParams ps = commaSep printParam ps
 
+printIdent :: Ident -> Doc
+printIdent (Simpl name)  = text name
+printIdent (Quoted name) = quotes $ text name
+
 -- Prints the parameters of call expressions (predicates, tests and functions) or annotations
 printParam :: Param -> Doc
-printParam (i, t, n) = printTypeInst (i, t) <> colon <+> text n
+printParam (i, t, n) = printTypeInst (i, t) <> colon <+> printIdent n
 
 -- Prints the instantiation (var or par) and the type in a variable declaration. If the
 -- type is Array or String, it does not print the inst, since these types are of fixed

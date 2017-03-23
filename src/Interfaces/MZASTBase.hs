@@ -37,7 +37,7 @@ module Interfaces.MZASTBase (
   CompTail,
   Generator,
   Param,
-  Ident,
+  Ident(..), stringToIdent, identToString,
   Filename
 ) where 
 
@@ -99,7 +99,7 @@ data DeclarationSignature = Variable Param
                           | Predicate Ident [Param]
                           | Test Ident [Param]
                           | Function Param [Param]
-                          | Annotation' Ident [Param]
+                          | Annotation' String [Param]
   deriving (Show, Eq)
 
 -- | The type of a MiniZinc expression's representation.
@@ -185,7 +185,7 @@ data Type
   | ACT Ident
   -}
   -- | Type variable
-  | VarType Ident
+  | VarType String
   deriving (Show, Eq)
 
 -- | Represents an operator name/symbol in MiniZinc.
@@ -195,8 +195,9 @@ newtype Op = Op Ident
 -- | Transforms an operator to a quoted operator (which, in MiniZinc admits prefix 
 -- notation). One can represent the application of a quoted operator though the 'Call'
 -- constructor of type 'Item'.
-prefixOp :: Op -> Ident
-prefixOp (Op op) = "`" ++ op ++ "`"
+prefixOp :: Op -> Op
+prefixOp    (Op (Simpl name))  = Op $ Quoted name
+prefixOp op@(Op (Quoted name)) = op
 
 -- | Used in annotations' arguments, which can be either annotations or expressions.
 data GArguments = A Annotation
@@ -205,7 +206,7 @@ data GArguments = A Annotation
 
 -- | Represents a call to a MiniZinc annotation. First argument represents the 
 -- annotation\'s name and second argument contains the annotation's arguments, if any.
-data Annotation = Annotation Ident [GArguments]
+data Annotation = Annotation String [GArguments]
   deriving (Show, Eq)
 
 -- | The type of a MiniZinc instantiation representation.
@@ -229,6 +230,19 @@ type TypeInst = (Inst, Type)
 
 type Param = (Inst, Type, Ident)
 
-type Ident = String
+-- | MiniZinc identifiers can be simple alphanumberics of the form @[A-Za-z][A-Za-z0-9_]*@
+-- or quoted strings.
+data Ident = Simpl String   -- ^ Represents a simple identifier
+           | Quoted String  -- ^ Represents a quoted identifier
+  deriving (Eq, Show)
+
+stringToIdent :: String -> Ident
+stringToIdent name@('\'':rest) = Quoted (init rest)
+stringToIdent name = Simpl name
+
+identToString :: Ident -> String
+identToString (Simpl name)  = name
+identToString (Quoted name) = "'" ++ name ++ "'"
+
 
 type Filename = String

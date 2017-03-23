@@ -70,6 +70,8 @@ module Interfaces.MZBuiltIns (
   mz_implied_constraint, mz_redundant_constraint, mz_symmetry_breaking_constraint,
   -- ** Language information
   mz_mzn_compiler_version, mz_mzn_version_to_string,
+  -- * MiniZinc global constraints
+  mz_all_different,
   -- * MiniZinc annotations
   -- ** General annotations
   mz_add_to_output, mz_is_defined_var, mz_is_reverse_map, mz_maybe_partial, mz_output_var,
@@ -89,178 +91,189 @@ module Interfaces.MZBuiltIns (
   -- *** Exploration strategy annotations
   mz_complete,
   -- Others
-  call
+  prefCall, infCall, prefOp, infOp
 ) where
 
 import Interfaces.MZASTBase
 
--- | Used to represent a call to a funtion, test or predicate.
-call :: Ident  -- ^ The name of the called operation
+-- | Used to represent a call to a function, test or predicate, using the prefix notation.
+prefCall :: String  -- ^ The name of the called operation
      -> [Expr] -- ^ A representation of the arguments
      -> Expr
-call name = Call name . map toSimpleExpr
+prefCall name = Call (Simpl name) . map toSimpleExpr
 
+infCall :: String
+        -> Expr
+        -> Expr
+        -> Expr
+infCall name e1 e2 = Call (Quoted name) $ map toSimpleExpr [e1, e2]
+
+prefOp :: String -> Op
+prefOp = Op . Quoted
+
+infOp :: String -> Op
+infOp = Op . Simpl
 -- MiniZinc calls
 
 -- Arithmetic calls
-mz_abs     = call "abs"
-mz_arg_max = call "arg_max"
-mz_arg_min = call "arg_min"
-mz_max     = call "max"
-mz_min     = call "min"
-mz_pow     = call "pow"
-mz_product = call "product"
-mz_sqrt    = call "sqrt"
-mz_sum     = call "sum"
+mz_abs     = prefCall "abs"
+mz_arg_max = prefCall "arg_max"
+mz_arg_min = prefCall "arg_min"
+mz_max     = prefCall "max"
+mz_min     = prefCall "min"
+mz_pow     = prefCall "pow"
+mz_product = prefCall "product"
+mz_sqrt    = prefCall "sqrt"
+mz_sum     = prefCall "sum"
 
 -- Exponential and logarithmic calls
-mz_exp   = call "exp"
-mz_ln    = call "ln"
-mz_log   = call "log"
-mz_log10 = call "log10"
-mz_log2  = call "log2"
+mz_exp   = prefCall "exp"
+mz_ln    = prefCall "ln"
+mz_log   = prefCall "log"
+mz_log10 = prefCall "log10"
+mz_log2  = prefCall "log2"
 
 -- Trigonometric calls
-mz_acos  = call "acos"
-mz_acosh = call "acosh"
-mz_asin  = call "asin"
-mz_asinh = call "asinh"
-mz_atan  = call "atan"
-mz_atanh = call "atanh"
-mz_cos   = call "cos"
-mz_cosh  = call "cosh"
-mz_sin   = call "sin"
-mz_sinh  = call "sinh"
-mz_tan   = call "tan"
-mz_tanh  = call "tanh"
+mz_acos  = prefCall "acos"
+mz_acosh = prefCall "acosh"
+mz_asin  = prefCall "asin"
+mz_asinh = prefCall "asinh"
+mz_atan  = prefCall "atan"
+mz_atanh = prefCall "atanh"
+mz_cos   = prefCall "cos"
+mz_cosh  = prefCall "cosh"
+mz_sin   = prefCall "sin"
+mz_sinh  = prefCall "sinh"
+mz_tan   = prefCall "tan"
+mz_tanh  = prefCall "tanh"
 
 -- Logical calls
-mz_clause = call "clause"
-mz_exists = call "exists"
-mz_forall = call "forall"
-mz_iffall = call "iffall"
-mz_xorall = call "xorall"
+mz_clause = prefCall "clause"
+mz_exists = prefCall "exists"
+mz_forall = prefCall "forall"
+mz_iffall = prefCall "iffall"
+mz_xorall = prefCall "xorall"
 
 -- Set calls
-mz_array_intersect = call "array_intersect"
-mz_array_union     = call "array_union"
-mz_card            = call "card"
+mz_array_intersect = prefCall "array_intersect"
+mz_array_union     = prefCall "array_union"
+mz_card            = prefCall "card"
 
 -- Array calls
-mz_array1d     = call "array1d"
-mz_array2d     = call "array2d"
-mz_array3d     = call "array3d"
-mz_array4d     = call "array4d"
-mz_array5d     = call "array5d"
-mz_array6d     = call "array6d"
-mz_arrayXd     = call "arrayXd"
-mz_col         = call "col"
-mz_has_element = call "has_element"
-mz_has_index   = call "has_index"
-mz_index_set   = call "index_set"
-mz_index_set_1of2 = call "index_set_1of2"
-mz_index_set_1of3 = call "index_set_1of3"
-mz_index_set_1of4 = call "index_set_1of4"
-mz_index_set_1of5 = call "index_set_1of5"
-mz_index_set_1of6 = call "index_set_1of6"
-mz_index_set_2of2 = call "index_set_2of2"
-mz_index_set_2of3 = call "index_set_2of3"
-mz_index_set_2of4 = call "index_set_2of4"
-mz_index_set_2of5 = call "index_set_2of5"
-mz_index_set_2of6 = call "index_set_2of6"
-mz_index_set_3of3 = call "index_set_3of3"
-mz_index_set_3of4 = call "index_set_3of4"
-mz_index_set_3of5 = call "index_set_3of5"
-mz_index_set_3of6 = call "index_set_3of6"
-mz_index_set_4of4 = call "index_set_4of4"
-mz_index_set_4of5 = call "index_set_4of5"
-mz_index_set_4of6 = call "index_set_4of6"
-mz_index_set_5of5 = call "index_set_5of5"
-mz_index_set_5of6 = call "index_set_5of6"
-mz_index_set_6of6 = call "index_set_6of6"
-mz_index_sets_agree = call "index_sets_agree"
-mz_length  = call "length"
-mz_reverse = call "reverse"
-mz_row     = call "row"
+mz_array1d     = prefCall "array1d"
+mz_array2d     = prefCall "array2d"
+mz_array3d     = prefCall "array3d"
+mz_array4d     = prefCall "array4d"
+mz_array5d     = prefCall "array5d"
+mz_array6d     = prefCall "array6d"
+mz_arrayXd     = prefCall "arrayXd"
+mz_col         = prefCall "col"
+mz_has_element = prefCall "has_element"
+mz_has_index   = prefCall "has_index"
+mz_index_set   = prefCall "index_set"
+mz_index_set_1of2 = prefCall "index_set_1of2"
+mz_index_set_1of3 = prefCall "index_set_1of3"
+mz_index_set_1of4 = prefCall "index_set_1of4"
+mz_index_set_1of5 = prefCall "index_set_1of5"
+mz_index_set_1of6 = prefCall "index_set_1of6"
+mz_index_set_2of2 = prefCall "index_set_2of2"
+mz_index_set_2of3 = prefCall "index_set_2of3"
+mz_index_set_2of4 = prefCall "index_set_2of4"
+mz_index_set_2of5 = prefCall "index_set_2of5"
+mz_index_set_2of6 = prefCall "index_set_2of6"
+mz_index_set_3of3 = prefCall "index_set_3of3"
+mz_index_set_3of4 = prefCall "index_set_3of4"
+mz_index_set_3of5 = prefCall "index_set_3of5"
+mz_index_set_3of6 = prefCall "index_set_3of6"
+mz_index_set_4of4 = prefCall "index_set_4of4"
+mz_index_set_4of5 = prefCall "index_set_4of5"
+mz_index_set_4of6 = prefCall "index_set_4of6"
+mz_index_set_5of5 = prefCall "index_set_5of5"
+mz_index_set_5of6 = prefCall "index_set_5of6"
+mz_index_set_6of6 = prefCall "index_set_6of6"
+mz_index_sets_agree = prefCall "index_sets_agree"
+mz_length  = prefCall "length"
+mz_reverse = prefCall "reverse"
+mz_row     = prefCall "row"
 
 -- Array sorting calls
-mz_arg_sort = call "arg_sort"
-mz_sort     = call "sort"
-mz_sort_by  = call "sort_by"
+mz_arg_sort = prefCall "arg_sort"
+mz_sort     = prefCall "sort"
+mz_sort_by  = prefCall "sort_by"
 
 -- Coercion calls
-mz_bool2float = call "bool2float"
-mz_bool2int   = call "bool2int"
-mz_ceil       = call "ceil"
-mz_floor      = call "floor"
-mz_int2float  = call "int2float"
-mz_round      = call "round"
-mz_set2array  = call "set2array"
+mz_bool2float = prefCall "bool2float"
+mz_bool2int   = prefCall "bool2int"
+mz_ceil       = prefCall "ceil"
+mz_floor      = prefCall "floor"
+mz_int2float  = prefCall "int2float"
+mz_round      = prefCall "round"
+mz_set2array  = prefCall "set2array"
 
 -- String calls
-mz_concat    = call "concat"
-mz_file_path = call "file_path"
-mz_format    = call "format"
-mz_join      = call "join"
-mz_show      = call "show"
-mz_show2d    = call "show2d"
-mz_show3d    = call "show3d"
-mz_showJSON  = call "showJSON"
-mz_show_float = call "show_float"
-mz_show_int   = call "show_int"
-mz_strig_length = call "string_length"
+mz_concat       = prefCall "concat"
+mz_file_path    = prefCall "file_path"
+mz_format       = prefCall "format"
+mz_join         = prefCall "join"
+mz_show         = prefCall "show"
+mz_show2d       = prefCall "show2d"
+mz_show3d       = prefCall "show3d"
+mz_showJSON     = prefCall "showJSON"
+mz_show_float   = prefCall "show_float"
+mz_show_int     = prefCall "show_int"
+mz_strig_length = prefCall "string_length"
 
 -- Reflection calls
-mz_dom              = call "dom"
-mz_dom_array        = call "dom_array"
-mz_dom_bounds_array = call "dom_bounds_array"
-mz_dom_size         = call "dom_size"
-mz_fix              = call "fix"
-mz_has_bounds       = call "has_bounds"
-mz_has_ub_set       = call "has_ub_set"
-mz_is_fixed         = call "is_fixed"
-mz_lb               = call "lb"
-mz_lb_array         = call "lb_array"
-mz_ub               = call "ub"
-mz_ub_array         = call "ub_array"
+mz_dom              = prefCall "dom"
+mz_dom_array        = prefCall "dom_array"
+mz_dom_bounds_array = prefCall "dom_bounds_array"
+mz_dom_size         = prefCall "dom_size"
+mz_fix              = prefCall "fix"
+mz_has_bounds       = prefCall "has_bounds"
+mz_has_ub_set       = prefCall "has_ub_set"
+mz_is_fixed         = prefCall "is_fixed"
+mz_lb               = prefCall "lb"
+mz_lb_array         = prefCall "lb_array"
+mz_ub               = prefCall "ub"
+mz_ub_array         = prefCall "ub_array"
 
 -- Assertions and debugging calls
-mz_abort        = call "abort"
-mz_assert       = call "assert"
-mz_trace        = call "trace"
-mz_trace_stdout = call "trace_stdout"
+mz_abort        = prefCall "abort"
+mz_assert       = prefCall "assert"
+mz_trace        = prefCall "trace"
+mz_trace_stdout = prefCall "trace_stdout"
 
 -- Calls for @Enum@s
-mz_enum_next = call "enum_next"
-mz_enum_prev = call "enum_prev"
-mz_to_enum   = call "to_enum"
+mz_enum_next = prefCall "enum_next"
+mz_enum_prev = prefCall "enum_prev"
+mz_to_enum   = prefCall "to_enum"
 
 -- Calls for Optionals
 
 -- Random number generator calls
-mz_bernoulli      = call "bernoulli"
-mz_binomial       = call "binomial"
-mz_cauchy         = call "cauchy"
-mz_chisquared     = call "chisquared"
-mz_discrete_distribution = call "discrete_distribution"
-mz_exponential    = call "exponential"
-mz_fdistribution  = call "fdistribution"
-mz_gamma          = call "gamma"
-mz_lognormal      = call "lognormal"
-mz_normal         = call "normal"
-mz_poisson        = call "poisson"
-mz_tdistribution  = call "tdistribution"
-mz_uniform        = call "uniform"
-mz_weibull        = call "weibull"
+mz_bernoulli      = prefCall "bernoulli"
+mz_binomial       = prefCall "binomial"
+mz_cauchy         = prefCall "cauchy"
+mz_chisquared     = prefCall "chisquared"
+mz_discrete_distribution = prefCall "discrete_distribution"
+mz_exponential    = prefCall "exponential"
+mz_fdistribution  = prefCall "fdistribution"
+mz_gamma          = prefCall "gamma"
+mz_lognormal      = prefCall "lognormal"
+mz_normal         = prefCall "normal"
+mz_poisson        = prefCall "poisson"
+mz_tdistribution  = prefCall "tdistribution"
+mz_uniform        = prefCall "uniform"
+mz_weibull        = prefCall "weibull"
 
 -- Special constraints
-mz_implied_constraint           = call "implied_constraint"
-mz_redundant_constraint         = call "redundant_constraint"
-mz_symmetry_breaking_constraint = call "symmetry_breaking_constraint"
+mz_implied_constraint           = prefCall "implied_constraint"
+mz_redundant_constraint         = prefCall "redundant_constraint"
+mz_symmetry_breaking_constraint = prefCall "symmetry_breaking_constraint"
 
 -- Language information
-mz_mzn_compiler_version  = call "mzn_compiler_version"
-mz_mzn_version_to_string = call "mzn_version_to_string"
+mz_mzn_compiler_version  = prefCall "mzn_compiler_version"
+mz_mzn_version_to_string = prefCall "mzn_version_to_string"
 
 -- MiniZinc operators
 
@@ -271,18 +284,18 @@ infixl 6 `_union_`, `_diff_`, `_symdiff_`, ...
 infixl 7 +., -.
 infixl 8 *., /., `_div_`, `_mod_`, `_intersect_`, ++.
 
-mz_absent = call "absent"
-mz_deopt  = call "deopt"
-mz_occurs = call "occurs"
+mz_absent = prefCall "absent"
+mz_deopt  = prefCall "deopt"
+mz_occurs = prefCall "occurs"
 --mz_regular = call "regular"
 
 -- Comparison operators
-mz_neq = Op "!="
-mz_lt  = Op "<" 
-mz_lte = Op "<="
-mz_eq  = Op "=" 
-mz_gt  = Op ">" 
-mz_gte = Op ">="
+mz_neq = infOp "!="
+mz_lt  = infOp "<" 
+mz_lte = infOp "<="
+mz_eq  = infOp "=" 
+mz_gt  = infOp ">" 
+mz_gte = infOp ">="
 -- | @!=@
 (!=.) = Bi mz_neq
 -- | @<@
@@ -297,12 +310,12 @@ mz_gte = Op ">="
 (>=.) = Bi mz_gte
 
 -- Arithmetic operators
-mz_times = Op "*"  
-mz_plus  = Op "+"  
-mz_minus = Op "-"  
-mz_div   = Op "/"  
-mz_idiv  = Op "div"
-mz_mod   = Op "mod"
+mz_times = infOp "*"  
+mz_plus  = infOp "+"  
+mz_minus = infOp "-"  
+mz_div   = infOp "/"  
+mz_idiv  = infOp "div"
+mz_mod   = infOp "mod"
 -- | @*@
 (*.)   = Bi mz_times
 -- | @+@ (the binary operator)
@@ -321,13 +334,13 @@ _div_  = Bi mz_idiv
 _mod_  = Bi mz_mod
 
 -- Logical operators
-mz_rarrow  = Op "->"  
-mz_and     = Op "/\\" 
-mz_larrow  = Op "<-"  
-mz_lrarrow = Op "<->" 
-mz_not     = Op "not" 
-mz_or      = Op "\\/" 
-mz_xor     = Op "xor"
+mz_rarrow  = infOp "->"
+mz_and     = infOp "/\\"
+mz_larrow  = infOp "<-"
+mz_lrarrow = infOp "<->"
+mz_not     = infOp "not" 
+mz_or      = infOp "\\/" 
+mz_xor     = infOp "xor"
 -- | @->@
 (->.)  = Bi mz_rarrow
 -- | @\/\\@
@@ -344,14 +357,14 @@ not_   = U  mz_not
 _xor_  = Bi mz_xor
 
 -- Set operators
-mz_range     = Op ".."
-mz_diff      = Op "diff"
-mz_in        = Op "in"
-mz_intersect = Op "intersect"
-mz_subset    = Op "subset"
-mz_superset  = Op "superset"
-mz_symdiff   = Op "symdiff"
-mz_union     = Op "union"
+mz_range     = infOp ".."
+mz_diff      = infOp "diff"
+mz_in        = infOp "in"
+mz_intersect = infOp "intersect"
+mz_subset    = infOp "subset"
+mz_superset  = infOp "superset"
+mz_symdiff   = infOp "symdiff"
+mz_union     = infOp "union"
 -- | @..@
 (...)        = Bi mz_range
 -- | @diff@
@@ -370,7 +383,7 @@ _symdiff_    = Bi mz_symdiff
 _union_      = Bi mz_union
 
 -- Array operators
-mz_pp = Op "++"
+mz_pp = infOp "++"
 -- | @++@
 (++.) = Bi mz_pp
 
@@ -406,6 +419,10 @@ opPrec op
   | op == mz_larrow    = 10
   | op == mz_lrarrow   = 11
   | otherwise          = 15
+
+  
+-- MiniZinf global constraints
+mz_all_different = prefCall "all_different"
 
 -- MiniZinc annotations
 -- General annotations

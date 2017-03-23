@@ -13,6 +13,7 @@ MiniZinc model and getting back the solutions in Haskell values.
 
 module Interfaces.MZinHaskell (
   iTestModel,
+  iTestGModel,
   testModel,
   testModelWithData,
   testModelWithParser,
@@ -24,6 +25,7 @@ import System.Process
 import System.FilePath
 import Interfaces.MZAuxiliary
 import Interfaces.MZASTBase (MZModel, Item(Comment))
+import Interfaces.MZAST (ModelData, turnToItem)
 import Interfaces.MZPrinter
 import Interfaces.FZSolutionParser (Solution, tryDefaultSolutions, getSolutions)
 import Text.Parsec.Error
@@ -41,6 +43,9 @@ testModelWithData model mdata path solver num =
   let fdata = [Comment "Model\'s data"] ++ mdata ++ [Comment "End of model\'s data"]
   in testModel (fdata ++ model) path solver num
 
+  
+iTestGModel :: [ModelData] -> IO (Either ParseError [Solution])
+iTestGModel gm = iTestModel (map turnToItem gm)
 -- | Same as `testModel`, but interactive.
 -- 
 -- Interactively runs a constraint model and outputs its solution(s). The 
@@ -95,7 +100,7 @@ testModelWithParser p m mpath s n = do
   let mfzn = (spaceFix $ mz_dir ++ "mzn2fzn") ++ " -O- - -o " ++ (spaceFix (mpath ++ ".fzn"))
   let flatzinc = spaceFix $ mz_dir ++ "flatzinc"
   -- Uncomment line below for debugging
-  -- writeFile (mpath ++ ".mzn") (layout m)
+  writeFile (mpath ++ ".mzn") (layout m)
   readCreateProcess (shell mfzn) (layout m)
   res <- case s of
            1 -> readCreateProcess (shell $ flatzinc ++ " -a -b fd " ++ mpath ++ ".fzn") ""

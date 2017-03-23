@@ -1,13 +1,16 @@
-{-# LANGUAGE TypeFamilies, FlexibleInstances #-}
-{-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+-- {-# LANGUAGE OverloadedStrings #-}
+-- {-# LANGUAGE FunctionalDependencies #-}
+-- {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE GADTs, DataKinds, KindSignatures #-}
+
 {-|
 Module      : MZAST
 Description : More human-friendly interface for "Interfaces.MZASTBase"
 Copyright   : (c) Some Guy, 2013
                   Someone Else, 2014
 License     : GPL-3
-Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
+Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>, Ruben Pieters
 Stability   : experimental
 
 
@@ -17,13 +20,13 @@ of "Interfaces.MZASTBase". With the use of this module, one can represent MiniZi
 
 module Interfaces.MZAST (
   -- * Items
-  include, constraint, output, (%),
-  (=.), declare, variable, predicate, function, test, annotation,
-  solve, satisfy, minimize, maximize, declareVar, declarePar,
-  assignPar, assignVar, declarePars, declareVars,
+  GItem(..),
+  include, constraint, output, (%), solve, satisfy, minimize, maximize,
+  (=.), declare, variable, var, par, predicate, function, test, annotation,
   -- * Expressions
+  let_,
   -- ** Constants
-  true, false, var, int, float, string,
+  true, false, int, float, string,
   -- ** Conditional
   if_, then_, elseif_, else_,
   -- ** Sets
@@ -40,31 +43,29 @@ module Interfaces.MZAST (
   ctvar, ($$),
   -- * Annotations
   (|:),
+  ModelData, declareOnly, turnToItem,
+  {- DSorOther(..),  -}
   module Interfaces.MZASTBase
 ) where
 
 import Interfaces.MZASTBase
 import Interfaces.MZBuiltIns
 import Data.String
+-- import qualified Data.Kind as K
 
 -- Items
-{-
--- | Represents an empty line in the MiniZinc code.
-newline :: Item
-newline = Empty
--}
 
 -- | Represents a comment in the MiniZinc model.
 -- Example:
 -- 
 -- >>> (%) "comment goes here"
 -- % comment goes here
-(%) :: String -> Item
-(%) = Comment
+(%) :: String -> GItem 'OK
+(%) x = Comment' x
 
 -- | Represents an include item in the MiniZinc model. The argument is the filepath.
-include :: String -> Item
-include = Include
+include :: String -> GItem 'OK
+include = Include'
 
 -- | Represents an output item in the MiniZinc model. The elements in the list argument 
 -- represent the elements of the MiniZinc array passed to the output item.
@@ -77,17 +78,17 @@ include = Include
 -- If the represented model contains an @output@ item that changes the default format of
 -- the solver's solutions, then a custom parser will be needed to get the solver's results
 -- back in Haskell. See "Interfaces.FZSolutionParser".
-output :: [Expr] -> Item
-output = Output . ArrayLit
+output :: [Expr] -> GItem 'OK
+output = Output' 
 
 -- | Represents a non-annotated constraint item in the MiniZinc model.
-constraint :: Expr -> Item
-constraint e = Constraint $ AnnExpr e []
+constraint :: Expr -> GItem 'OK
+constraint e = Constrain' (toSimpleExpr e)
 
 -- | Represents a solve item in the MiniZinc model. Used together with one of 'satisfy',
 -- 'minimize' or 'maximize' functions.
-solve :: Solve -> Item
-solve = Solve
+solve :: Solve -> GItem 'OK
+solve = Solve'
 
 -- | Finilizes the representation of a non-annotated solve item. Use '|:' operator to
 -- annotate it.
@@ -106,10 +107,16 @@ maximize = Maximize []
 
 -- Declaring and assigning
 
-infix 1 =.
+declareOnly :: DeclarationSignature -> Declaration
+declareOnly ds = Declaration ds [] Nothing
 
-class Assignable a b | a -> b, b -> a where
+-- | Used to represent declaration items of MiniZinc. These are variable, function, 
+-- predicate, test and annotation declaration items.
+declare :: Declaration -> Item
+declare = Declare
 
+infixl 1 =.
+class Assignable a {-i | a -> i-} where
   -- | The operator that represents assignment in MiniZinc code. One can assign a non-
   -- annotated expression to a variable, predicate, test or function either on declaration
   -- or later.
@@ -118,73 +125,66 @@ class Assignable a b | a -> b, b -> a where
   --
   -- Examples:
   -- 
-  -- To assign to an already declared variable, predicate, test or function 
-  -- @x@, use:
+  -- Assigning to an already declared variable, predicate, test or function 
+  -- @x@:
   -- 
   -- >>> "x" =. int 1
   --
-  -- To assign a value to a variable on declaration, use:
+  -- Assigning a value to a variable on declaration:
   -- 
-  -- >>> declare $ variable "x" Par Int =. int 1
+  -- >>> par Int "x" =. int 1
   -- 
   -- Not to be confused with the equality operator, represented in haskelzinc by '=.='.
-  (=.) :: a -> Expr -> b
+  (=.) :: a -> Expr -> GItem 'OK
 
-instance Assignable [Char] Item where
-  name =. e = Assign name $ AnnExpr e []
+instance i ~ 'DS => Assignable (GItem i) where
+  v@(Var' _ _ _)     =. e = 
+    Declare' $ Declaration (turnToDS v) [] (Just (toSimpleExpr e))
+  (Function' ds)     =. e = Declare' $ Declaration ds [] (Just (toSimpleExpr e))
+  p@(Predicate' _ _) =. e = 
+    Declare' $ Declaration (turnToDS p) [] (Just (toSimpleExpr e))
+  (Test' ds)         =. e = Declare' $ Declaration ds [] (Just (toSimpleExpr e))
+{-
+instance Assignable Expr where
+  Var x =. e = Assign' x e
+  -- x =. e = Assign' (stringToIdent x) e
+-}
+instance Assignable String where
+  x =. e = Assign' (stringToIdent x) e
 
-instance Assignable Declaration Declaration where
-  (Declaration ds ans _) =. e = Declaration ds ans (Just $ toSimpleExpr e)
+class Varr i where
+  var :: Type -> String -> GItem i
+  par :: Type -> String -> GItem i
 
--- | Used to represent declaration items of MiniZinc. These are variable, function, 
--- predicate, test and annotation declaration items.
-declare :: Declaration -> Item
-declare = Declare
+instance Varr OK where
+  var t n = Declare' (declareOnly (Variable (Dec, t, Simpl n)))
+  par t n = Declare' (declareOnly (Variable (Par, t, Simpl n)))
 
-declareOnly :: DeclarationSignature -> Declaration
-declareOnly ds = Declaration ds [] Nothing
+instance Varr DS where
+  var = Var' Dec
+  par = Var' Par
 
--- | Used together with 'declare' to represent a variable declaration item.
--- 
--- >>> declare $ variable Dec Int "x"
-variable :: Inst -> Type -> Ident -> Declaration
-variable i t s = declareOnly $ Variable (i, t, s)
+variable :: Inst -> Type -> String -> DeclarationSignature
+variable i t s = Variable (i, t, Simpl s)
 
--- | Used together with 'declare' to represent a predicate declaration item.
--- 
--- >>> declare $ predicate "even"[(Dec, Int, "x")] =. var "x" `_mod_` int 2
--- predicate even(var int: x) = x mod 2;
-predicate :: Ident -> [Param] -> Declaration
-predicate name ps = declareOnly $ Predicate name ps
+predicate' :: String -> [Param] -> Declaration
+predicate' name ps = declareOnly $ Predicate (Simpl name) ps
 
--- | Used together with 'declare' to represent a test declaration item.
-test :: Ident -> [Param] -> Declaration
-test name ps = declareOnly $ Test name ps
+predicate :: String -> [GItem 'DS] -> GItem 'DS
+predicate name args = Predicate' name args
 
--- | Used together with 'declare' to represent a function declaration item.
--- 
--- >>> declare $ function Dec Int "addFive" [(Dec, Int, "x")] =. var "x" +. int 5
--- function var int: addFive(var int: x) = x + 5;
-function :: Inst -> Type -> Ident -> [Param] -> Declaration
-function i t s ps = declareOnly $ Function (i, t, s) ps
+test :: String -> [Param] -> Declaration
+test name ps = declareOnly $ Test (Simpl name) ps
 
--- | Used together with 'declare' to represent an annotation declaration item.
-annotation :: Ident -> [Param] -> Declaration
+function :: Inst -> Type -> String -> [Param] -> Declaration
+function i t s ps = declareOnly $ Function (i, t, Simpl s) ps
+
+annotation :: String -> [Param] -> Declaration
 annotation i ps = declareOnly $ Annotation' i ps
 
 -- Expressions (plain)
-
 __ :: Expr
 __ = AnonVar
-
--- | Used when refering to an already defined variable.
--- 
--- Example:
---
--- >>> constraint $ var "x" !=. int 1
--- constraint x != 1;
-var :: Ident -> Expr
-var = Var
 
 -- | MiniZinc boolean constant @true@.
 true :: Expr
@@ -312,16 +312,16 @@ infix 9 !.
 -- 
 -- >>> "matrix"!.[var "i", var "j"]
 -- matrix[i,j]
-(!.) :: Ident  -- ^ Array's name
+(!.) :: String -- ^ Array's name
      -> [Expr] -- ^ Indexes of the desired element
      -> Expr
-(!.) = ArrayElem
+x !. is = ArrayElem (Simpl x) is
 
 -- | Used to construct the representation of a comprehension tail with a single generator 
 -- expression. See the example in the documentation for '#/.'.
 infix 5 @@
-(@@) :: [Ident] -> Expr -> CompTail
-(@@) vars e = ([(vars, e)], Nothing)
+(@@) :: [String] -> Expr -> CompTail
+(@@) vars e = ([(map Simpl vars, e)], Nothing)
 
 --infixl 6 `and_`
 combineCompTail :: CompTail -> CompTail -> CompTail
@@ -334,7 +334,7 @@ decideWhere :: Maybe Expr -> Maybe Expr -> Maybe Expr
 decideWhere Nothing   Nothing   = Nothing
 decideWhere Nothing   (Just e)  = Just e
 decideWhere (Just e)  Nothing   = Just e
-decideWhere (Just e1) (Just e2) = Just $ Bi (Op "/\\") e1 e2
+decideWhere (Just e1) (Just e2) = Just $ Bi (Op (Simpl "/\\")) e1 e2
 
 infix 4 `where_`
 -- | Adds a representation for a MiniZinc @where@ clause in a generator expression.
@@ -361,10 +361,10 @@ where_ (gs, _) e = (gs, Just e)
 -- forall(c in C) (sum(s in S) (bool2int(bs[s] = c)) = result[c])
 
 forall :: [CompTail] -- ^ Generator expressions' representation
-       -> Ident      -- ^ The name of the called operation
+       -> String     -- ^ The name of the called operation
        -> Expr       -- ^ The head expression of the underlying array comprehension
        -> Expr
-forall cts name e = GenCall name (mergeCompTails cts) e
+forall cts name e = GenCall (Simpl name) (mergeCompTails cts) e
 
 -- Constrained types
 -- | Represents a constrained type defined by a set parameter.
@@ -376,14 +376,12 @@ forall cts name e = GenCall name (mergeCompTails cts) e
 -- 
 -- >>> declare $ variable Dec (ctvar "one2three") "x"
 -- var one2three: x;
-ctvar :: Ident -> Type
-ctvar = CT . var
+ctvar :: String -> Type
+ctvar = CT . Var . Simpl
 
 -- | Represents a type variable.
-($$) :: Ident -> Type
+($$) :: String -> Type
 ($$) = VarType
-
--- Auxiliary types for if-then-else expressions
 
 -- | Used together with 'then_' and 'elseif_' \/ 'else_' to represent an if-then-else 
 -- MiniZinc expression. In case of multiple alternatives, use 'elseif_', but the last 
@@ -409,44 +407,11 @@ else_ :: [(Expr, Expr)] -> Expr -> Expr
 else_ = ITE
 
 -- Let expressions
-let_ = Let
+-- let_ = Let
+let_ :: [GItem i] -> Expr -> Expr
+let_ bs = Let (map turnToItem bs)
 
--- | shorter syntax to declare a parameter
---
--- Example:
---
--- >>> declarePar Int "n"
--- par int: n;
-declarePar :: Type -> Ident -> Item
-declarePar t i = declare $ variable Par t i
-
--- | shorter syntax to declare a decision variable
---
--- Example:
---
--- >>> declareVar Int "n"
--- var int: n;
-declareVar :: Type -> Ident -> Item
-declareVar t i = declare $ variable Dec t i
-
--- | shorter syntax to declare and assign a parameter
---
--- Example:
---
--- >>> assignVar Int "n" $ int 1
--- par int: n = 1;
-assignPar :: Type -> Ident -> Expr -> Item
-assignPar t i a = declare $ variable Par t i =. a
-
--- | shorter syntax to declare and assign a decision variable
---
--- Example:
---
--- >>> assignVar Int "n" $ int 1
--- var int: n = 1;
-assignVar :: Type -> Ident -> Expr -> Item
-assignVar t i a = declare $ variable Dec t i =. a
-
+{-
 -- | allows you to declare multiple parameters at once
 --
 -- Example:
@@ -454,7 +419,7 @@ assignVar t i a = declare $ variable Dec t i =. a
 -- >>> declarePars Int ["a", "b"]
 -- par int: a;
 -- par int: b;
-declarePars :: Type -> [Ident] -> [Item]
+declarePars :: Type -> [Ident] -> [DeclarationSignature]
 declarePars t li = map (declarePar t) li
 
 -- | allows you to declare multiple decision variables at once
@@ -464,9 +429,9 @@ declarePars t li = map (declarePar t) li
 -- >>> declareVars Int ["a", "b"]
 -- var int: a;
 -- var int: b;
-declareVars :: Type -> [Ident] -> [Item]
+declareVars :: Type -> [Ident] -> [DeclarationSignature]
 declareVars t li = map (declareVar t) li
-
+-}
 
 -- Annotations
 infixl 4 |:
@@ -493,15 +458,21 @@ instance Annotatable Solve where
   (Minimize a1 e) |: a2 = Minimize (a1 ++ [a2]) e
   (Maximize a1 e) |: a2 = Maximize (a1 ++ [a2]) e
   
-  isAnnotated (Satisfy [])     = False
+  isAnnotated (Satisfy [])    = False
   isAnnotated (Minimize [] _) = False
   isAnnotated (Maximize [] _) = False
-  isAnnotated _                = True
+  isAnnotated _               = True
 
 -- Ranges
 
 instance IsString Expr where
-  fromString = var
+  fromString = Var . stringToIdent
+
+-- instance IsString (GItem DS) where
+--  fromString = Var'
+
+-- instance IsString Ident where
+--   fromString = stringToIdent
 
 instance Num Expr where
   fromInteger = int . fromIntegral
@@ -516,5 +487,47 @@ instance Num Expr where
 
 instance Fractional Expr where
   fromRational = float . fromRational
-  (/) = undefined
+  (/) = (/.)
   recip = undefined
+
+-- Auxiliary definitions
+data DSorOther = DS | OK
+
+data GItem (a :: DSorOther) where
+  Include'   :: String -> GItem 'OK
+  Comment'   :: String -> GItem 'OK
+  Declare'   :: Declaration -> GItem 'OK
+  Var'       :: Inst -> Type -> String -> GItem 'DS
+  Function'  :: DeclarationSignature -> GItem 'DS
+  Predicate' :: String -> [GItem 'DS] -> GItem 'DS
+  Test'      :: DeclarationSignature -> GItem 'DS
+  Annot'     :: DeclarationSignature -> GItem 'OK
+  Assign'    :: Ident -> Expr -> GItem 'OK
+  Solve'     :: Solve -> GItem 'OK
+  Constrain' :: AnnExpr -> GItem 'OK
+  Output'    :: [Expr] -> GItem 'OK
+
+type ModelData = GItem 'OK
+
+turnToParam :: (GItem 'DS) -> Param
+turnToParam (Var' i t x) = (i, t, stringToIdent x)
+
+turnToDS :: (GItem 'DS) -> DeclarationSignature
+turnToDS (Var' i t x) = Variable (i, t, stringToIdent x)
+turnToDS (Predicate' name args) = Predicate (stringToIdent name) (map turnToParam args)
+
+turnToItem :: (GItem a) -> Item
+turnToItem (Include' file) = Include file
+turnToItem (Comment' text) = Comment text
+turnToItem (Declare' d)    = Declare d
+turnToItem v@(Var' _ _ _)    = 
+  Declare $ Declaration (turnToDS v) [] Nothing
+turnToItem (Function' ds)  = Declare $ Declaration ds [] Nothing
+turnToItem p@(Predicate' _ _) = 
+  Declare $ Declaration (turnToDS p) [] Nothing
+turnToItem (Test' ds)      = Declare $ Declaration ds [] Nothing
+turnToItem (Annot' ds)     = Declare $ Declaration ds [] Nothing
+turnToItem (Assign' x e)   = Assign x (toSimpleExpr e)
+turnToItem (Solve' s)      = Solve s
+turnToItem (Constrain' e)  = Constraint e
+turnToItem (Output' o)     = Output (ArrayLit o)
