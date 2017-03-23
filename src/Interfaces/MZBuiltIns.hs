@@ -89,30 +89,12 @@ module Interfaces.MZBuiltIns (
   mz_indomain_split_random, mz_outdomain_max, mz_outdomain_median, mz_outdomain_min,
   mz_outdomain_random,
   -- *** Exploration strategy annotations
-  mz_complete,
-  -- Others
-  prefCall, infCall, prefOp, infOp
+  mz_complete
 ) where
 
-import Interfaces.MZASTBase
+import Interfaces.MZAST (Expr(Bi, U), Op, infOp, prefCall, Annotation(Annotation))
 
--- | Used to represent a call to a function, test or predicate, using the prefix notation.
-prefCall :: String  -- ^ The name of the called operation
-     -> [Expr] -- ^ A representation of the arguments
-     -> Expr
-prefCall name = Call (Simpl name) . map toSimpleExpr
 
-infCall :: String
-        -> Expr
-        -> Expr
-        -> Expr
-infCall name e1 e2 = Call (Quoted name) $ map toSimpleExpr [e1, e2]
-
-prefOp :: String -> Op
-prefOp = Op . Quoted
-
-infOp :: String -> Op
-infOp = Op . Simpl
 -- MiniZinc calls
 
 -- Arithmetic calls
