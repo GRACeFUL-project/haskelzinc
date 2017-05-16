@@ -288,6 +288,7 @@ escapeChar '\r' = "\\r"
 escapeChar '\\' = "\\\\"
 escapeChar '\f' = "\\f"
 escapeChar '\a' = "\\a"
+escapeChar '\"' = "\\\""
 escapeChar c = [c]
 
 putParens :: [Doc] -> [Doc]
