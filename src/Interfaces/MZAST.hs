@@ -24,6 +24,7 @@ module Interfaces.MZAST (
   include, constraint, output, (%), solve, satisfy, minimize, maximize,
   (=.), declare, variable, var, par, predicate, function, test, annotation,
   -- * Expressions
+  let_,
   -- ** Constants
   true, false, int, float, string,
   -- ** Conditional
@@ -38,19 +39,17 @@ module Interfaces.MZAST (
   (@@), where_,
   -- ** Generator calls
   forall,
-  -- * User defined operations
-  prefCall, infCall, prefOp, infOp, let_,
   -- * Types
   ctvar, ($$),
   -- * Annotations
   (|:),
-  -- * Others
   ModelData, declareOnly, turnToItem,
   {- DSorOther(..),  -}
   module Interfaces.MZASTBase
 ) where
 
 import Interfaces.MZASTBase
+import Interfaces.MZBuiltIns
 import Data.String
 -- import qualified Data.Kind as K
 
@@ -149,10 +148,10 @@ instance i ~ 'DS => Assignable (GItem i) where
 instance Assignable Expr where
   Var x =. e = Assign' x e
   -- x =. e = Assign' (stringToIdent x) e
--}
+
 instance Assignable String where
   x =. e = Assign' (stringToIdent x) e
-
+-}
 class Varr i where
   var :: Type -> String -> GItem i
   par :: Type -> String -> GItem i
@@ -182,29 +181,6 @@ function i t s ps = declareOnly $ Function (i, t, Simpl s) ps
 
 annotation :: String -> [Param] -> Declaration
 annotation i ps = declareOnly $ Annotation' i ps
-
--- User defined operations
-
--- | Used to represent a prefix call to a function, test or predicate.
-prefCall :: String  -- ^ The name of the called operation
-     -> [Expr] -- ^ A representation of the arguments
-     -> Expr
-prefCall name = Call (Simpl name) . map toSimpleExpr
-
--- | Used to represent an infix (quoted) call to a function, test or predicate.
-infCall :: String
-        -> Expr
-        -> Expr
-        -> Expr
-infCall name e1 e2 = Call (Quoted name) $ map toSimpleExpr [e1, e2]
-
--- | Used to represent a prefix (quoted) call of an operator.
-prefOp :: String -> Op
-prefOp = Op . Quoted
-
--- | Used to represent an infix call to an operator.
-infOp :: String -> Op
-infOp = Op . Simpl
 
 -- Expressions (plain)
 __ :: Expr
@@ -488,10 +464,10 @@ instance Annotatable Solve where
   isAnnotated _               = True
 
 -- Ranges
-
+{-
 instance IsString Expr where
   fromString = Var . stringToIdent
-
+-}
 -- instance IsString (GItem DS) where
 --  fromString = Var'
 
@@ -500,19 +476,18 @@ instance IsString Expr where
 
 instance Num Expr where
   fromInteger = int . fromIntegral
-  (+) = Bi (infOp "+") -- (+.)
-  (*) = Bi (infOp "*") -- (*.)
-  (-) = Bi (infOp "-") -- (-.)
-  abs a = prefCall "abs" [a]
-  signum a = let lt = Bi (infOp "<")
-                 gt = Bi (infOp ">")
-             in if_ (a `lt` 0) `then_` (-1)
-                `elseif_` (a `gt` 0) `then_` 1
-                `else_` 0
+  (+) = (+.)
+  (*) = (*.)
+  (-) = (-.)
+  abs a = mz_abs [a]
+  signum a =
+    if_ (a <. 0) `then_` (-1)
+    `elseif_` (a >. 0) `then_` 1
+    `else_` 0
 
 instance Fractional Expr where
   fromRational = float . fromRational
-  (/) = Bi (infOp "-") -- (/.)
+  (/) = (/.)
   recip = undefined
 
 -- Auxiliary definitions

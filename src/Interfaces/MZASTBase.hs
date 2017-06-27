@@ -37,8 +37,9 @@ module Interfaces.MZASTBase (
   CompTail,
   Generator,
   Param,
-  Ident(..), stringToIdent, identToString,
-  Filename
+  Ident(..), stringToIdent, identToString, safeStrToIdent,
+  -- * Errors
+  IdentError(..)
 ) where 
 
 -- | An abbreviation for the type of a represented MiniZinc model.
@@ -55,7 +56,7 @@ data Item
   -- | Commented line
   = Comment String
   -- | Include item
-  | Include Filename
+  | Include FilePath
   -- | A declaration item. Can represent a MiniZinc variable, predicate, test, function 
   -- or annotation declaration. This is specified by the constructor\'s argument.
   | Declare Declaration
@@ -133,7 +134,7 @@ data Expr
   -- | Represents an array element. In @ArrayElem name js@, the argument @name@ is the 
   -- identifier of the array and @js@ is the list of indexes that specify the desired 
   -- element. The length of @js@ must be equal to the number of dimensions of the array.
-  | ArrayElem Ident [Expr]
+  | ArrayElem Expr [Expr]
   -- | @Bi op exp1 exp2@ represents the MiniZinc expression of the binary operator @op@
   -- applied on @exp1@ and @exp2@.
   | Bi Op Expr Expr
@@ -236,13 +237,24 @@ data Ident = Simpl String   -- ^ Represents a simple identifier
            | Quoted String  -- ^ Represents a quoted identifier
   deriving (Eq, Show)
 
+safeStrToIdent :: String -> Either IdentError Ident
+safeStrToIdent ""        = Left EmptyIdent
+safeStrToIdent "\'"      = Left SingleQuote
+safeStrToIdent ('\'':rs) = case last rs of
+                          '\'' -> Right $ Quoted (init rs)
+                          _    -> Left $ QuoteMissing
+safeStrToIdent name      = Right $ Simpl name -- extra conditions should be checked here
+
 stringToIdent :: String -> Ident
-stringToIdent name@('\'':rest) = Quoted (init rest)
-stringToIdent name = Simpl name
+stringToIdent ('\'':xs) = Quoted $ init xs
+stringToIdent name      = Simpl name
 
 identToString :: Ident -> String
 identToString (Simpl name)  = name
 identToString (Quoted name) = "'" ++ name ++ "'"
 
-
-type Filename = String
+data IdentError
+  = EmptyIdent
+  | SingleQuote
+  | QuoteMissing
+  deriving Show

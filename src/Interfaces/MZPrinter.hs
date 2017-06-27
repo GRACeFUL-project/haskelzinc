@@ -9,13 +9,13 @@ This module provides a pretty-printer of MiniZinc models represented by the
 "Interfaces.MZASTBase" module.
 -}
 
-module Interfaces.MZPrinter(
+module Interfaces.MZPrinter {-(
   printModel,
   printItem,
 --  printAnnExpr,
 --  printExpr,
   layout
-) where
+)-} where
 
 import Text.PrettyPrint
 import Data.List
@@ -121,7 +121,7 @@ printExpr (ArrayLit es)       = brackets $ commaSepExprs es
 printExpr (ArrayLit2D ess)    = 
   brackets (foldl1 ($+$) (map (\x -> text "|" <+> commaSepExprs x) ess) <> text "|")
 printExpr (ArrayComp e ct)    = brackets (hang (printExpr e <+> text "|") 0 (printCompTail ct))
-printExpr (ArrayElem v es)    = printIdent v <> brackets (commaSepExprs es)
+printExpr (ArrayElem v es)    = printExpr v <> brackets (commaSepExprs es)
 printExpr (U op e)            = printOp op 
                                      <+> (
                                        if isAtomic e 
@@ -288,7 +288,6 @@ escapeChar '\r' = "\\r"
 escapeChar '\\' = "\\\\"
 escapeChar '\f' = "\\f"
 escapeChar '\a' = "\\a"
-escapeChar '\"' = "\\\""
 escapeChar c = [c]
 
 putParens :: [Doc] -> [Doc]
