@@ -1,7 +1,4 @@
 {-# LANGUAGE FlexibleInstances #-}
--- {-# LANGUAGE OverloadedStrings #-}
--- {-# LANGUAGE FunctionalDependencies #-}
--- {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs, DataKinds, KindSignatures #-}
 
 {-|
@@ -46,7 +43,6 @@ module Interfaces.MZAST (
   (|:),
   -- * Others
   ModelData, declareOnly, turnToItem,
-  {- DSorOther(..),  -}
   module Interfaces.MZASTBase
 ) where
 

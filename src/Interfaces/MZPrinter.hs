@@ -20,6 +20,7 @@ module Interfaces.MZPrinter(
 import Text.PrettyPrint
 import Data.List
 import Interfaces.MZASTBase
+import Interfaces.MZAST (turnToItem, GItem)
 import Interfaces.MZBuiltIns (opPrec)
 
 -- | The main function that is used to pretty print the MiniZinc model. The 'Text.PrettyPrint.Style' used is the following.
@@ -31,8 +32,8 @@ import Interfaces.MZBuiltIns (opPrec)
 --   ribbonsPerLine = 1.5
 -- }
 -- @
-layout :: MZModel -> String
-layout = renderStyle myStyle . printModel
+layout :: [GItem a] -> String
+layout = renderStyle myStyle . printModel . map turnToItem
 
 myStyle = Style {
   mode = PageMode,

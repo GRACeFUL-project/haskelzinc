@@ -15,7 +15,7 @@ module Interfaces.MZinHaskell (
 --  iTestModel,
   iRunModel,
   runModel,
---  testModel,
+  Interfaces.MZPrinter.layout,
 --  testModelWithData,
 --  testModelWithParser,
   writeData
@@ -26,45 +26,24 @@ import System.Process
 import System.FilePath
 import Interfaces.MZAuxiliary
 import Interfaces.MZASTBase (MZModel, Item(Comment))
-import Interfaces.MZAST (ModelData, turnToItem)
+import Interfaces.MZAST (GItem(..))
 import Interfaces.MZPrinter
 import Interfaces.FZSolutionParser (Solution, tryDefaultSolutions, getSolutions)
 import Text.Parsec.Error
 import Text.Parsec.String (Parser)
-
+{-
 -- | Same as `testModel` but accepts one more argument for the data of the model.
 testModelWithData
-  :: MZModel  -- ^ The model
-  -> MZModel  -- ^ The data to be used by the model
+  :: [GItem 'OK]  -- ^ The model
+  -> [GItem 'OK]  -- ^ The data to be used by the model
   -> FilePath -- ^ Path of the file in which the FlatZinc translation will be printed (without ".fzn" extension)
   -> Int      -- ^ Chosen solver (@1@ for the G12/FD built-in solver or @2@ for choco3)
   -> Int      -- ^ Number of solutions to be returned
   -> IO (Either ParseError [Solution])
 testModelWithData model mdata path solver num = 
-  let fdata = [Comment "Model\'s data"] ++ mdata ++ [Comment "End of model\'s data"]
+  let fdata = [Comment' "Model\'s data"] ++ mdata ++ [Comment' "End of model\'s data"]
   in testModel (fdata ++ model) path solver num
-
--- | Same as `runModel`, but interactive.
--- 
--- Interactively runs a constraint model and outputs its solution(s). The 
--- function first prompts the user for the working directory: the FlatZinc file 
--- will be created in that directory. Then, for a name for the constraint model: 
--- the created FlatZinc file will be named after this. Also asks the user to 
--- choose between supported solvers and the desired number of solutions. Returns 
--- either a parse error or a list of solutions of the constraint model. The length 
--- of the list is at most equal to the number of solutions requested.
-iRunModel :: [ModelData] -> IO (Either ParseError [Solution])
-iRunModel = iTestModel . map turnToItem
-
--- | Runs (noninteractively) a model and parses its solution(s). Use this function if 
--- the model contains no @output@ item, so that the solutions have the default format.
-runModel :: [ModelData] -- ^ The model
-         -> FilePath    -- ^ The path of the file in which the FlatZinc translation will be printed (without ".fzn" extension)
-         -> Int         -- ^ The chosen solver (@1@ for the G12/FD built-in solver or @2@ for choco3)
-         -> Int         -- ^ The number of solutions to be returned
-         -> IO (Either ParseError [Solution])
-runModel model = testModelWithParser tryDefaultSolutions (map turnToItem model)
-
+-}
 -- | Same as `testModel`, but interactive.
 -- 
 -- Interactively runs a constraint model and outputs its solution(s). The 
@@ -74,8 +53,8 @@ runModel model = testModelWithParser tryDefaultSolutions (map turnToItem model)
 -- choose between supported solvers and the desired number of solutions. Returns 
 -- either a parse error or a list of solutions of the constraint model. The length 
 -- of the list is at most equal to the number of solutions requested.
-iTestModel :: MZModel -> IO (Either ParseError [Solution])
-iTestModel m = do
+iRunModel :: [GItem a] -> IO (Either ParseError [Solution])
+iRunModel m = do
   putStrLn "Enter working directory:"
   dirpath <- getLine
   putStr "Enter model\'s name: "
@@ -87,23 +66,23 @@ iTestModel m = do
   let solver = read str_solver
       ns = read str_ns
       path = joinPath [dirpath, name]
-  testModel m path solver ns
+  runModel m path solver ns
 
 -- | Runs a model and parses its solution(s). Use this function if the model contains no
 -- @output@ item, so that the solutions have the default format.
-testModel :: MZModel -- ^ The model
+runModel :: [GItem a] -- ^ The model
   -> FilePath        -- ^ The path of the file in which the FlatZinc translation will be printed (without ".fzn" extension)
   -> Int             -- ^ The chosen solver (@1@ for the G12/FD built-in solver or @2@ for choco3)
   -> Int             -- ^ The number of solutions to be returned
   -> IO (Either ParseError [Solution])
-testModel = testModelWithParser tryDefaultSolutions
+runModel = testModelWithParser tryDefaultSolutions
 
 -- | Runs a model and parses its solution(s) with the use of the specified parser. Use
 -- this function if the model outputs its solutions in a different format than the 
 -- default.
 testModelWithParser :: (Int -> Parser [Solution]) -- ^ The parser with which solutions will be
                                          -- parsed
-                    -> MZModel           -- ^ The model
+                    -> [GItem a]         -- ^ The model
                     -> FilePath          -- ^ The path of the file in which the FlatZinc 
                                          -- translation will be printed (without ".fzn" 
                                          -- extension)
