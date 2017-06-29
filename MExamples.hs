@@ -75,9 +75,9 @@ mCar = do
   optionDemand =. forall [["j"] @@ cars] "sum" (demand!.["j"] *. option!.["i", "j"]) #|.
                    [["i"] @@ options]
   
-  {-f  <- function Dec Bool "1stfunc" [par Int "x"] 
-           (\x -> IConst 1) -}
-  --return cars -- (f [nbSlots])
+mPlanning = do
+  nproducts <- par Int "nproducts"
+  Products <- par (Set Int) "Products" =. 1 ... nproducts
   
 {-
 car = [

@@ -153,7 +153,7 @@ instance Monad KM where
   (MConstrain e k)    >>= f       = MConstrain e (k >>= f)
   (MSolve s k)        >>= f       = MSolve s (k >>= f)
   (MOutput es k)      >>= f       = MOutput es (k >>= f)
-  (MError err)        >>= f       = MError err
+  (MError err)        >>= _       = MError err
 
 instance MonadError PossibleError KM where
   throwError = MError
