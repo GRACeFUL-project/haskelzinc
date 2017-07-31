@@ -14,7 +14,8 @@ module Interfaces.MZPrinter(
   printItem,
 --  printAnnExpr,
 --  printExpr,
-  layout
+  layout,
+  layoutModel
 ) where
 
 import Text.PrettyPrint
@@ -34,6 +35,9 @@ import Interfaces.MZBuiltIns (opPrec)
 -- @
 layout :: [GItem a] -> String
 layout = renderStyle myStyle . printModel . map turnToItem
+
+layoutModel :: MZModel -> String
+layoutModel = renderStyle myStyle . printModel
 
 myStyle = Style {
   mode = PageMode,
