@@ -14,7 +14,8 @@ module Interfaces.MZPrinter(
   printItem,
 --  printAnnExpr,
 --  printExpr,
-  layout
+  layout,
+  layoutModel
 ) where
 
 import Text.PrettyPrint
@@ -34,6 +35,9 @@ import Interfaces.MZBuiltIns (opPrec)
 -- @
 layout :: [GItem a] -> String
 layout = renderStyle myStyle . printModel . map turnToItem
+
+layoutModel :: MZModel -> String
+layoutModel = renderStyle myStyle . printModel
 
 myStyle = Style {
   mode = PageMode,
@@ -159,7 +163,7 @@ listEI e = [ text "else" <+> printExpr e
 printParensExpr :: Int -> Expr -> Doc
 -- A smaller integer represents higher precedence (tighter binding)
 printParensExpr n e@(Bi op _ _)
-  | opPrec op <= n   = printExpr e
+  | opPrec op < n    = printExpr e
   | otherwise        = parens $ printExpr e
 printParensExpr _ e  = printExpr e
 
