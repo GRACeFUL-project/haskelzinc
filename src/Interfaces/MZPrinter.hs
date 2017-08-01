@@ -163,8 +163,7 @@ listEI e = [ text "else" <+> printExpr e
 printParensExpr :: Int -> Expr -> Doc
 -- A smaller integer represents higher precedence (tighter binding)
 printParensExpr n e@(Bi op _ _)
-  -- workaround for precedence issue: always print parens
-  -- | opPrec op <= n   = printExpr e
+  | opPrec op < n    = printExpr e
   | otherwise        = parens $ printExpr e
 printParensExpr _ e  = printExpr e
 
