@@ -179,10 +179,10 @@ printType (List i ty)     = text "list of" <+> printTypeInst (i, ty)
 printType (Opt t)         = text "opt" <+> printType t
 printType (Ann)           = text "ann"
 printType (CT expr)       = printExpr expr
-{-
-printType (Range e1 e2)  = printParensExpr (opPrec (Op "..")) e1 
+printType (Range e1 e2)  = printParensExpr (opPrec (Op $ stringToIdent "..")) e1 
                            <+> text ".." 
-                           <+> printParensExpr (opPrec (Op "..")) e2
+                           <+> printParensExpr (opPrec (Op $ stringToIdent "..")) e2
+{-
 printType (Elems es)     = braces $ commaSepExprs es
 printType (ACT name)     = text name
 -}

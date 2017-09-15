@@ -176,9 +176,9 @@ data Type
   | Ann
   -- | A constrainted type. The 'Expr' argument should represent a MiniZinc finite set.
   | CT Expr
-  {-
   -- | A constrained type using the integer range. @Range a b@ translates to @a .. b@.
   | Range Expr Expr
+  {-
   -- | A constrained type using set literals.
   | Elems [Expr]
   -- | A constrained type using a previously defined set parameter.
