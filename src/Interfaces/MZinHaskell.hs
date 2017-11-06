@@ -1,8 +1,6 @@
 {-|
 Module      : MZinHaskell
 Description : Integration of MiniZinc 2.0 in Haskell
-Copyright   : (c) Some Guy, 2013
-                  Someone Else, 2014
 License     : BSD3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental

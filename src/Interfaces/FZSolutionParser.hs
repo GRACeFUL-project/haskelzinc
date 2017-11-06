@@ -3,7 +3,7 @@
 {-|
 Module      : FZSolutionParser
 Description : FlatZinc solutions parser
-License     : GPL-3
+License     : BSD3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 

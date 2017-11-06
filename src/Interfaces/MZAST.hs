@@ -4,9 +4,7 @@
 {-|
 Module      : MZAST
 Description : More human-friendly interface for "Interfaces.MZASTBase"
-Copyright   : (c) Some Guy, 2013
-                  Someone Else, 2014
-License     : GPL-3
+License     : BSD3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>, Ruben Pieters
 Stability   : experimental
 

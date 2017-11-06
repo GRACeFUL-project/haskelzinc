@@ -1,7 +1,7 @@
 {-|
 Module      : MZAuxiliary
 Description : Contains auxiliary definitions
-License     : GPL-3
+License     : BSD3
 Maintainer  : Klara Marntirosian <klara.mar@cs.kuleuven.be>
 Stability   : experimental
 
