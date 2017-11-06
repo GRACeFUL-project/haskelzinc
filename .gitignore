@@ -6,7 +6,7 @@
 htmldocs/*
 
 # My notes
-notes.txt
+helper_dir/*
 
 # Cabal
 .cabal-sandbox/
