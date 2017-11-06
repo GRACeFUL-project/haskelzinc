@@ -10,7 +10,7 @@ name:                haskelzinc
 -- PVP summary:      +-+------- breaking API changes
 --                   | | +----- non-breaking API additions
 --                   | | | +--- code changes with no API change
-version:             0.3.0.9
+version:             0.3.1.0
 
 -- A short (one-line) description of the package.
 synopsis:         CP in Haskell through MiniZinc 
@@ -37,11 +37,13 @@ license:             BSD3
 license-file:        LICENSE
 
 -- The package author(s).
-author:              Klara Marntirosian
+author:              Klara Marntirosian,
+                     Ruben Pieters
 
 -- An email address to which users can send suggestions, bug reports, and 
 -- patches.
-maintainer:          klara.mar@cs.kuleuven.be
+maintainer:          klara.mar@cs.kuleuven.be,
+                     ruben.pieters@cs.kuleuven.be
 
 stability:           experimental
 
@@ -54,7 +56,8 @@ build-type:          Simple
 
 -- Extra files to be distributed with the package, such as examples or a 
 -- README.
-extra-source-files:  Examples.hs
+extra-source-files:  GExamples.hs
+                     
 
 -- Constraint on the version of Cabal needed to build this package.
 cabal-version:       >=1.10
@@ -79,7 +82,10 @@ library
   other-modules: Interfaces.MZAuxiliary
   
   -- LANGUAGE extensions used by modules in this package.
-  other-extensions:    FlexibleInstances, TypeFamilies
+  other-extensions:    FlexibleInstances,
+                       GADTs,
+                       DataKinds,
+                       KindSignatures
   
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.8 && <5,
