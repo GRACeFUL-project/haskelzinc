@@ -20,4 +20,4 @@ dist
 *.results.txt
 
 # Local specific
-HZconf/conf.txt
+*conf.txt
