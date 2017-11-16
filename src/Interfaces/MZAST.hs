@@ -323,7 +323,7 @@ e #|. cts = ArrayComp e (mergeCompTails cts)
 infix 9 !.
 -- | Represents a MiniZinc array access.
 -- 
--- Exaamples:
+-- Examples:
 -- 
 -- >>> "array"!.[int 1]
 -- array[1]
