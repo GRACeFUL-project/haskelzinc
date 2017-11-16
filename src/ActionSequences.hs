@@ -163,6 +163,39 @@ value_precedence k i j =
     failure  = 3
     padding  = 2
 
+-- | When an action i is performed at least once,
+-- it has to be performed at least s times in a row.
+--
+-- * k = the number of actions
+-- * i = the action in question
+-- * s = the number of times action i has to at least be performed in a row
+--       once it is performed at least once
+stretch_min :: Int -> Int -> Int -> DFA
+stretch_min k i s =
+  DFA
+  { alphabet         = S.fromList abc
+  , states           = S.fromList [0..s+2]
+  , accepting_states = S.fromList [0,s,padding]
+  , transitions      =           S.fromList [(0,a,0) | a <- [1..k], a /= i]
+                       `S.union` S.fromList [(p,i,p+1) | p <- [0..s-1]]
+                       `S.union` S.fromList ((s,i,s) : [(s,a,0) | a <- [1..k], a /= i])
+                       `S.union` S.fromList [(p,a,failure) | p <- [1..s-1], a <- abc, a /= i]
+                       `S.union` S.singleton (0,next,0)
+                       `S.union` S.singleton (s,next,0)
+                       `S.union` S.singleton (0,nop,padding)
+                       `S.union` S.singleton (s,nop,padding)
+                       `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- abc, a /= nop])
+                       `S.union` S.fromList [(failure,a,failure) | a <- abc]
+  , start            = 0
+  }
+  where
+    abc = [1..k+2]
+
+    next = k + 1
+    nop  = k + 2
+
+    failure  = s + 2
+    padding  = s + 1
 dfaToRegular :: DFA -> Expr -> Expr
 dfaToRegular atm' xs =
   prefCall "regular" [xs, int q,int s,intArray2 d, int q0, intSet f]
