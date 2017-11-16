@@ -130,6 +130,39 @@ implication k i j =
 
     failure  = 3
     padding  = 2
+
+-- | Action i has to precede action j.
+-- This means that in order for action j to be performed,
+-- action i has to be performed at least once.
+--
+-- * k = the number of actions
+-- * i = the action that to precede action j
+-- * j = the action that has to be preceded by action i
+value_precedence :: Int -> Int -> Int -> DFA
+value_precedence k i j =
+  DFA
+  { alphabet         = S.fromList abc
+  , states           = S.fromList [0..3]
+  , accepting_states = S.fromList [0..2]
+  , transitions      =           S.fromList [(0,a,0) | a <- [1..k], a /= i, a /= j]
+                       `S.union` S.fromList [(1,a,1) | a <- [1..k]]
+                       `S.union` S.singleton (0,i,1)
+                       `S.union` S.singleton (0,j,failure)
+                       `S.union` S.fromList [(p,next,0) | p <- [0..1]]
+                       `S.union` S.fromList [(p,nop,padding) | p <- [0..1]]
+                       `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- abc, a /= nop])
+                       `S.union` S.fromList [(failure,a,failure) | a <- abc]
+  , start            = 0
+  }
+  where
+    abc = [1..k+2]
+
+    next = k + 1
+    nop  = k + 2
+
+    failure  = 3
+    padding  = 2
+
 dfaToRegular :: DFA -> Expr -> Expr
 dfaToRegular atm' xs =
   prefCall "regular" [xs, int q,int s,intArray2 d, int q0, intSet f]
