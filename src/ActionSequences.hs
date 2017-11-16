@@ -196,6 +196,37 @@ stretch_min k i s =
 
     failure  = s + 2
     padding  = s + 1
+
+-- | When an action i is performed at least once,
+-- it may be performed at most s times in a row.
+--
+-- * k = the number of actions
+-- * i = the action in question
+-- * s = the number of times action i may at most be performed in a row
+--       once it is performed at least once
+stretch_max :: Int -> Int -> Int -> DFA
+stretch_max k i s =
+  DFA
+  { alphabet         = S.fromList abc
+  , states           = S.fromList [0..s+2]
+  , accepting_states = S.fromList (padding : [0..s])
+  , transitions      =           S.fromList [(p,a,0) | p <- [0..s], a <- [1..k], a /= i]
+                       `S.union` S.fromList [(p,i,p+1) | p <- [0..s-1]]
+                       `S.union` S.singleton (s,i,failure)
+                       `S.union` S.fromList [(p,next,0) | p <- [0..s]]
+                       `S.union` S.fromList [(p,nop,padding) | p <- [0..s]]
+                       `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- abc, a /= nop])
+                       `S.union` S.fromList [(failure,a,failure) | a <- abc]
+  , start            = 0
+  }
+  where
+    abc = [1..k+2]
+
+    next = k + 1
+    nop  = k + 2
+
+    failure  = s + 2
+    padding  = s + 1
 dfaToRegular :: DFA -> Expr -> Expr
 dfaToRegular atm' xs =
   prefCall "regular" [xs, int q,int s,intArray2 d, int q0, intSet f]
