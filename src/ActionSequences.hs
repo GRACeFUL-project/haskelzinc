@@ -286,3 +286,9 @@ normalize d =
 
 test1 :: String
 test1 = layout [constraint (dfaToRegular (atLeast 2 1 1) (Var (Simpl "xs")))]
+
+render :: DFA -> IO ()
+render = putStrLn . toString
+
+main :: IO ()
+main = render $ or_ctr 4 2 3
