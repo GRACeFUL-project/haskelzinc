@@ -7,6 +7,11 @@ import Data.Maybe (fromJust)
 import Interfaces.MZinHaskell
 import Interfaces.MZAST
 
+-- | Action i must be performed at least p times in each cell.
+--
+-- * k = the number of actions
+-- * i = the action that has to be repeated
+-- * p = the number of times action i has to at least be repeated
 atLeast :: Int -> Int -> Int -> DFA
 atLeast k i p =
   DFA
@@ -30,6 +35,11 @@ atLeast k i p =
      failure  = p + 2
      padding  = p + 1
 
+-- | Action i has to performed at most p times in each cell.
+--
+-- * k = the number of actions
+-- * i = the action that has to be repeated
+-- * p = the number of times action i can at most be repeated
 atMost :: Int -> Int -> Int -> DFA
 atMost k i p =
   DFA
