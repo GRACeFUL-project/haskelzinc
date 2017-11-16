@@ -95,6 +95,41 @@ incompatible k i j =
 
     failure  = 4
     padding  = 3
+
+-- | Action i implies action j.
+-- This means that if action i is performed in a cell,
+-- action j has to be performed as well.
+--
+-- * k = the number of actions
+-- * i = the action that implies action j
+-- * j = the action that is implied by action i
+implication :: Int -> Int -> Int -> DFA
+implication k i j =
+  DFA
+  { alphabet         = S.fromList abc
+  , states           = S.fromList [0..3]
+  , accepting_states = S.fromList [0,2]
+  , transitions      =           S.fromList [(0,a,0) | a <- [1..k], a /= i]
+                       `S.union` S.fromList [(1,a,1) | a <- [1..k], a /= i, a /= j]
+                       `S.union` S.singleton (0,i,1)
+                       `S.union` S.singleton (1,j,0)
+                       `S.union` S.singleton (1,i,failure)
+                       `S.union` S.singleton (0,next,0)
+                       `S.union` S.singleton (0,nop,padding)
+                       `S.union` S.singleton (1,nop,failure)
+                       `S.union` S.singleton (1,next,failure)
+                       `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- abc, a /= nop])
+                       `S.union` S.fromList [(failure,a,failure) | a <- abc]
+  , start            = 0
+  }
+  where
+    abc = [1..k+2]
+
+    next = k + 1
+    nop  = k + 2
+
+    failure  = 3
+    padding  = 2
 dfaToRegular :: DFA -> Expr -> Expr
 dfaToRegular atm' xs =
   prefCall "regular" [xs, int q,int s,intArray2 d, int q0, intSet f]
