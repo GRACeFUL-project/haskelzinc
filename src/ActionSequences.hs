@@ -29,6 +29,25 @@ data ASExpr = Atleast Int         -- ^ The action in question
             | Or Int              -- ^ The first of the two actions, at least one of which has to be performed
                  Int              -- ^ The second of the two actions, at least one of which has to be performed
 
+-- | Transform an action sequence model into a DFA
+asModelToDFA :: ASModel -> DFA
+asModelToDFA (ASModel k es) = foldl DFA.sequence (emptyDFA k) $ map (asExprToDFA k) es
+
+-- | Transform an action sequence expression into a DFA
+--
+-- * k = the number of actions
+-- * e = the action sequence expression
+asExprToDFA :: Int -> ASExpr -> DFA
+asExprToDFA k e = case e of
+  Atleast i p         -> atLeast k i p
+  Atmost i p          -> atMost k i p
+  Incompatible i j    -> incompatible k i j
+  Implication i j     -> implication k i j
+  ValuePrecedence i j -> value_precedence k i j
+  StretchMin i s      -> stretch_min k i s
+  StretchMax i s      -> stretch_max k i s
+  Or i j              -> or_ctr k i j
+
 -- | An empty DFA
 --
 -- * k = the number of actions
