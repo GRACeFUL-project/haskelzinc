@@ -1,9 +1,13 @@
 module DFA
  ( DFA (..)
+ , ImplDFA (..)
  , minimize
  , sequence
  , toString
+ , normalize
+ , dfaToImplDFA
  , transition
+ , transitionI
  ) where
 
 import qualified NFA as N
@@ -167,6 +171,43 @@ nfaToDFA n =
 sequence :: DFA -> DFA -> DFA
 sequence d1 d2 = minimize (nfaToDFA (N.sequence (dfaToNFA (minimize d1)) (dfaToNFA (minimize d2))))
 
+normalize :: DFA -> DFA
+normalize d =
+  DFA { alphabet         = S.map thetaA (alphabet d)
+      , states           = S.map thetaS (states d)
+      , accepting_states = S.map thetaS (accepting_states d)
+      , transitions      = S.map (\(f,l,t) -> (thetaS f,thetaA l,thetaS t)) (transitions d)
+      , start            = thetaS (start d)
+      , failure          = thetaS (failure d)
+      }
+  where
+    thetaS s = fromJust (lookup s (zip (S.toList (states d)) [1..]))
+    thetaA l = fromJust (lookup l (zip (S.toList (alphabet d)) [1..]))
+
+-- | Converts a DFA (with an explicit failure state)
+-- to an ImplDFA (with an implicit failure state : state 0)
+dfaToImplDFA :: DFA -> ImplDFA
+dfaToImplDFA d = let n = normalize d in
+  ImplDFA { alphabetI         = alphabet n
+          , statesI           = removeFailState (failure n) (states n)
+          , accepting_statesI = accepting_states n
+          , transitionsI      = filterFailTransitions $ replaceFailTransitions (failure n) (transitions n)
+          , startI            = start n
+          }
+  where
+    removeFailState :: State -> S.Set State -> S.Set State
+    removeFailState fail = S.filter (\s -> s /= fail)
+
+    replaceFailState :: State -> State -> State
+    replaceFailState fail s
+      | s == fail = 0
+      | otherwise = s
+
+    replaceFailTransitions :: State -> S.Set (State,Label,State) -> S.Set (State,Label,State)
+    replaceFailTransitions fail = S.map (\(s,a,t) -> ((replaceFailState fail s),a,(replaceFailState fail t)))
+
+    filterFailTransitions :: S.Set (State,Label,State) -> S.Set (State,Label,State)
+    filterFailTransitions = S.filter (\(s,_,_) -> s /= 0)
 
 toDot :: DFA -> Dot ()
 toDot d =
