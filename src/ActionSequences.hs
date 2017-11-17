@@ -6,6 +6,12 @@ import Data.Maybe (fromJust)
 
 import Interfaces.MZinHaskell
 import Interfaces.MZAST
+import Interfaces.FZSolutionParser (Solution)
+import Text.Parsec.Error
+
+type Label = Int
+type State = Int
+
 -- | An action sequence model
 data ASModel = ASModel Int      -- ^ The number of actions
                        [ASExpr] -- ^ A list of expressions
@@ -345,7 +351,7 @@ dfaToRegular atm xs =
     f  = S.toList (accepting_statesI atm)
 
 test1 :: String
-test1 = layout [constraint (dfaToRegular (atLeast 2 1 1) (Var (Simpl "xs")))]
+test1 = layout [constraint (dfaToRegular (dfaToImplDFA (or_ctr 2 1 2)) (Var (Simpl "xs")))]
 
 -- | Converts a DFA to a HaskellZinc model
 --
@@ -354,5 +360,16 @@ test1 = layout [constraint (dfaToRegular (atLeast 2 1 1) (Var (Simpl "xs")))]
 dfaToModel :: String -> DFA -> [ModelData]
 dfaToModel s d = [constraint (dfaToRegular (dfaToImplDFA d) (Var (Simpl s)))]
 
+runActionSeqModel :: ASModel -- ^ The model
+  -> String                  -- ^ The variable name
+  -> FilePath                -- ^ The path where the FlatZinc translation will be printed
+  -> Int                     -- ^ The chosen solver
+  -> Int                     -- ^ The number of solutions to be returned
+  -> IO (Either ParseError [Solution])
+runActionSeqModel m n p s ns =
+  let model = dfaToModel n $ asModelToDFA m
+  in runModel model p s ns
+
 main :: IO ()
-main = render $ or_ctr 4 2 3
+-- main = render $ or_ctr 2 1 2
+main = putStrLn test1
