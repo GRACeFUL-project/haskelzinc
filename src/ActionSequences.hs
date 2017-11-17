@@ -29,6 +29,30 @@ data ASExpr = Atleast Int         -- ^ The action in question
             | Or Int              -- ^ The first of the two actions, at least one of which has to be performed
                  Int              -- ^ The second of the two actions, at least one of which has to be performed
 
+-- | An empty DFA
+--
+-- * k = the number of actions
+emptyDFA :: Int -> DFA
+emptyDFA k =
+  DFA
+   { alphabet         = S.fromList abc
+   , states           = S.fromList (padding : failure : [0])
+   , accepting_states = S.fromList (padding : [0])
+   , transitions      =           S.fromList ((0,nop,padding) : [(0,a,0) | a <- (next : [1..k])])
+                        `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- (next : [1..k])])
+                        `S.union` S.fromList [(failure,a,failure) | a <- abc]
+   , start = 0
+   , failure = failure
+   }
+   where
+     abc = [1..k+2]
+
+     next = k + 1
+     nop  = k + 2
+
+     failure  = 2
+     padding  = 1
+
 -- | Action i must be performed at least p times in each cell.
 --
 -- * k = the number of actions
