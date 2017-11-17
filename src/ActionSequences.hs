@@ -6,6 +6,28 @@ import Data.Maybe (fromJust)
 
 import Interfaces.MZinHaskell
 import Interfaces.MZAST
+-- | An action sequence model
+data ASModel = ASModel Int      -- ^ The number of actions
+                       [ASExpr] -- ^ A list of expressions
+
+-- | An action sequence expression
+data ASExpr = Atleast Int         -- ^ The action in question
+                      Int         -- ^ The min number of times this action has to be performed
+            | Atmost Int          -- ^ The action in question
+                     Int          -- ^ The max number of times this action can be performed
+            | Incompatible Int    -- ^ The first of the incompatible actions
+                           Int    -- ^ The second of the incompatible actions
+            | Implication Int     -- ^ The action that implies the second action
+                          Int     -- ^ The action that is implied
+            | ValuePrecedence Int -- ^ The action that has to precede the second action
+                              Int -- ^ The action that has to be preceded by the first action
+            | StretchMin Int      -- ^ The action in question
+                         Int      -- ^ The min number of times the action has to be performed in a row
+                                  -- once it has been performed at least once
+            | StretchMax Int      -- ^ The action in question
+                         Int      -- ^ The max number of times the action may be performed in a row
+            | Or Int              -- ^ The first of the two actions, at least one of which has to be performed
+                 Int              -- ^ The second of the two actions, at least one of which has to be performed
 
 -- | Action i must be performed at least p times in each cell.
 --
