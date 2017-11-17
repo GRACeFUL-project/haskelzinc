@@ -25,13 +25,14 @@ atLeast k i p =
                         `S.union` S.fromList [(failure,l,failure) | l <- abc]
                         `S.union` S.fromList ((padding,nop,padding) : [(padding,l,failure) | l <- abc, l /= nop])
    , start            = 0
+   , failure          = failure
    }
    where
      abc = [1..k+2]
-     
+
      next = k + 1
      nop  = k + 2
-     
+
      failure  = p + 2
      padding  = p + 1
 
@@ -53,6 +54,7 @@ atMost k i p =
                         `S.union` S.fromList [(failure,l,failure) | l <- abc]
                         `S.union` S.fromList ((padding,nop,padding) : [(padding,l,failure) | l <- abc, l /= nop])
    , start            = 0
+   , failure          = failure
    }
    where
      abc = [1..k+2]
@@ -86,6 +88,7 @@ incompatible k i j =
                        `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- abc, a /= nop])
                        `S.union` S.fromList [(failure,a,failure) | a <- abc]
   , start            = 0
+  , failure          = failure
   }
   where
     abc = [1..k+2]
@@ -121,6 +124,7 @@ implication k i j =
                        `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- abc, a /= nop])
                        `S.union` S.fromList [(failure,a,failure) | a <- abc]
   , start            = 0
+  , failure          = failure
   }
   where
     abc = [1..k+2]
@@ -153,6 +157,7 @@ value_precedence k i j =
                        `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- abc, a /= nop])
                        `S.union` S.fromList [(failure,a,failure) | a <- abc]
   , start            = 0
+  , failure          = failure
   }
   where
     abc = [1..k+2]
@@ -187,6 +192,7 @@ stretch_min k i s =
                        `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- abc, a /= nop])
                        `S.union` S.fromList [(failure,a,failure) | a <- abc]
   , start            = 0
+  , failure          = failure
   }
   where
     abc = [1..k+2]
@@ -218,6 +224,7 @@ stretch_max k i s =
                        `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- abc, a /= nop])
                        `S.union` S.fromList [(failure,a,failure) | a <- abc]
   , start            = 0
+  , failure          = failure
   }
   where
     abc = [1..k+2]
@@ -251,6 +258,7 @@ or_ctr k i j =
                        `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- abc, a /= nop])
                        `S.union` S.fromList [(failure,a,failure) | a <- abc]
   , start            = 0
+  , failure          = failure
   }
   where
     abc = [1..k+2]
