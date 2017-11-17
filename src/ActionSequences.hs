@@ -334,34 +334,25 @@ or_ctr k i j =
     failure  = 3
     padding  = 2
 
-dfaToRegular :: DFA -> Expr -> Expr
-dfaToRegular atm' xs =
+dfaToRegular :: ImplDFA -> Expr -> Expr
+dfaToRegular atm xs =
   prefCall "regular" [xs, int q,int s,intArray2 d, int q0, intSet f]
   where
-    atm = normalize atm'
-    q  = S.size (states atm)
-    s  = S.size (alphabet atm)
-    d  = [[ transition atm state label | label <- [1..s] ] | state <- [1..q]] 
-    q0 = start atm
-    f  = S.toList (accepting_states atm)
-
-normalize :: DFA -> DFA
-normalize d =
-  DFA { alphabet         = S.map thetaA (alphabet d)
-      , states           = S.map thetaS (states d)
-      , accepting_states = S.map thetaS (accepting_states d)
-      , transitions      = S.map (\(f,l,t) -> (thetaS f,thetaA l,thetaS t)) (transitions d)
-      , start            = thetaS (start d)
-      }
-  where
-    thetaS s = fromJust (lookup s (zip (S.toList (states d)) [1..]))
-    thetaA l = fromJust (lookup l (zip (S.toList (alphabet d)) [1..]))
+    q  = S.size (statesI atm)
+    s  = S.size (alphabetI atm)
+    d  = [[ transitionI atm state label | label <- [1..s] ] | state <- [1..q]]
+    q0 = startI atm
+    f  = S.toList (accepting_statesI atm)
 
 test1 :: String
 test1 = layout [constraint (dfaToRegular (atLeast 2 1 1) (Var (Simpl "xs")))]
 
-render :: DFA -> IO ()
-render = putStrLn . toString
+-- | Converts a DFA to a HaskellZinc model
+--
+-- * s = The variable name
+-- * d = The given DFA
+dfaToModel :: String -> DFA -> [ModelData]
+dfaToModel s d = [constraint (dfaToRegular (dfaToImplDFA d) (Var (Simpl s)))]
 
 main :: IO ()
 main = render $ or_ctr 4 2 3
