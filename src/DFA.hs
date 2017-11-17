@@ -20,16 +20,45 @@ import Text.Dot
 type Label = Int
 type State = Int
 
+-- | The representation of a DFA.
+--
+-- * alphabet    = the possible actions
+-- * states      = the states of the DFA
+-- * accepting_states
+-- * transitions = the possible transitions, of the form
+--                 <current state, action, new state>
+-- * start       = the start state
+-- * failure     = the failure state
 data DFA = 
   DFA { alphabet         :: S.Set Label
       , states           :: S.Set State
       , accepting_states :: S.Set State
       , transitions      :: S.Set (State,Label,State)
       , start            :: State
+      , failure          :: State
       } deriving Show
+
+-- | The representation of a DFA with implicit failure state 0.
+--
+-- * alphabet    = the possible actions
+-- * states      = the states of the DFA
+-- * accepting_states
+-- * transitions = the possible transitions, of the form
+--                 <current state, action, new state>
+-- * start       = the start state
+data ImplDFA =
+  ImplDFA { alphabetI         :: S.Set Label
+          , statesI           :: S.Set State
+          , accepting_statesI :: S.Set State
+          , transitionsI      :: S.Set (State,Label,State)
+          , startI            :: State
+          } deriving Show
 
 transition :: DFA -> State -> Label -> State
 transition d s l = head [t' | (s',l',t') <- S.toList (transitions d), s' == s, l' == l]
+
+transitionI :: ImplDFA -> State -> Label -> State
+transitionI d s l = head [t' | (s',l',t') <- S.toList (transitionsI d), s' == s, l' == l]
 
 example = 
   DFA { alphabet         = S.fromList [0,1]
@@ -44,6 +73,7 @@ example =
                      ,(6,0,6),(6,1,6)
                      ]
       , start            = 1
+      , failure          = 6
       }
 
 -- | Minimize the given DFA.
@@ -87,6 +117,7 @@ minimize dfa = update reduce
           , accepting_states = S.map theta (accepting_states dfa)
           , transitions      = S.map (\(f,l,t) -> (theta f,l,theta t)) (transitions dfa)
           , start            = theta (start dfa)
+          , failure          = theta (failure dfa)
           }
       where
         theta :: State -> State
@@ -100,6 +131,7 @@ dfaToNFA d =
    , N.accepting_states = accepting_states d
    , N.transitions      = S.map (\(f,l,t) -> (f,l,S.singleton t)) (transitions d)
    , N.start            = start d
+   , N.failure          = failure d
    }
 
 nfaToDFA :: N.NFA -> DFA
@@ -110,6 +142,7 @@ nfaToDFA n =
   , accepting_states = S.map theta (S.filter (any (\x -> S.member x (N.accepting_states n))) combined_states)
   , transitions      = S.map (\(f,l,t) -> (theta f,l,theta t)) $ S.foldr S.union S.empty $ S.map aggregated_transitions combined_states
   , start            = theta (S.singleton (N.start n))
+  , failure          = theta (S.singleton (N.failure n))
   }  
   where
    theta :: S.Set State -> State
