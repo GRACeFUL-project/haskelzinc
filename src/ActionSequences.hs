@@ -73,16 +73,16 @@ asModelToImplDFA (ASModel k es) = foldl DFA.sequence (emptyImplDFA k) $
 -- * e = the action sequence expression
 asExprToDFA :: Int -> ASExpr -> DFA
 asExprToDFA k e = case e of
-  Atleast i p         -> atLeast k i p
-  Atmost i p          -> atMost k i p
-  Incompatible i j    -> incompatible k i j
-  Implication i j     -> implication k i j
-  ValuePrecedence i j -> value_precedence k i j
-  StretchMin i s      -> stretch_min k i s
-  StretchMax i s      -> stretch_max k i s
-  Or i j              -> or_ctr k i j
+  Atleast i p         -> constr_atLeast k i p
+  Atmost i p          -> constr_atMost k i p
+  Incompatible i j    -> constr_incompatible k i j
+  Implication i j     -> constr_implication k i j
+  ValuePrecedence i j -> constr_value_precedence k i j
+  StretchMin i s      -> constr_stretch_min k i s
+  StretchMax i s      -> constr_stretch_max k i s
+  Or i j              -> constr_or k i j
 
--- | An empty DFA
+-- | An empty Implicit DFA
 --
 -- * k = the number of actions
 emptyImplDFA :: Int -> ImplDFA
@@ -109,8 +109,8 @@ emptyImplDFA k =
 -- * k = the number of actions
 -- * i = the action that has to be repeated
 -- * p = the number of times action i has to at least be repeated
-atLeast :: Int -> Int -> Int -> DFA
-atLeast k i p =
+constr_atLeast :: Int -> Int -> Int -> DFA
+constr_atLeast k i p =
   DFA
    { alphabet         = S.fromList abc
    , states           = S.fromList [0..p+2]
@@ -138,8 +138,8 @@ atLeast k i p =
 -- * k = the number of actions
 -- * i = the action that has to be repeated
 -- * p = the number of times action i can at most be repeated
-atMost :: Int -> Int -> Int -> DFA
-atMost k i p =
+constr_atMost :: Int -> Int -> Int -> DFA
+constr_atMost k i p =
   DFA
    { alphabet         = S.fromList abc
    , states           = S.fromList [0..p+2]
@@ -167,8 +167,8 @@ atMost k i p =
 -- * k = the number of actions
 -- * i = the action that cannot be combined with action j
 -- * j = the action that cannot be combined with action i
-incompatible :: Int -> Int -> Int -> DFA
-incompatible k i j =
+constr_incompatible :: Int -> Int -> Int -> DFA
+constr_incompatible k i j =
   DFA
   { alphabet         = S.fromList abc
   , states           = S.fromList [0..4]
@@ -203,8 +203,8 @@ incompatible k i j =
 -- * k = the number of actions
 -- * i = the action that implies action j
 -- * j = the action that is implied by action i
-implication :: Int -> Int -> Int -> DFA
-implication k i j =
+constr_implication :: Int -> Int -> Int -> DFA
+constr_implication k i j =
   DFA
   { alphabet         = S.fromList abc
   , states           = S.fromList [0..3]
@@ -239,8 +239,8 @@ implication k i j =
 -- * k = the number of actions
 -- * i = the action that to precede action j
 -- * j = the action that has to be preceded by action i
-value_precedence :: Int -> Int -> Int -> DFA
-value_precedence k i j =
+constr_value_precedence :: Int -> Int -> Int -> DFA
+constr_value_precedence k i j =
   DFA
   { alphabet         = S.fromList abc
   , states           = S.fromList [0..3]
@@ -272,8 +272,8 @@ value_precedence k i j =
 -- * i = the action in question
 -- * s = the number of times action i has to at least be performed in a row
 --       once it is performed at least once
-stretch_min :: Int -> Int -> Int -> DFA
-stretch_min k i s =
+constr_stretch_min :: Int -> Int -> Int -> DFA
+constr_stretch_min k i s =
   DFA
   { alphabet         = S.fromList abc
   , states           = S.fromList [0..s+2]
@@ -307,8 +307,8 @@ stretch_min k i s =
 -- * i = the action in question
 -- * s = the number of times action i may at most be performed in a row
 --       once it is performed at least once
-stretch_max :: Int -> Int -> Int -> DFA
-stretch_max k i s =
+constr_stretch_max :: Int -> Int -> Int -> DFA
+constr_stretch_max k i s =
   DFA
   { alphabet         = S.fromList abc
   , states           = S.fromList [0..s+2]
@@ -338,8 +338,8 @@ stretch_max k i s =
 -- * k = the number of actions
 -- * i = the first of the pair of actions, one of which at least has to be performed
 -- * j = the second of the pair of actions, one of which at least has to be performed
-or_ctr :: Int -> Int -> Int -> DFA
-or_ctr k i j =
+constr_or :: Int -> Int -> Int -> DFA
+constr_or k i j =
   DFA
   { alphabet         = S.fromList abc
   , states           = S.fromList [0..3]
