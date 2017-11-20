@@ -4,6 +4,7 @@ module DFA
  , minimize
  , sequence
  , toString
+ , toStringI
  , normalize
  , dfaToImplDFA
  , transition
@@ -229,6 +230,27 @@ toDot d =
        | otherwise 
        = "circle"
 
+toDotI :: ImplDFA -> Dot ()
+toDotI d =
+  do tuples <- mapM mkNode (S.toList $ statesI d)
+     let m = M.fromList tuples
+     mapM_ (\(f,l,t) -> edge (m M.! f) (m M.! t) [("label",show l)])(transitionsI d)
+     dummy <- node [("shape","none"),("style","invisible")]
+     edge dummy (m M.! startI d) []
+     return ()
+ where
+   mkNode n = 
+     do i <- node [("shape",shape)]
+        return (n,i)
+    where
+      shape 
+       | S.member n (accepting_statesI d)
+       = "doublecircle"
+       | otherwise 
+       = "circle"
 
 toString :: DFA -> String
 toString = showDot . toDot
+
+toStringI :: ImplDFA -> String
+toStringI = showDot . toDotI
