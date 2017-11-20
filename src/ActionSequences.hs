@@ -63,8 +63,9 @@ or_as :: Int -> Int -> ASExpr
 or_as = Or
 
 -- | Transform an action sequence model into a DFA
-asModelToDFA :: ASModel -> DFA
-asModelToDFA (ASModel k es) = foldl DFA.sequence (emptyDFA k) $ map (asExprToDFA k) es
+asModelToImplDFA :: ASModel -> ImplDFA
+asModelToImplDFA (ASModel k es) = foldl DFA.sequence (emptyImplDFA k) $
+  map (dfaToImplDFA . (asExprToDFA k)) es
 
 -- | Transform an action sequence expression into a DFA
 --
@@ -84,17 +85,15 @@ asExprToDFA k e = case e of
 -- | An empty DFA
 --
 -- * k = the number of actions
-emptyDFA :: Int -> DFA
-emptyDFA k =
-  DFA
-   { alphabet         = S.fromList abc
-   , states           = S.fromList (padding : failure : [0])
-   , accepting_states = S.fromList (padding : [0])
-   , transitions      =           S.fromList ((0,nop,padding) : [(0,a,0) | a <- (next : [1..k])])
+emptyImplDFA :: Int -> ImplDFA
+emptyImplDFA k =
+  ImplDFA
+   { alphabetI         = S.fromList abc
+   , statesI           = S.fromList (padding : [0])
+   , accepting_statesI = S.fromList (padding : [0])
+   , transitionsI      =           S.fromList ((0,nop,padding) : [(0,a,0) | a <- (next : [1..k])])
                         `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- (next : [1..k])])
-                        `S.union` S.fromList [(failure,a,failure) | a <- abc]
-   , start = 0
-   , failure = failure
+   , startI = 0
    }
    where
      abc = [1..k+2]
@@ -102,7 +101,7 @@ emptyDFA k =
      next = k + 1
      nop  = k + 2
 
-     failure  = 2
+     failure  = 0
      padding  = 1
 
 -- | Action i must be performed at least p times in each cell.
