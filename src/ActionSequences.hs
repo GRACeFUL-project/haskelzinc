@@ -15,6 +15,7 @@ type State = Int
 -- | An action sequence model
 data ASModel = ASModel Int      -- ^ The number of actions
                        [ASExpr] -- ^ A list of expressions
+  deriving (Show)
 
 -- | An action sequence expression
 data ASExpr = Atleast Int         -- ^ The action in question
@@ -34,6 +35,32 @@ data ASExpr = Atleast Int         -- ^ The action in question
                          Int      -- ^ The max number of times the action may be performed in a row
             | Or Int              -- ^ The first of the two actions, at least one of which has to be performed
                  Int              -- ^ The second of the two actions, at least one of which has to be performed
+  deriving (Show)
+
+-- | Constructors
+atleast :: Int -> Int -> ASExpr
+atleast = Atleast
+
+atmost :: Int -> Int -> ASExpr
+atmost = Atmost
+
+incompatible :: Int -> Int -> ASExpr
+incompatible = Incompatible
+
+implication :: Int -> Int -> ASExpr
+implication = Implication
+
+value_precedence :: Int -> Int -> ASExpr
+value_precedence = ValuePrecedence
+
+stretch_min :: Int -> Int -> ASExpr
+stretch_min = StretchMin
+
+stretch_max :: Int -> Int -> ASExpr
+stretch_max = StretchMax
+
+or_as :: Int -> Int -> ASExpr
+or_as = Or
 
 -- | Transform an action sequence model into a DFA
 asModelToDFA :: ASModel -> DFA
