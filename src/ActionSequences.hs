@@ -370,7 +370,7 @@ dfaToRegular :: ImplDFA -> Expr -> Expr
 dfaToRegular atm xs =
   prefCall "regular" [xs, int q,int s,intArray2 d, int q0, intSet f]
   where
-    q  = S.size (statesI atm)
+    q  = S.size (statesI atm) - 1
     s  = S.size (alphabetI atm)
     d  = [[ transitionI atm state label | label <- [1..s] ] | state <- [1..q]]
     q0 = startI atm

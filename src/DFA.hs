@@ -187,7 +187,7 @@ normalize d =
 dfaToImplDFA :: DFA -> ImplDFA
 dfaToImplDFA d = let n = normalize d in
   ImplDFA { alphabetI         = alphabet n
-          , statesI           = removeFailState (failure n) (states n)
+          , statesI           = addImplFailState $ removeFailState (failure n) (states n)
           , accepting_statesI = accepting_states n
           , transitionsI      = filterFailTransitions $ replaceFailTransitions (failure n) (transitions n)
           , startI            = start n
@@ -195,6 +195,9 @@ dfaToImplDFA d = let n = normalize d in
   where
     removeFailState :: State -> S.Set State -> S.Set State
     removeFailState fail = S.filter (\s -> s /= fail)
+
+    addImplFailState :: S.Set State -> S.Set State
+    addImplFailState states = S.union states $ S.singleton 0
 
     replaceFailState :: State -> State -> State
     replaceFailState fail s
