@@ -89,11 +89,11 @@ emptyImplDFA :: Int -> ImplDFA
 emptyImplDFA k =
   ImplDFA
    { alphabetI         = S.fromList abc
-   , statesI           = S.fromList (padding : [0])
-   , accepting_statesI = S.fromList (padding : [0])
-   , transitionsI      =           S.fromList ((0,nop,padding) : [(0,a,0) | a <- (next : [1..k])])
+   , statesI           = S.fromList (failure : padding : [1])
+   , accepting_statesI = S.fromList (padding : [1])
+   , transitionsI      =           S.fromList ((1,nop,padding) : [(1,a,1) | a <- (next : [1..k])])
                         `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- (next : [1..k])])
-   , startI = 0
+   , startI = 1
    }
    where
      abc = [1..k+2]
@@ -102,7 +102,7 @@ emptyImplDFA k =
      nop  = k + 2
 
      failure  = 0
-     padding  = 1
+     padding  = 2
 
 -- | Action i must be performed at least p times in each cell.
 --
