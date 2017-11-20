@@ -12,13 +12,12 @@ import Prelude hiding (sequence)
 type Label = Int
 type State = Int
 
-data NFA = 
+data NFA =
   NFA { alphabet         :: S.Set Label
       , states           :: S.Set State
       , accepting_states :: S.Set State
       , transitions      :: S.Set (State,Label,S.Set State)
       , start            :: State
-      , failure          :: State
       } deriving Show
 
 sequence :: NFA -> NFA -> NFA
@@ -35,7 +34,6 @@ sequence n1 n2 =
                                    (transitions n1))
                             (S.map (\(f,l,t) -> (theta2 f,l,S.map theta2 t)) (transitions n2))
    , start            = theta1 (start n1)
-   , failure          = theta1 (failure n1) -- TODO : what about the failure state of n2? demand they are equal?
    }
   where
    theta1 :: State -> State
