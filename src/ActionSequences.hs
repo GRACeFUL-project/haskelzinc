@@ -383,8 +383,8 @@ test1 = layout [constraint (dfaToRegular (dfaToImplDFA (or_ctr 2 1 2)) (Var (Sim
 --
 -- * s = The variable name
 -- * d = The given DFA
-dfaToModel :: String -> DFA -> [ModelData]
-dfaToModel s d = [constraint (dfaToRegular (dfaToImplDFA d) (Var (Simpl s)))]
+dfaToModel :: String -> ImplDFA -> [ModelData]
+dfaToModel s d = [constraint (dfaToRegular d (Var (Simpl s)))]
 
 runActionSeqModel :: ASModel -- ^ The model
   -> String                  -- ^ The variable name
@@ -393,7 +393,7 @@ runActionSeqModel :: ASModel -- ^ The model
   -> Int                     -- ^ The number of solutions to be returned
   -> IO (Either ParseError [Solution])
 runActionSeqModel m n p s ns =
-  let model = dfaToModel n $ asModelToDFA m
+  let model = dfaToModel n $ asModelToImplDFA m
   in runModel model p s ns
 
 main :: IO ()
