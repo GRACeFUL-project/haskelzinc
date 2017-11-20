@@ -84,22 +84,22 @@ example =
 --
 -- This returns an equivalent DFA with a minimal number of states.
 -- The implementation is based on Hopcroft's algoritm.
-minimize :: DFA -> DFA
+minimize :: ImplDFA -> ImplDFA
 minimize dfa = update reduce
   where 
     reduce :: [S.Set State]
-    reduce = go1 [accepting_states dfa] [accepting_states dfa,S.difference (states dfa) (accepting_states dfa)] 
+    reduce = go1 [accepting_statesI dfa] [accepting_statesI dfa,S.difference (statesI dfa) (accepting_statesI dfa)] 
      where 
       go1 :: [S.Set State] -> [S.Set State] -> [S.Set State]
       go1 w p = go1' (filter (not . S.null) w) p
 
       go1' []    p = p
-      go1' (a:w) p = go2 (S.toList (alphabet dfa)) a w p 
+      go1' (a:w) p = go2 (S.toList (alphabetI dfa)) a w p 
 
       go2 :: [Label] -> S.Set State -> [S.Set State] -> [S.Set State] -> [S.Set State]
       go2 []     _ w p = go1 w p
       go2 (c:cs) a w p = 
-        let x = S.map (\(f,_,_) -> f) (S.filter (\(_,l,t) -> l == c && S.member t a) (transitions dfa))
+        let x = S.map (\(f,_,_) -> f) (S.filter (\(_,l,t) -> l == c && S.member t a) (transitionsI dfa))
         in go3 p x cs a w []
 
       go3 :: [S.Set State] -> S.Set State -> [Label] -> S.Set State -> [S.Set State] -> [S.Set State] -> [S.Set State]
@@ -114,39 +114,37 @@ minimize dfa = update reduce
                 | otherwise                           =   dif : w
          in go3 p' x cs a w2 p2
 
-    update :: [S.Set State] -> DFA
+    update :: [S.Set State] -> ImplDFA
     update p = 
-      DFA { alphabet         = alphabet dfa
-          , states           = S.map theta (states dfa)
-          , accepting_states = S.map theta (accepting_states dfa)
-          , transitions      = S.map (\(f,l,t) -> (theta f,l,theta t)) (transitions dfa)
-          , start            = theta (start dfa)
-          , failure          = theta (failure dfa)
-          }
+      ImplDFA
+        { alphabetI         = alphabetI dfa
+        , statesI           = S.map theta (statesI dfa)
+        , accepting_statesI = S.map theta (accepting_statesI dfa)
+        , transitionsI      = S.map (\(f,l,t) -> (theta f,l,theta t)) (transitionsI dfa)
+        , startI            = theta (startI dfa)
+        }
       where
         theta :: State -> State
         theta s = fromJust (findIndex (S.member s) p)
 
-dfaToNFA :: DFA -> N.NFA
+dfaToNFA :: ImplDFA -> N.NFA
 dfaToNFA d =
   N.NFA 
-   { N.alphabet         = alphabet d
-   , N.states           = states d
-   , N.accepting_states = accepting_states d
-   , N.transitions      = S.map (\(f,l,t) -> (f,l,S.singleton t)) (transitions d)
-   , N.start            = start d
-   , N.failure          = failure d
+   { N.alphabet         = alphabetI d
+   , N.states           = statesI d
+   , N.accepting_states = accepting_statesI d
+   , N.transitions      = S.map (\(f,l,t) -> (f,l,S.singleton t)) (transitionsI d)
+   , N.start            = startI d
    }
 
-nfaToDFA :: N.NFA -> DFA
+nfaToDFA :: N.NFA -> ImplDFA
 nfaToDFA n = 
- DFA
-  { alphabet         = N.alphabet n
-  , states           = S.map theta combined_states
-  , accepting_states = S.map theta (S.filter (any (\x -> S.member x (N.accepting_states n))) combined_states)
-  , transitions      = S.map (\(f,l,t) -> (theta f,l,theta t)) $ S.foldr S.union S.empty $ S.map aggregated_transitions combined_states
-  , start            = theta (S.singleton (N.start n))
-  , failure          = theta (S.singleton (N.failure n))
+ ImplDFA
+  { alphabetI         = N.alphabet n
+  , statesI           = S.map theta combined_states
+  , accepting_statesI = S.map theta (S.filter (any (\x -> S.member x (N.accepting_states n))) combined_states)
+  , transitionsI      = S.map (\(f,l,t) -> (theta f,l,theta t)) $ S.foldr S.union S.empty $ S.map aggregated_transitions combined_states
+  , startI            = theta (S.singleton (N.start n))
   }  
   where
    theta :: S.Set State -> State
@@ -168,7 +166,7 @@ nfaToDFA n =
      S.map (\c -> (s,c,S.foldr S.union S.empty $ S.map (\(_,_,t) -> t) $ S.filter (\(f,l,_) -> l == c && S.member f s) $ N.transitions n)) 
            (N.alphabet n)
    
-sequence :: DFA -> DFA -> DFA
+sequence :: ImplDFA -> ImplDFA -> ImplDFA
 sequence d1 d2 = minimize (nfaToDFA (N.sequence (dfaToNFA (minimize d1)) (dfaToNFA (minimize d2))))
 
 normalize :: DFA -> DFA
