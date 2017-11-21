@@ -13,18 +13,20 @@ import DFA
 import qualified Data.Set as S
 import Data.Maybe (fromJust)
 
-import Interfaces.MZinHaskell
-import Interfaces.MZAST
-import Interfaces.FZSolutionParser (Solution)
-import Text.Parsec.Error
+-- import Interfaces.MZinHaskell
+import Interfaces.MZAST (prefCall, int, intArray2, intSet)
+-- import Interfaces.MZBuiltIns
+-- import Interfaces.FZSolutionParser (Solution)
+-- import Text.Parsec.Error
+import Interfaces.MZASTBase
 
 type Label = Int
 type State = Int
 
 -- | An action sequence model
-data ASModel = ASModel Int      -- ^ The number of actions
-                       [ASExpr] -- ^ A list of expressions
-  deriving (Show)
+-- data ASModel = ASModel Int      -- ^ The number of actions
+--                        [ASExpr] -- ^ A list of expressions
+--   deriving (Show)
 
 -- | An action sequence expression
 data ASExpr = Atleast Int         -- ^ The action in question
@@ -72,9 +74,11 @@ or_as :: Int -> Int -> ASExpr
 or_as = Or
 
 -- | Transform an action sequence model into a DFA
-asModelToImplDFA :: ASModel -> ImplDFA
-asModelToImplDFA (ASModel k es) = foldl DFA.sequence (emptyImplDFA k) $
-  map (dfaToImplDFA . (asExprToDFA k)) es
+-- asModelToImplDFA :: ASModel -> ImplDFA
+-- asModelToImplDFA (ASModel k []) = error "something"
+-- asModelToImplDFA (ASModel k (e:es)) = dfaToImplDFA $ asExprToDFA k e
+-- asModelToImplDFA (ASModel k es) = foldl DFA.sequence (emptyImplDFA k) $
+  -- map (dfaToImplDFA . (asExprToDFA k)) es
 
 -- | Transform an action sequence expression into a DFA
 --
@@ -94,24 +98,24 @@ asExprToDFA k e = case e of
 -- | An empty Implicit DFA
 --
 -- * k = the number of actions
-emptyImplDFA :: Int -> ImplDFA
-emptyImplDFA k =
-  ImplDFA
-   { alphabetI         = S.fromList abc
-   , statesI           = S.fromList (failure : padding : [1])
-   , accepting_statesI = S.fromList (padding : [1])
-   , transitionsI      =           S.fromList ((1,nop,padding) : [(1,a,1) | a <- (next : [1..k])])
-                        `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- (next : [1..k])])
-   , startI = 1
-   }
-   where
-     abc = [1..k+2]
+-- emptyImplDFA :: Int -> ImplDFA
+-- emptyImplDFA k =
+--   ImplDFA
+--    { alphabetI         = S.fromList abc
+--    , statesI           = S.fromList (failure : padding : [1])
+--    , accepting_statesI = S.fromList (padding : [1])
+--    , transitionsI      =           S.fromList ((1,nop,padding) : [(1,a,1) | a <- (next : [1..k])])
+--                         `S.union` S.fromList ((padding,nop,padding) : [(padding,a,failure) | a <- (next : [1..k])])
+--    , startI = 1
+--    }
+--    where
+--      abc = [1..k+2]
 
-     next = k + 1
-     nop  = k + 2
+--      next = k + 1
+--      nop  = k + 2
 
-     failure  = 0
-     padding  = 2
+--      failure  = 0
+--      padding  = 2
 
 -- | Action i must be performed at least p times in each cell.
 --
@@ -385,29 +389,28 @@ dfaToRegular atm xs =
     q0 = startI atm
     f  = S.toList (accepting_statesI atm)
 
-test1 :: String
-test1 = layout [constraint (dfaToRegular (dfaToImplDFA (or_ctr 2 1 2)) (Var (Simpl "xs")))]
+-- test1 :: String
+-- test1 = layout [constraint (dfaToRegular (dfaToImplDFA (or_as 2 1 2)) (Var (Simpl "xs")))]
 
 -- | Converts a DFA to a HaskellZinc model
 --
 -- * s = The variable name
 -- * d = The given DFA
-dfaToModel :: String -> ImplDFA -> [ModelData]
-dfaToModel s d = [constraint (dfaToRegular d (Var (Simpl s)))]
+-- dfaToModel :: String -> ImplDFA -> [ModelData]
+-- dfaToModel s d = [constraint (dfaToRegular d (Var (Simpl s)))]
 
-runActionSeqModel :: ASModel -- ^ The model
-  -> String                  -- ^ The variable name
-  -> FilePath                -- ^ The path where the FlatZinc translation will be printed
-  -> Int                     -- ^ The chosen solver
-  -> Int                     -- ^ The number of solutions to be returned
-  -> IO (Either ParseError [Solution])
-runActionSeqModel m n p s ns =
-  let model = dfaToModel n $ asModelToImplDFA m
-  in runModel model p s ns
+-- runActionSeqModel :: ASModel -- ^ The model
+--   -> String                  -- ^ The variable name
+--   -> ModelData               -- ^ The variable declaration
+--   -> FilePath                -- ^ The path where the FlatZinc translation will be printed
+--   -> Int                     -- ^ The chosen solver
+--   -> Int                     -- ^ The number of solutions to be returned
+--   -> IO (Either ParseError [Solution])
+-- runActionSeqModel m n decl p s ns =
+  -- let model = dfaToModel n $ asModelToImplDFA m
+      -- model_with_decl = (include "regular.mzn") : decl : (model ++ [solve satisfy])
+  -- in runModel model_with_decl p s ns
 
-main :: IO ()
--- main = render $ or_ctr 2 1 2
-main = putStrLn test1
 -- | The main method of this module,
 -- which takes the action sequence expression and produces a HaskellZinc expression.
 --
@@ -416,3 +419,18 @@ main = putStrLn test1
 -- * v = The HaskellZinc variable
 actionSeqConstraint :: Int -> ASExpr -> Expr -> Expr
 actionSeqConstraint k e v = dfaToRegular (dfaToImplDFA (asExprToDFA k e)) v
+
+-- main :: IO ()
+-- main = do
+--   let n = 20
+--       k = 2
+--       model = ASModel 2 [atleast 1 3]
+--   --     dfa = asExprToDFA 2 $ atleast 1 3
+--   --     idfa = dfaToImplDFA dfa
+--   --     idfa' = DFA.minimize $ asModelToImplDFA model
+--   --     empty = emptyImplDFA 2
+--   -- putStrLn $ toStringI idfa'
+--       var_type = Array [CT $ 1...n] Dec (CT $ 1...(k+2))
+      -- var_decl = var var_type "x"
+  -- res <- runActionSeqModel model "x" var_decl "/tmp/as" 1 1
+  -- print res
