@@ -1,5 +1,14 @@
-module ActionSequences where
-  
+module ActionSequences
+  ( ASExpr (..)
+  , actionSeqConstraint
+  , atleast, atmost
+  , incompatible
+  , implication
+  , value_precedence
+  , stretch_min, stretch_max
+  , or_as
+  ) where
+
 import DFA
 import qualified Data.Set as S
 import Data.Maybe (fromJust)
@@ -399,3 +408,11 @@ runActionSeqModel m n p s ns =
 main :: IO ()
 -- main = render $ or_ctr 2 1 2
 main = putStrLn test1
+-- | The main method of this module,
+-- which takes the action sequence expression and produces a HaskellZinc expression.
+--
+-- * k = The number of actions
+-- * e = The action sequence expression
+-- * v = The HaskellZinc variable
+actionSeqConstraint :: Int -> ASExpr -> Expr -> Expr
+actionSeqConstraint k e v = dfaToRegular (dfaToImplDFA (asExprToDFA k e)) v
