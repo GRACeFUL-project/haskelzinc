@@ -1,4 +1,4 @@
-module NFA 
+module TimeSpaceConstr.NFA
  ( NFA (..)
  , sequence
  ) where

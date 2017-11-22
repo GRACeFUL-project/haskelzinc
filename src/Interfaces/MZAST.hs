@@ -39,15 +39,12 @@ module Interfaces.MZAST (
   ctvar, ($$),
   -- * Annotations
   (|:),
-  -- * Action sequences
-  actionSequence,
   -- * Others
   ModelData, declareOnly, turnToItem,
   module Interfaces.MZASTBase
 ) where
 
 import Interfaces.MZASTBase
-import ActionSequences
 import Data.String
 -- import qualified Data.Kind as K
 
@@ -513,14 +510,6 @@ instance Fractional Expr where
   recip = undefined
 
 -- Action sequences
-
--- | Constructs an action sequence constraint
---
--- * k = The number of actions
--- * e = The action sequence expression
--- * v = The result variable
-actionSequence :: Int -> ASExpr -> Expr -> Expr
-actionSequence k e v = actionSeqConstraint k e v
 
 -- Auxiliary definitions
 data DSorOther = DS | OK

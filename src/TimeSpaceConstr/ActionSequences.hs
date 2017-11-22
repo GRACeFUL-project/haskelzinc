@@ -1,4 +1,4 @@
-module ActionSequences
+module TimeSpaceConstr.ActionSequences
   ( ASExpr (..)
   , actionSeqConstraint
   , atleast, atmost
@@ -9,7 +9,7 @@ module ActionSequences
   , or_as
   ) where
 
-import DFA
+import TimeSpaceConstr.DFA
 import qualified Data.Set as S
 import Data.Maybe (fromJust)
 

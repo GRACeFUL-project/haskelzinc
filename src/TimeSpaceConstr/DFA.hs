@@ -1,4 +1,4 @@
-module DFA
+module TimeSpaceConstr.DFA
  ( DFA (..)
  , ImplDFA (..)
  , minimize
@@ -11,7 +11,7 @@ module DFA
  , transitionI
  ) where
 
-import qualified NFA as N
+import qualified TimeSpaceConstr.NFA as N
 
 import qualified Data.Set as S
 import qualified Data.Map as M
