@@ -15,7 +15,7 @@ import Data.Maybe (fromJust)
 
 -- import Interfaces.MZinHaskell
 import Interfaces.MZAST
--- import Interfaces.MZBuiltIns
+import Interfaces.MZBuiltIns
 -- import Interfaces.FZSolutionParser (Solution)
 -- import Text.Parsec.Error
 import Interfaces.MZASTBase
@@ -344,6 +344,56 @@ constr_or k i j =
 
     failure  = 3
     padding  = 2
+
+-- | Generate the automaton for uniform cost.
+-- The given action has a constant cost.
+--
+-- * k = the number of actions
+-- * i = the action for which the cost is always the constant c
+-- * c = the constant cost, corresponding to action i
+uniform_cost_autom :: Int -> Int -> Int -> DFA
+uniform_cost_autom k i c =
+  DFA
+  { alphabet         = S.fromList abc
+  , states           = S.fromList (failure : [0])
+  , accepting_states = S.singleton 0
+  , transitions      =           S.fromList [(0,a,0) | a <- abc]
+                       `S.union` S.fromList [(failure,a,failure) | a <- abc]
+  , start            = 0
+  , failure          = failure
+  }
+  where
+    abc = [1..k+2]
+
+    next = k + 1
+    nop  = k + 2
+
+    failure = 1
+
+-- | Generate the predicate for uniform cost.
+-- The given action has a constant cost.
+-- The given variable v gets constrained to be the total cost
+-- of the actions in sequence x
+--
+-- * x = the sequence of actions
+-- * a = the action for which the cost is always the constant c
+-- * c = the constant cost, corresponding to action a
+-- * v = the variable which gets constrained to be the total cost
+--       of the actions in sequence x
+uniform_cost_pred :: Expr -> Int -> Int -> Expr -> [Expr]
+uniform_cost_pred x a c v = [
+  let_ [
+      var Int "x_length"           =. mz_length x,
+      var Int "result_upper_bound" =. "x_length" *. c,
+      var (Array [CT $ 0..."x_length"] Dec (CT $ 0..."result_upper_bound")) "counters"
+       ]
+    ("counters"[0] =. 0
+     /\. forall [["i"] @@ [1..."x_length"]] "forall" (
+           if_     (x["i"] =.= a)
+           `then_` ("counters"["i"] =. "counters"["i" -. 1] +. c)
+           `else_` ("counters"["i"] =. "counters"["i" -. 1]))
+     /\. v =. "counters"["x_length"])
+                            ]
 
 dfaToRegular :: ImplDFA -> Expr -> Expr
 dfaToRegular atm xs =
