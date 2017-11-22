@@ -14,7 +14,7 @@ import qualified Data.Set as S
 import Data.Maybe (fromJust)
 
 -- import Interfaces.MZinHaskell
-import Interfaces.MZAST (prefCall, int, intArray2, intSet)
+import Interfaces.MZAST
 -- import Interfaces.MZBuiltIns
 -- import Interfaces.FZSolutionParser (Solution)
 -- import Text.Parsec.Error
@@ -361,5 +361,5 @@ dfaToRegular atm xs =
 -- * k = The number of actions
 -- * e = The action sequence expression
 -- * v = The HaskellZinc variable
-actionSeqConstraint :: Int -> ASExpr -> Expr -> Expr
-actionSeqConstraint k e v = dfaToRegular (dfaToImplDFA (asExprToDFA k e)) v
+actionSeqConstraint :: Int -> ASExpr -> Expr -> ModelData
+actionSeqConstraint k e v = constraint $ dfaToRegular (dfaToImplDFA (asExprToDFA k e)) v

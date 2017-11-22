@@ -8,5 +8,5 @@ import TimeSpaceConstr.ActionSequences
 -- * k = The number of actions
 -- * e = The action sequence expression
 -- * v = The result variable
-actionSequence :: Int -> ASExpr -> Expr -> Expr
+actionSequence :: Int -> ASExpr -> Expr -> ModelData
 actionSequence k e v = actionSeqConstraint k e v
