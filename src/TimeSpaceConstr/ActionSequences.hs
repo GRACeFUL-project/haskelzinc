@@ -583,14 +583,32 @@ dependent_cost_pred =
 -- MAIN
 -- -----------------------------------------------------------------
 
--- | The main method of this module,
--- which takes the action sequence expression and produces a HaskellZinc expression.
+-- | The main method of this module for constructing action sequence constraints.
+-- Takes the action sequence expression and produces a HaskellZinc expression.
 --
 -- * k = The number of actions
--- * v = The name of the HaskellZinc variable
+-- * x = The name of the action sequence variable
 -- * e = The action sequence expression
 actionSeqConstraint :: Int -> String -> ASExpr -> ModelData
-actionSeqConstraint k v e = constraint $ dfaToRegular (dfaToImplDFA (asExprToDFA k e)) $ str2var v
-  where
-    str2var :: String -> Expr
-    str2var = Var . Simpl
+actionSeqConstraint k x e = constraint $ dfaToRegular (dfaToImplDFA (asExprToDFA k e)) $ str2var x
+
+-- | The main method of this module for constructing cost constraints.
+-- Takes the cost expression and produces a HaskellZinc expression.
+--
+-- * x = The name of the action sequence variable
+-- * c = The name of the variable containing the resulting cost
+-- * e = The cost expression
+actionSeqCost :: String -> String -> ASCostExpr -> ModelData
+actionSeqCost x c e = constraint $ asCostExprToExpr (str2var x) (str2var c) e
+
+-- | The main method for constructing cost predicates.
+-- Takes a list of cost predicate expressions and produces a list
+-- of HaskellZinc predicates.
+--
+-- * l = The list of cost predicate expressions
+actionSeqCostPreds :: [ASCostPredExpr] -> [ModelData]
+actionSeqCostPreds l = map asCostPredExprToPred l
+
+-- | Converts a string to a HaskellZinc variable
+str2var :: String -> Expr
+str2var = Var . Simpl
