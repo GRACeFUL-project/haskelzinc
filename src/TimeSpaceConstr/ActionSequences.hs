@@ -9,6 +9,16 @@ module TimeSpaceConstr.ActionSequences
   , value_precedence
   , stretch_min, stretch_max
   , or_as
+  , ASCostExpr (..)
+  , actionSeqCost
+  , uniformCost
+  , discountCost
+  , dependentCost
+  , ASCostPredExpr (..)
+  , actionSeqCostPreds
+  , uniformCostPred
+  , discountCostPred
+  , dependentCostPred
   ) where
 
 import TimeSpaceConstr.DFA
