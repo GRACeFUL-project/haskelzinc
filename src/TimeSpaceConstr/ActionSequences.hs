@@ -26,6 +26,11 @@ import Interfaces.MZASTBase
 type Label = Int
 type State = Int
 
+
+-- -----------------------------------------------------------------
+-- ACTION SEQUENCE EXPRESSIONS
+-- -----------------------------------------------------------------
+
 -- | An action sequence expression
 data ASExpr = Atleast Int         -- ^ The action in question
                       Int         -- ^ The min number of times this action has to be performed
@@ -85,6 +90,11 @@ asExprToDFA k e = case e of
   StretchMin i s      -> constr_stretch_min k i s
   StretchMax i s      -> constr_stretch_max k i s
   Or i j              -> constr_or k i j
+
+
+-- -----------------------------------------------------------------
+-- AUTOMATAS
+-- -----------------------------------------------------------------
 
 -- | Action i must be performed at least p times in each cell.
 --
@@ -348,6 +358,21 @@ constr_or k i j =
     failure  = 3
     padding  = 2
 
+dfaToRegular :: ImplDFA -> Expr -> Expr
+dfaToRegular atm xs =
+  prefCall "regular" [xs, int q,int s,intArray2 d, int q0, intSet f]
+  where
+    q  = S.size (statesI atm) - 1
+    s  = S.size (alphabetI atm)
+    d  = [[ transitionI atm state label | label <- [1..s] ] | state <- [1..q]]
+    q0 = startI atm
+    f  = S.toList (accepting_statesI atm)
+
+
+-- -----------------------------------------------------------------
+-- COST PREDICATES
+-- -----------------------------------------------------------------
+
 -- | Generate the predicate for uniform cost.
 -- The given action has a constant cost.
 -- The given variable v gets constrained to be the total cost
@@ -488,15 +513,10 @@ dependent_cost_pred =
                                   /\. "saw_cost_changing_action"!.["i"] =.= "saw_cost_changing_action"!.["i" - 1]))))
   /\. "result" =.= "counters"!.["x_length"])
 
-dfaToRegular :: ImplDFA -> Expr -> Expr
-dfaToRegular atm xs =
-  prefCall "regular" [xs, int q,int s,intArray2 d, int q0, intSet f]
-  where
-    q  = S.size (statesI atm) - 1
-    s  = S.size (alphabetI atm)
-    d  = [[ transitionI atm state label | label <- [1..s] ] | state <- [1..q]]
-    q0 = startI atm
-    f  = S.toList (accepting_statesI atm)
+
+-- -----------------------------------------------------------------
+-- MAIN
+-- -----------------------------------------------------------------
 
 -- | The main method of this module,
 -- which takes the action sequence expression and produces a HaskellZinc expression.
