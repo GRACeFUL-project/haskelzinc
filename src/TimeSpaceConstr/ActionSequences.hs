@@ -1,3 +1,5 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module TimeSpaceConstr.ActionSequences
   ( ASExpr (..)
   , actionSeqConstraint
@@ -12,6 +14,7 @@ module TimeSpaceConstr.ActionSequences
 import TimeSpaceConstr.DFA
 import qualified Data.Set as S
 import Data.Maybe (fromJust)
+import Data.String
 
 -- import Interfaces.MZinHaskell
 import Interfaces.MZAST
@@ -375,25 +378,29 @@ uniform_cost_autom k i c =
 -- The given variable v gets constrained to be the total cost
 -- of the actions in sequence x
 --
--- * x = the sequence of actions
--- * a = the action for which the cost is always the constant c
--- * c = the constant cost, corresponding to action a
--- * v = the variable which gets constrained to be the total cost
---       of the actions in sequence x
-uniform_cost_pred :: Expr -> Int -> Int -> Expr -> [Expr]
-uniform_cost_pred x a c v = [
-  let_ [
-      var Int "x_length"           =. mz_length x,
-      var Int "result_upper_bound" =. "x_length" *. c,
-      var (Array [CT $ 0..."x_length"] Dec (CT $ 0..."result_upper_bound")) "counters"
-       ]
-    ("counters"[0] =. 0
-     /\. forall [["i"] @@ [1..."x_length"]] "forall" (
-           if_     (x["i"] =.= a)
-           `then_` ("counters"["i"] =. "counters"["i" -. 1] +. c)
-           `else_` ("counters"["i"] =. "counters"["i" -. 1]))
-     /\. v =. "counters"["x_length"])
-                            ]
+-- * x      = the sequence of actions
+-- * action = the action for which the cost is always the constant cost
+-- * cost   = the constant cost, corresponding to action action
+-- * result = the variable which gets constrained to be the total cost
+--            of the actions in sequence x
+uniform_cost_pred :: ModelData
+uniform_cost_pred =
+  predicate "uniform"[ var (Array [Int] Dec Int) "x"
+                     , par Int "action"
+                     , par Int "cost"
+                     , var Int "result"
+                     ]
+  =. let_ [
+         var Int "x_length"           =. mz_length["x"],
+         var Int "result_upper_bound" =. "x_length" * "cost",
+         var (Array [CT $ 0..."x_length"] Dec (CT $ 0..."result_upper_bound")) "counters"
+          ]
+    ("counters"!.[0] =.= 0
+     /\. forall [["i"] @@ 1..."x_length"] "forall" (
+           if_     ("x"!.["i"] =.= "action")
+           `then_` ("counters"!.["i"] =.= "counters"!.["i" - 1] + "cost")
+           `else_` ("counters"!.["i"] =.= "counters"!.["i" - 1]))
+     /\. "result" =.= "counters"!.["x_length"])
 
 dfaToRegular :: ImplDFA -> Expr -> Expr
 dfaToRegular atm xs =
