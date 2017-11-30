@@ -425,7 +425,69 @@ discount_cost_pred =
                  `else_` ("counters"!.["i"] =.= "counters"!.["i" - 1]
                          /\. "saw_action"!.["i"] =.= "saw_action"!.["i" - 1])))
   /\. "result" =.= "counters"!.["x_length"])
+
+-- | Generate the predicate for action dependent cost.
+-- The action action gets uniform cost cost when cost_changing_action
+-- is not performed.
+-- If it does get execute, action gets the uniform cost discount_cost,
+-- for discount_cost < cost.
+--
+-- * x                    = the sequence of actions
+-- * action               = the action for which the cost is given
+-- * cost_changing_action = the action which influences the cost of action action
+-- * cell_changing_action = the action which moves to the next station
+-- * cost                 = the original cost for action action
+-- * discount_cost        = the cost for action action,
+--                          if cost_changing_action is executed as well
+-- * local_flag           = the flag marking whether cost_changing_action works
+--                          locally in a single station or globally over
+--                          the whole sequence x
+-- * result               = the variable which gets constrained to be the total cost
+--                          of the actions in sequence x
+dependent_cost_pred :: ModelData
+dependent_cost_pred =
+  predicate "dependent"[ var (Array [Int] Dec Int) "x"
+                       , par Int  "action"
+                       , par Int  "cost_changing_action"
+                       , par Int  "cell_changing_action"
+                       , par Int  "cost"
+                       , par Int  "discount_cost"
+                       , par Bool "local_flag"
+                       , var Int  "result"
+                       ]
+  =. let_ [
+         var Int "x_length" =. mz_length["x"],
+         var Int "result_upper_bound" =. "x_length" * "cost",
+         var (Array [CT $ 0..."x_length"] Dec (CT $ 0..."result_upper_bound")) "counters",
+         var (Array [CT $ 0..."x_length"] Dec Bool) "saw_cost_changing_action",
+         var (Array [CT $ 0..."x_length"] Dec Int) "nb_action"
+          ]
+  ("counters"!.[0] =.= 0
+  /\. "saw_cost_changing_action"!.[0] =.= false
+  /\. "nb_action"!.[0] =.= 0
+  /\. forall [["i"] @@ 1..."x_length"] "forall" (
+        if_     ("x"!.["i"] =.= "action")
+        `then_` ("counters"!.["i"] =.= "counters"!.["i" - 1]
+                 + "cost" * (1 - (mz_bool2int ["saw_cost_changing_action"!.["i" - 1]]))
+                 + "discount_cost" * (mz_bool2int ["saw_cost_changing_action"!.["i" - 1]])
+                /\. "nb_action"!.["i"] =.= "nb_action"!.["i" - 1] + 1
+                /\. "saw_cost_changing_action"!.["i"] =.= "saw_cost_changing_action"!.["i" - 1])
+        `else_` (if_     ("x"!.["i"] =.= "cost_changing_action"
+                          /\. not_ ("saw_cost_changing_action"!.["i" - 1]))
+                 `then_` ("counters"!.["i"] =.= "counters"!.["i" - 1]
+                           + "nb_action"!.["i" - 1] * ("discount_cost" - "cost")
+                         /\. "nb_action"!.["i"] =.= "nb_action"!.["i" - 1]
+                         /\. "saw_cost_changing_action"!.["i"] =.= true)
+                 `else_` (if_     ("x"!.["i"] =.= "cell_changing_action"
+                                   /\. "local_flag")
+                          `then_` ("counters"!.["i"] =.= "counters"!.["i" - 1]
+                                  /\. "nb_action"!.[0] =.= 0
+                                  /\. "saw_cost_changing_action"!.["i"] =.= false)
+                          `else_` ("counters"!.["i"] =.= "counters"!.["i" - 1]
+                                  /\. "nb_action"!.["i"] =.= "nb_action"!.["i" - 1]
+                                  /\. "saw_cost_changing_action"!.["i"] =.= "saw_cost_changing_action"!.["i" - 1]))))
   /\. "result" =.= "counters"!.["x_length"])
+
 dfaToRegular :: ImplDFA -> Expr -> Expr
 dfaToRegular atm xs =
   prefCall "regular" [xs, int q,int s,intArray2 d, int q0, intSet f]
