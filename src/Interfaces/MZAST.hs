@@ -20,7 +20,7 @@ module Interfaces.MZAST (
   (=.), declare, variable, var, par, predicate, function, test, annotation,
   -- * Expressions
   -- ** Constants
-  true, false, int, float, string,
+  true, false, bool, int, float, string,
   -- ** Conditional
   if_, then_, elseif_, else_,
   -- ** Sets
@@ -211,6 +211,11 @@ true = BConst True
 -- | MiniZinc boolean constant @false@.
 false :: Expr
 false = BConst False
+
+-- | Used to represent a MiniZinc bool constant.
+bool :: Bool -> Expr
+bool True  = true
+bool False = false
 
 -- | Used to represent a MiniZinc integer constant.
 -- Example:
