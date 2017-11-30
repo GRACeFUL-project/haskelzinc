@@ -348,31 +348,6 @@ constr_or k i j =
     failure  = 3
     padding  = 2
 
--- | Generate the automaton for uniform cost.
--- The given action has a constant cost.
---
--- * k = the number of actions
--- * i = the action for which the cost is always the constant c
--- * c = the constant cost, corresponding to action i
-uniform_cost_autom :: Int -> Int -> Int -> DFA
-uniform_cost_autom k i c =
-  DFA
-  { alphabet         = S.fromList abc
-  , states           = S.fromList (failure : [0])
-  , accepting_states = S.singleton 0
-  , transitions      =           S.fromList [(0,a,0) | a <- abc]
-                       `S.union` S.fromList [(failure,a,failure) | a <- abc]
-  , start            = 0
-  , failure          = failure
-  }
-  where
-    abc = [1..k+2]
-
-    next = k + 1
-    nop  = k + 2
-
-    failure = 1
-
 -- | Generate the predicate for uniform cost.
 -- The given action has a constant cost.
 -- The given variable v gets constrained to be the total cost
