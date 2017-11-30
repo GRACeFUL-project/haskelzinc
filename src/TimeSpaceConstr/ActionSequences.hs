@@ -466,8 +466,8 @@ uniform_cost_pred =
                      , var Int "result"
                      ]
   =. let_ [
-         var Int "x_length"           =. mz_length["x"],
-         var Int "result_upper_bound" =. "x_length" * "cost",
+         par Int "x_length"           =. mz_length["x"],
+         par Int "result_upper_bound" =. "x_length" * "cost",
          var (Array [CT $ 0..."x_length"] Dec (CT $ 0..."result_upper_bound")) "counters"
           ]
     ("counters"!.[0] =.= 0
@@ -499,15 +499,15 @@ discount_cost_pred :: ModelData
 discount_cost_pred =
   predicate "discount"[ var (Array [Int] Dec Int) "x"
                       , par Int  "action"
-                      , par Int  "cell_change_action"
+                      , par Int  "cell_changing_action"
                       , par Int  "cost"
                       , par Int  "discount_cost"
                       , par Bool "local_flag"
                       , var Int  "result"
                       ]
   =. let_ [
-         var Int "x_length"           =. mz_length["x"],
-         var Int "result_upper_bound" =. "x_length" * "cost",
+         par Int "x_length"           =. mz_length["x"],
+         par Int "result_upper_bound" =. "x_length" * "cost",
          var (Array [CT $ 0..."x_length"] Dec (CT $ 0..."result_upper_bound")) "counters",
          var (Array [CT $ 0..."x_length"] Dec Bool) "saw_action"
           ]
@@ -556,8 +556,8 @@ dependent_cost_pred =
                        , var Int  "result"
                        ]
   =. let_ [
-         var Int "x_length" =. mz_length["x"],
-         var Int "result_upper_bound" =. "x_length" * "cost",
+         par Int "x_length" =. mz_length["x"],
+         par Int "result_upper_bound" =. "x_length" * "cost",
          var (Array [CT $ 0..."x_length"] Dec (CT $ 0..."result_upper_bound")) "counters",
          var (Array [CT $ 0..."x_length"] Dec Bool) "saw_cost_changing_action",
          var (Array [CT $ 0..."x_length"] Dec Int) "nb_action"
