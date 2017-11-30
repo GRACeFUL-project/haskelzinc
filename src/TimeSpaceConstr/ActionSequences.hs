@@ -370,6 +370,71 @@ dfaToRegular atm xs =
 
 
 -- -----------------------------------------------------------------
+-- ACTION SEQUENCE COST EXPRESSIONS
+-- -----------------------------------------------------------------
+
+-- | An action sequence cost expression
+data ASCostExpr = UniformCost Int    -- ^ The action for which the cost is given
+                              Int    -- ^ The uniform cost for this action
+                | DiscountCost Int   -- ^ The action for which the cost is given
+                               Int   -- ^ The action which moves to the next station
+                               Int   -- ^ The initial cost
+                               Int   -- ^ The discounted cost
+                               Bool  -- ^ The local flag
+                | DependentCost Int  -- ^ The action for which the cost is given
+                                Int  -- ^ The action which influences the cost
+                                Int  -- ^ The action which moves to the next station
+                                Int  -- ^ The original cost
+                                Int  -- ^ The discounted cost
+                                Bool -- ^ The local flag
+
+-- | Constructors
+uniformCost :: Int -> Int -> ASCostExpr
+uniformCost = UniformCost
+
+discountCost :: Int -> Int -> Int -> Int -> Bool -> ASCostExpr
+discountCost = DiscountCost
+
+dependentCost :: Int -> Int -> Int -> Int -> Int -> Bool -> ASCostExpr
+dependentCost = DependentCost
+
+-- | Transform an action sequence cost expression into a HaskellZinc expression
+--
+-- * x = the action sequence variable
+-- * r = the variable containing the resulting cost
+-- * e = the cost expression
+asCostExprToExpr :: Expr -> Expr -> ASCostExpr -> Expr
+asCostExprToExpr x r e = case e of
+  UniformCost a c           -> prefCall "uniform"   [x, int a, int c, r]
+  DiscountCost a n c d l    -> prefCall "discount"  [x, int a, int n, int c, int d, bool l, r]
+  DependentCost a b n c d l -> prefCall "dependent" [x, int a, int b, int n, int c, int d, bool l, r]
+
+-- | An action sequence cost predicate expression
+data ASCostPredExpr = UniformCostPred
+                    | DiscountCostPred
+                    | DependentCostPred
+
+-- | Constructors
+uniformCostPred :: ASCostPredExpr
+uniformCostPred = UniformCostPred
+
+discountCostPred :: ASCostPredExpr
+discountCostPred = DiscountCostPred
+
+dependentCostPred :: ASCostPredExpr
+dependentCostPred = DependentCostPred
+
+-- | Transform an action sequence cost predicate expression into a predicate
+--
+-- * e = the action sequence cost predicate expression
+asCostPredExprToPred :: ASCostPredExpr -> ModelData
+asCostPredExprToPred e = case e of
+  UniformCostPred   -> uniform_cost_pred
+  DiscountCostPred  -> discount_cost_pred
+  DependentCostPred -> dependent_cost_pred
+
+
+-- -----------------------------------------------------------------
 -- COST PREDICATES
 -- -----------------------------------------------------------------
 
