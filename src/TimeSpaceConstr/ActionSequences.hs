@@ -3,6 +3,7 @@
 module TimeSpaceConstr.ActionSequences
   ( ASExpr (..)
   , actionSeqConstraint
+  , atleast_cells, atmost_cells
   , atleast, atmost
   , incompatible
   , implication
@@ -42,7 +43,9 @@ type State = Int
 -- -----------------------------------------------------------------
 
 -- | An action sequence expression
-data ASExpr = Atleast Int         -- ^ The action in question
+data ASExpr = AtleastCells Int    -- ^ The minimum amount of cells in the sequence
+            | AtmostCells Int     -- ^ The maximum amount of cells in the sequence
+            | Atleast Int         -- ^ The action in question
                       Int         -- ^ The min number of times this action has to be performed
             | Atmost Int          -- ^ The action in question
                      Int          -- ^ The max number of times this action can be performed
@@ -62,6 +65,12 @@ data ASExpr = Atleast Int         -- ^ The action in question
   deriving (Show)
 
 -- | Constructors
+atleast_cells :: Int -> ASExpr
+atleast_cells = AtleastCells
+
+atmost_cells :: Int -> ASExpr
+atmost_cells = AtmostCells
+
 atleast :: Int -> Int -> ASExpr
 atleast = Atleast
 
@@ -92,6 +101,8 @@ or_as = Or
 -- * e = the action sequence expression
 asExprToDFA :: Int -> ASExpr -> DFA
 asExprToDFA k e = case e of
+  AtleastCells i      -> constr_atLeastCells k i
+  AtmostCells i       -> constr_atMostCells k i
   Atleast i p         -> constr_atLeast k i p
   Atmost i p          -> constr_atMost k i p
   Incompatible i j    -> constr_incompatible k i j
@@ -105,6 +116,66 @@ asExprToDFA k e = case e of
 -- -----------------------------------------------------------------
 -- AUTOMATAS
 -- -----------------------------------------------------------------
+
+-- | The sequence must contain at least i cells.
+--
+-- * k = the number of actions
+-- * c = the minimum amount of cells in the sequence
+constr_atLeastCells :: Int -> Int -> DFA
+constr_atLeastCells k c =
+  DFA
+   { alphabet         = S.fromList abc
+   , states           = S.fromList [0..i+2]
+   , accepting_states = S.fromList [i,padding]
+   , transitions      =           S.fromList [(q,next,q+1) | q <- [0..i-1]]
+                        `S.union` S.fromList [(q,a,q)   | q <- [0..i], a <- [1..k]]
+                        `S.union` S.singleton (i,next,i)
+                        `S.union` S.fromList ((i,nop,padding) : [(q,nop,failure) | q <- [0..i-1]])
+                        `S.union` S.fromList [(failure,l,failure) | l <- abc]
+                        `S.union` S.fromList ((padding,nop,padding) : [(padding,l,failure) | l <- abc, l /= nop])
+   , start            = 0
+   , failure          = failure
+   }
+   where
+     i = c - 1 -- The min number of next actions
+
+     abc = [1..k+2]
+
+     next = k + 1
+     nop  = k + 2
+
+     failure  = i + 2
+     padding  = i + 1
+
+-- | The sequence can contain at most i cells.
+--
+-- * k = the number of actions
+-- * c = the maximum amount of cells in the sequence
+constr_atMostCells :: Int -> Int -> DFA
+constr_atMostCells k c =
+  DFA
+   { alphabet         = S.fromList abc
+   , states           = S.fromList [0..i+2]
+   , accepting_states = S.fromList (padding:[0..i])
+   , transitions      =           S.fromList [(q,next,q+1) | q <- [0..i-1]]
+                        `S.union` S.fromList [(q,j,q)   | q <- [0..i], j <- [1..k]]
+                        `S.union` S.fromList [(q,nop,padding) | q <- [0..i]]
+                        `S.union` S.singleton (i,next,failure)
+                        `S.union` S.fromList [(failure,l,failure) | l <- abc]
+                        `S.union` S.fromList ((padding,nop,padding) : [(padding,l,failure) | l <- abc, l /= nop])
+   , start            = 0
+   , failure          = failure
+   }
+   where
+     i = c - 1 -- The max number of next actions
+
+     abc = [1..k+2]
+
+     next = k + 1
+     nop  = k + 2
+
+     failure  = i + 2
+     padding  = i + 1
 
 -- | Action i must be performed at least p times in each cell.
 --

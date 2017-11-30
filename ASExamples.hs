@@ -19,6 +19,7 @@ example1 = [ include "regular.mzn"
 example2 = (useCostPreds [uniformCostPred, discountCostPred, dependentCostPred])
         ++ [ include "regular.mzn"
            , var (Array [CT $ 1...10] Dec (CT $ 1...8)) "x"
+           , actionSequence 6 "x" (atleast_cells 2)
            , actionSequence 6 "x" (atleast 1 1)
            , actionSequence 6 "x" (or_as 2 3)
            , actionSequence 6 "x" (or_as 3 4)
