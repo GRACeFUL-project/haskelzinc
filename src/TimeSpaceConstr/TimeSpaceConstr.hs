@@ -6,7 +6,7 @@ import TimeSpaceConstr.ActionSequences
 -- | Constructs an action sequence constraint
 --
 -- * k = The number of actions
+-- * v = The name of the result variable
 -- * e = The action sequence expression
--- * v = The result variable
-actionSequence :: Int -> ASExpr -> Expr -> ModelData
-actionSequence k e v = actionSeqConstraint k e v
+actionSequence :: Int -> String -> ASExpr -> ModelData
+actionSequence k v e = actionSeqConstraint k v e

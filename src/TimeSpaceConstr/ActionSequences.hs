@@ -522,7 +522,10 @@ dependent_cost_pred =
 -- which takes the action sequence expression and produces a HaskellZinc expression.
 --
 -- * k = The number of actions
+-- * v = The name of the HaskellZinc variable
 -- * e = The action sequence expression
--- * v = The HaskellZinc variable
-actionSeqConstraint :: Int -> ASExpr -> Expr -> ModelData
-actionSeqConstraint k e v = constraint $ dfaToRegular (dfaToImplDFA (asExprToDFA k e)) v
+actionSeqConstraint :: Int -> String -> ASExpr -> ModelData
+actionSeqConstraint k v e = constraint $ dfaToRegular (dfaToImplDFA (asExprToDFA k e)) $ str2var v
+  where
+    str2var :: String -> Expr
+    str2var = Var . Simpl
