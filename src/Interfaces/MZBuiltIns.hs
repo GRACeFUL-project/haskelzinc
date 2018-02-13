@@ -269,7 +269,7 @@ infixl 8 *., /., `_div_`, `_mod_`, `_intersect_`, ++.
 mz_absent = prefCall "absent"
 mz_deopt  = prefCall "deopt"
 mz_occurs = prefCall "occurs"
---mz_regular = call "regular"
+mz_regular = prefCall "regular"
 
 -- Comparison operators
 mz_neq = infOp "!="

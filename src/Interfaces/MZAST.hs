@@ -20,7 +20,7 @@ module Interfaces.MZAST (
   (=.), declare, variable, var, par, predicate, function, test, annotation,
   -- * Expressions
   -- ** Constants
-  true, false, int, float, string,
+  true, false, bool, int, float, string,
   -- ** Conditional
   if_, then_, elseif_, else_,
   -- ** Sets
@@ -212,6 +212,11 @@ true = BConst True
 false :: Expr
 false = BConst False
 
+-- | Used to represent a MiniZinc bool constant.
+bool :: Bool -> Expr
+bool True  = true
+bool False = false
+
 -- | Used to represent a MiniZinc integer constant.
 -- Example:
 --
@@ -323,7 +328,7 @@ e #|. cts = ArrayComp e (mergeCompTails cts)
 infix 9 !.
 -- | Represents a MiniZinc array access.
 -- 
--- Exaamples:
+-- Examples:
 -- 
 -- >>> "array"!.[int 1]
 -- array[1]
@@ -508,6 +513,8 @@ instance Fractional Expr where
   fromRational = float . fromRational
   (/) = Bi (infOp "-") -- (/.)
   recip = undefined
+
+-- Action sequences
 
 -- Auxiliary definitions
 data DSorOther = DS | OK
