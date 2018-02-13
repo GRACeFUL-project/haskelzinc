@@ -264,7 +264,7 @@ cakes = [
          ]
   ]
 
-cakedata :: [Item]
+cakedata :: [ModelData]
 cakedata =
   ["flour"   =. int 4000
   ,"banana"  =. int 6

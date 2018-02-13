@@ -26,15 +26,16 @@ module Interfaces.FZSolutionParser (
   comment, comments,
   -- ** Default parsers
   defaultNameValuePair,
-  defaultUnsat, defaultSolution, defaultSolutions,
-  tryDefaultSolutions,
-  getDefaultSolutions, getDefaultSolutionsFromFile,
+  defaultUnsat, defaultSolution,
+  trySolutionsDefault,
+  getAllSolutionsDefault, getDefaultSolutionsFromFile,
   -- ** Custom
+  getAllSolutions, trySolutions,
   -- | The following functions can be used when a MiniZinc @output@ item, which alters the 
   -- default output format of the solver, is present in the model.
   
   nameValuePair,
-  trySolutions, getSolutions
+  allSolutions, takeSolutionsWithParser
 ) where
 
 import Data.Char
@@ -68,18 +69,27 @@ data MValue = MError String
 getDefaultSolutionsFromFile :: FilePath -> Int -> IO (Either P.ParseError [Solution])
 getDefaultSolutionsFromFile path n = do
   output <- readFile path
-  return $ runParser (tryDefaultSolutions n) output
-
+  return $ getAllSolutionsDefault output
+{-
 -- | Same as 'getSolutionFromFile' but parses the string argument of the function instead
 -- of the contents of a file.
 getDefaultSolutions :: Int -> String -> Either P.ParseError [Solution]
-getDefaultSolutions = getSolutions tryDefaultSolutions
+getDefaultSolutions = takeSolutions trySolutionsDefault
+-}
+getAllSolutions :: Parser [Solution] -> String -> Either P.ParseError [Solution]
+getAllSolutions = runParser
+
+getAllSolutionsDefault :: String -> Either P.ParseError [Solution]
+getAllSolutionsDefault = getAllSolutions trySolutionsDefault
 
 -- | A custom version of 'getDefaultSolutions'. This function accepts a custom parser to 
 -- parse the solutions. The custom parser must be parametrized by an integer, for 
 -- specifying the number of solutions to be returned.
-getSolutions :: (Int -> Parser [Solution]) -> Int -> String -> Either P.ParseError [Solution]
-getSolutions p n = runParser (p n)
+takeSolutionsWithParser :: (Int -> Parser [Solution]) -> Int -> String -> Either P.ParseError [Solution]
+takeSolutionsWithParser p n = runParser (p n)
+
+allSolutions' :: Parser [Solution] -> String -> Either P.ParseError [Solution]
+allSolutions' = runParser
 
 -- Auxiliary definitions
 digit :: Parser Char
@@ -120,8 +130,11 @@ string = C.string
 spaces :: Parser ()
 spaces = C.spaces
 
-parse :: Parser a -> P.SourceName -> String -> Either P.ParseError a
-parse = P.parse
+parseAll :: Parser a -> P.SourceName -> String -> Either P.ParseError a
+parseAll = P.parse
+
+count :: Int -> Parser a -> Parser [a]
+count = P.count
 
 try :: Parser a -> Parser a
 try = P.try
@@ -134,34 +147,42 @@ eosMSG = "----------"                 -- End-of-solution message
 -----------------------
 
 runParser :: Parser a -> String -> Either P.ParseError a
-runParser p = parse (p <* eof) ""
+runParser p = parseAll (p <* eof) ""
 
 -- | @tryDefaultSolutions n@ tries to parse the solutions and, if it succeeds, returns 
 -- the first @n@. Else, tries 'defaultUnsat' and returns an empty list.
-tryDefaultSolutions :: Int -> Parser [Solution]
-tryDefaultSolutions = trySolutions takeSolutions defaultUnsat
+trySolutionsDefault :: Parser [Solution]
+trySolutionsDefault = trySolutions allSolutionsDefault defaultUnsat
 
 -- | @trySolutions f p n@ applies @f n@ and returns the solutions. If that fails, tries 
 -- to parse an /Unsatisfiable/ message by applying @p@ and returns an empty list. The 
 -- custom parser must be parametrized by an integer, for specifying the number of 
 -- solutions to be returned.
-trySolutions :: (Int -> Parser [Solution]) -- Custom solutions parser
-             -> Parser String              -- Custom /Unsatisfiable/ message parser
-             -> Int                        -- Number of solutions to be returned
+trySolutions :: Parser [Solution] -- Custom solutions parser
+             -> Parser String     -- Custom /Unsatisfiable/ message parser
              -> Parser [Solution]
-trySolutions p u n = try $ (p n) <|> (u >> return [[]])
+trySolutions p u = try $ p <|> (u >> return [[]])
 
 -- | Parses the default message for a model with no solutions: @=====UNSATISFIABLE=====@, 
 -- surrounded by commented lines before and after.
 defaultUnsat :: Parser String
 defaultUnsat = skipMany comment *> (string unsatMSG) <* endOfLine <* many comment
 
-takeSolutions :: Int -> Parser [Solution]
-takeSolutions n = take n <$> defaultSolutions
+takeSolutions :: Parser Solution -> Int -> Parser [Solution]
+takeSolutions p n = case (n > 0) of
+                    True -> count n p
+                    _    -> allSolutions p
+
+
+takeSolutionsDefault :: Int -> Parser [Solution]
+takeSolutionsDefault = takeSolutions defaultSolution
+
+allSolutions :: Parser Solution -> Parser [Solution]
+allSolutions p = manyTill p (optional (string eoSMSG *> endOfLine) *> eof)
 
 -- | Parses all the returned solutions.
-defaultSolutions :: Parser [Solution]
-defaultSolutions = manyTill defaultSolution (string eoSMSG *> endOfLine)
+allSolutionsDefault :: Parser [Solution]
+allSolutionsDefault = allSolutions defaultSolution
 
 -- | Parses a single solution with the default output format from the set of returned 
 -- solutions.
@@ -317,5 +338,5 @@ scalar = try floatM <|> intM <|> boolM <|> stringM
 
 -- for testing purposes
 parseWithLeftOver :: Parser a -> String -> Either P.ParseError (a,String)
-parseWithLeftOver p = parse ((,) <$> p <*> leftOver) ""
+parseWithLeftOver p = parseAll ((,) <$> p <*> leftOver) ""
   where leftOver = manyTill anyToken eof

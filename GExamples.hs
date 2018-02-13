@@ -12,7 +12,7 @@ import Data.String
 
 -- default (Int, Float)
 
-main = iRunModel nineDigitArrangement
+main = runModel cakes "C:\\Users\\klma-lt\\Repositories\\GRACeFUL_org\\haskelzinc\\cakes" 1 10
 
 nineDigitArrangement = [
   (%) "Example taken from http://www.hakank.org/minizinc/nine_digit_arrangement.mzn",
@@ -67,7 +67,7 @@ nineDigitArrangement = [
   ]
 
 unsatisfiable = [
-    var (CT $ int 1 ... int 3) "k",
+    var (CT $ 1 ... 3) "k",
     constraint $ "k" >. 3,
     solve satisfy
   ]
@@ -182,4 +182,61 @@ planning = [
     ("used"!.["r"] =.= mz_sum ["consumption"!.["p", "r"] *. ("produce"!.["p"]) #|. [["p"] @@ "Products"]])
     /\. ("used"!.["r"] <=. "capacity"!.["r"]) #|. [["r"] @@ "Resources"]],
   solve $ maximize (mz_sum [("profit"!.["p"] *. "produce"!.["p"]) #|. [["p"] @@ "Products"]])
+  ]
+
+australia = [
+  (%) "Colouring Australia using nc colours",
+  par Int "nc" =. 3,
+  
+  var (CT $ 1 ... "nc") "wa",
+  var (CT $ 1 ... "nc") "nsw",
+  var (CT $ 1 ... "nc") "nt",
+  var (CT $ 1 ... "nc") "v",
+  var (CT $ 1 ... "nc") "sa",
+  var (CT $ 1 ... "nc") "t",
+  var (CT $ 1 ... "nc") "q",
+  
+  constraint $ "wa" !=. "nt",
+  constraint $ "wa" !=. "sa",
+  constraint $ "nt" !=. "sa",
+  constraint $ "nt" !=. "q",
+  constraint $ "sa" !=. "q",
+  constraint $ "sa" !=. "nsw",
+  constraint $ "sa" !=. "v",
+  constraint $ "q"  !=. "nsw",
+  constraint $ "nsw" !=. "v",
+  solve satisfy
+  ]
+
+cakes = [
+  (%) "Baking cakes for the school fete (with data file)",
+  par Int "flour" =. int 4000,
+  par Int "banana" =. int 6,
+  par Int "sugar" =. int 2000,
+  par Int "butter" =. int 500,
+  par Int "cocoa" =. int 500,
+  constraint $
+    mz_assert ["flour" >=. 0
+             ,string "mz_invalid datafile: Ammount of flour is non-negative"],
+  constraint $
+    mz_assert ["banana" >=. 0
+             ,string "mz_invalid datafile: Ammount of banana is non-negative"],
+  constraint $
+    mz_assert ["sugar" >=. 0
+              ,string "mz_invalid datafile: Ammount of sugar is non-negative"],
+  constraint $
+    mz_assert ["butter" >=. 0
+              ,string "mz_invalid datafile: Ammount of butter is non-negative"],
+  constraint $
+    mz_assert ["cocoa" >=. 0
+              ,string "mz_invalid datafile: Ammount of cocoa is non-negative"],
+  var (CT $ 0 ... 100) "b",
+  var (CT $ 0 ... 100) "c",
+  constraint $ 250 *. "b" +. 200 *. "c" <=. "flour",
+  constraint $ 2 *. "b" <=. "banana",
+  constraint $ 75 *. "b" +. 150 *. "c" <=. "sugar",
+  constraint $ 100 *. "b" +. 150 *. "c" <=. "butter",
+  constraint $ 75 *. "c" <=. "cocoa",
+  (%) "Maximize our profit",
+  solve $ maximize (400 *. "b" +. 450 *. "c")
   ]
