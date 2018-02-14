@@ -8,6 +8,7 @@ The haskelzinc library defines an interface to the MiniZinc constraint prorammin
 * a pretty printer to print the representation of a MiniZinc model in MiniZinc
 * a parser that returns a representation of the solutions obtained by running the MiniZinc model
 * a set of functions useful for building a custom FlatZinc solutions parser.
+* a set of functions for constructing a model with time and space constraints, including cost related constraints.
 
 An additional module gives the possibility to directly get the solutions of a MiniZinc finite domain model. 
 Option for interactive interface is provided, as well as choice between two solvers: the G12/FD built-in 
