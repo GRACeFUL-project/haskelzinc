@@ -12,7 +12,7 @@ import Data.String
 
 -- default (Int, Float)
 
-main = runModel cakes "C:\\Users\\klma-lt\\Repositories\\GRACeFUL_org\\haskelzinc\\cakes" 1 10
+-- main = runModel divisor225 "divisor225.mzn" 1 10
 
 nineDigitArrangement = [
   (%) "Example taken from http://www.hakank.org/minizinc/nine_digit_arrangement.mzn",

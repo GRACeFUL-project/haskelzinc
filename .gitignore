@@ -8,10 +8,15 @@ htmldocs/*
 # My notes
 helper_dir/*
 
+# Stack
+.stack-work/
+
 # Cabal
 .cabal-sandbox/
 cabal.sandbox.config
 dist
+*.hi
+*.o
 
 # MiniZinc models and results
 *.mzn

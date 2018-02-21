@@ -135,7 +135,8 @@ class Assignable a {-i | a -> i-} where
 instance i ~ 'DS => Assignable (GItem i) where
   v@(Var' _ _ _)     =. e = 
     Declare' $ Declaration (turnToDS v) [] (Just (toSimpleExpr e))
-  (Function' ds)     =. e = Declare' $ Declaration ds [] (Just (toSimpleExpr e))
+  f@(Function' _ _ _ _)     =. e =
+    Declare' $ Declaration (turnToDS f) [] (Just (toSimpleExpr e))
   p@(Predicate' _ _) =. e = 
     Declare' $ Declaration (turnToDS p) [] (Just (toSimpleExpr e))
   (Test' ds)         =. e = Declare' $ Declaration ds [] (Just (toSimpleExpr e))
@@ -166,16 +167,29 @@ predicate' :: String -> [Param] -> Declaration
 predicate' name ps = declareOnly $ Predicate (Simpl name) ps
 
 predicate :: String -> [GItem 'DS] -> GItem 'DS
-predicate name args = Predicate' name args
+predicate = Predicate'
 
 test :: String -> [Param] -> Declaration
 test name ps = declareOnly $ Test (Simpl name) ps
 
-function :: Inst -> Type -> String -> [Param] -> Declaration
-function i t s ps = declareOnly $ Function (i, t, Simpl s) ps
+{-
+function' :: Inst -> Type -> String -> [Param] -> Declaration
+function' i t s ps = declareOnly $ Function (i, t, Simpl s) ps
+-}
 
+function :: Inst -> Type -> String -> [GItem 'DS] -> GItem 'DS
+function = Function' 
+
+{-
 annotation :: String -> [Param] -> Declaration
 annotation i ps = declareOnly $ Annotation' i ps
+-}
+
+annotation :: String -> [GItem 'DS] -> GItem 'OK
+annotation = Annot'
+
+ann :: String -> GItem 'DS
+ann = Var' Par Ann
 
 -- User defined operations
 
@@ -514,20 +528,19 @@ instance Fractional Expr where
   (/) = Bi (infOp "-") -- (/.)
   recip = undefined
 
--- Action sequences
-
 -- Auxiliary definitions
-data DSorOther = DS | OK
+data DSorOther = DS | OK -- | AN
 
 data GItem (a :: DSorOther) where
   Include'   :: String -> GItem 'OK
   Comment'   :: String -> GItem 'OK
   Declare'   :: Declaration -> GItem 'OK
   Var'       :: Inst -> Type -> String -> GItem 'DS
-  Function'  :: DeclarationSignature -> GItem 'DS
+  Function'  :: Inst -> Type -> String -> [GItem 'DS] -> GItem 'DS -- DeclarationSignature -> GItem 'DS
   Predicate' :: String -> [GItem 'DS] -> GItem 'DS
   Test'      :: DeclarationSignature -> GItem 'DS
-  Annot'     :: DeclarationSignature -> GItem 'OK
+  Annot'     :: String -> [GItem 'DS] -> GItem 'OK
+--  Ann'       :: String -> GItem 'DS
   Assign'    :: Ident -> Expr -> GItem 'OK
   Solve'     :: Solve -> GItem 'OK
   Constrain' :: AnnExpr -> GItem 'OK
@@ -536,23 +549,32 @@ data GItem (a :: DSorOther) where
 type ModelData = GItem 'OK
 
 turnToParam :: (GItem 'DS) -> Param
-turnToParam (Var' i t x) = (i, t, stringToIdent x)
+turnToParam (Var' _ Ann x) = (Par, Ann, stringToIdent x)
+turnToParam (Var' i t x)   = (i, t, stringToIdent x)
+
+{-
+turnToGarg :: (GItem 'AN) -> Param
+turnToGarg (Ann' x) = (Par, Ann, stringToIdent x)
+-}
 
 turnToDS :: (GItem 'DS) -> DeclarationSignature
 turnToDS (Var' i t x) = Variable (i, t, stringToIdent x)
 turnToDS (Predicate' name args) = Predicate (stringToIdent name) (map turnToParam args)
+turnToDS (Function' i t name args) = Function (i, t, Simpl name) (map turnToParam args)
 
 turnToItem :: (GItem a) -> Item
 turnToItem (Include' file) = Include file
 turnToItem (Comment' text) = Comment text
 turnToItem (Declare' d)    = Declare d
-turnToItem v@(Var' _ _ _)    = 
+turnToItem v@(Var' _ _ _)  = 
   Declare $ Declaration (turnToDS v) [] Nothing
-turnToItem (Function' ds)  = Declare $ Declaration ds [] Nothing
+turnToItem f@(Function' _ _ _ _)  =
+  Declare $ Declaration (turnToDS f) [] Nothing
 turnToItem p@(Predicate' _ _) = 
   Declare $ Declaration (turnToDS p) [] Nothing
 turnToItem (Test' ds)      = Declare $ Declaration ds [] Nothing
-turnToItem (Annot' ds)     = Declare $ Declaration ds [] Nothing
+turnToItem a@(Annot' n args)  = 
+  Declare $ Declaration (Annotation' n (map turnToParam args)) [] Nothing
 turnToItem (Assign' x e)   = Assign x (toSimpleExpr e)
 turnToItem (Solve' s)      = Solve s
 turnToItem (Constrain' e)  = Constraint e
