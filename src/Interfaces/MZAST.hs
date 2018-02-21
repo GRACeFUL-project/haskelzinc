@@ -17,7 +17,7 @@ module Interfaces.MZAST (
   -- * Items
   GItem(..),
   include, constraint, output, (%), solve, satisfy, minimize, maximize,
-  (=.), declare, variable, var, par, predicate, function, test, annotation,
+  (=.), var, par, predicate, function, test, annotation,
   -- * Expressions
   -- ** Constants
   true, false, bool, int, float, string,
@@ -81,11 +81,11 @@ constraint :: Expr -> GItem 'OK
 constraint e = Constrain' (toSimpleExpr e)
 
 -- | Represents a solve item in the MiniZinc model. Used together with one of 'satisfy',
--- 'minimize' or 'maximize' functions.
+-- 'minimize' or 'maximize' functions, which can also carry annotations.
 solve :: Solve -> GItem 'OK
 solve = Solve'
 
--- | Finilizes the representation of a non-annotated solve item. Use '|:' operator to
+-- | Finalizes the representation of a non-annotated solve item. Use '|:' operator to
 -- annotate it.
 satisfy :: Solve
 satisfy = Satisfy []
@@ -123,11 +123,11 @@ class Assignable a {-i | a -> i-} where
   -- Assigning to an already declared variable, predicate, test or function 
   -- @x@:
   -- 
-  -- >>> "x" =. int 1
+  -- >>> "x" =. 1
   --
   -- Assigning a value to a variable on declaration:
   -- 
-  -- >>> par Int "x" =. int 1
+  -- >>> par Int "x" =. 1
   -- 
   -- Not to be confused with the equality operator, represented in haskelzinc by '=.='.
   (=.) :: a -> Expr -> GItem 'OK
@@ -139,12 +139,9 @@ instance i ~ 'DS => Assignable (GItem i) where
     Declare' $ Declaration (turnToDS f) [] (Just (toSimpleExpr e))
   p@(Predicate' _ _) =. e = 
     Declare' $ Declaration (turnToDS p) [] (Just (toSimpleExpr e))
-  (Test' ds)         =. e = Declare' $ Declaration ds [] (Just (toSimpleExpr e))
-{-
-instance Assignable Expr where
-  Var x =. e = Assign' x e
-  -- x =. e = Assign' (stringToIdent x) e
--}
+  t@(Test' _ _)         =. e = 
+    Declare' $ Declaration (turnToDS t) [] (Just (toSimpleExpr e))
+
 instance Assignable String where
   x =. e = Assign' (stringToIdent x) e
 
@@ -159,13 +156,13 @@ instance Varr OK where
 instance Varr DS where
   var = Var' Dec
   par = Var' Par
-
+{-
 variable :: Inst -> Type -> String -> DeclarationSignature
 variable i t s = Variable (i, t, Simpl s)
 
 predicate' :: String -> [Param] -> Declaration
 predicate' name ps = declareOnly $ Predicate (Simpl name) ps
-
+-}
 predicate :: String -> [GItem 'DS] -> GItem 'DS
 predicate = Predicate'
 
@@ -538,9 +535,8 @@ data GItem (a :: DSorOther) where
   Var'       :: Inst -> Type -> String -> GItem 'DS
   Function'  :: Inst -> Type -> String -> [GItem 'DS] -> GItem 'DS -- DeclarationSignature -> GItem 'DS
   Predicate' :: String -> [GItem 'DS] -> GItem 'DS
-  Test'      :: DeclarationSignature -> GItem 'DS
+  Test'      :: String -> [GItem 'DS] -> GItem 'DS
   Annot'     :: String -> [GItem 'DS] -> GItem 'OK
---  Ann'       :: String -> GItem 'DS
   Assign'    :: Ident -> Expr -> GItem 'OK
   Solve'     :: Solve -> GItem 'OK
   Constrain' :: AnnExpr -> GItem 'OK
@@ -552,15 +548,11 @@ turnToParam :: (GItem 'DS) -> Param
 turnToParam (Var' _ Ann x) = (Par, Ann, stringToIdent x)
 turnToParam (Var' i t x)   = (i, t, stringToIdent x)
 
-{-
-turnToGarg :: (GItem 'AN) -> Param
-turnToGarg (Ann' x) = (Par, Ann, stringToIdent x)
--}
-
 turnToDS :: (GItem 'DS) -> DeclarationSignature
 turnToDS (Var' i t x) = Variable (i, t, stringToIdent x)
 turnToDS (Predicate' name args) = Predicate (stringToIdent name) (map turnToParam args)
 turnToDS (Function' i t name args) = Function (i, t, Simpl name) (map turnToParam args)
+turnToDS (Test' name args) = Test (stringToIdent name) (map turnToParam args)
 
 turnToItem :: (GItem a) -> Item
 turnToItem (Include' file) = Include file
@@ -568,12 +560,13 @@ turnToItem (Comment' text) = Comment text
 turnToItem (Declare' d)    = Declare d
 turnToItem v@(Var' _ _ _)  = 
   Declare $ Declaration (turnToDS v) [] Nothing
-turnToItem f@(Function' _ _ _ _)  =
+turnToItem f@(Function' _ _ _ _) =
   Declare $ Declaration (turnToDS f) [] Nothing
-turnToItem p@(Predicate' _ _) = 
+turnToItem p@(Predicate' _ _)    = 
   Declare $ Declaration (turnToDS p) [] Nothing
-turnToItem (Test' ds)      = Declare $ Declaration ds [] Nothing
-turnToItem a@(Annot' n args)  = 
+turnToItem t@(Test' _ _)         =
+  Declare $ Declaration (turnToDS t) [] Nothing
+turnToItem a@(Annot' n args)     =
   Declare $ Declaration (Annotation' n (map turnToParam args)) [] Nothing
 turnToItem (Assign' x e)   = Assign x (toSimpleExpr e)
 turnToItem (Solve' s)      = Solve s
