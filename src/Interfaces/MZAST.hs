@@ -17,7 +17,7 @@ module Interfaces.MZAST (
   -- * Items
   GItem(..),
   include, constraint, output, (%), solve, satisfy, minimize, maximize,
-  (=.), var, par, ann, predicate, function, test, annotation,
+  (=.), var, par, ann, predicate, function, test,
   -- * Expressions
   -- ** Constants
   true, false, bool, int, float, string,
@@ -36,9 +36,9 @@ module Interfaces.MZAST (
   -- * User defined operations
   prefCall, infCall, prefOp, infOp, let_,
   -- * Types
-  ctvar, ($$),
+  ($$),
   -- * Annotations
-  (|:),
+  annotation, (|:),
   -- * Others
   ModelData, declareOnly, turnToItem,
   module Interfaces.MZASTBase
@@ -188,25 +188,26 @@ annotation = Annot'
 
 -- | Creates the representation of a variable of type 'ann'. Use this 
 -- function in the declaration of the arguments of a user-defined 
--- operation.
+-- annotation.
 --
 -- Example:
 --  
 -- >>> annotation "int_search" [par Array[Int] Dec Int, ann "select", ann "explore"]
--- output ["x = ", show(x)];
+-- annotation int_search(array[int] of var int: x, ann: select,
+--                       ann: explore);
 ann :: String -> GItem 'DS
 ann = Var' Par Ann
 
 -- | Used to represent a prefix call to a function, test or predicate.
 prefCall :: String  -- ^ The name of the called operation
-     -> [Expr] -- ^ A representation of the arguments
-     -> Expr
+         -> [Expr]  -- ^ A representation of the arguments
+         -> Expr
 prefCall name = Call (Simpl name) . map toSimpleExpr
 
 -- | Used to represent an infix (quoted) call to a function, test or predicate.
-infCall :: String
-        -> Expr
-        -> Expr
+infCall :: String -- ^ The name of the called operation
+        -> Expr   -- ^ A representation of the left operand
+        -> Expr   -- ^ A representation of the right operand
         -> Expr
 infCall name e1 e2 = Call (Quoted name) $ map toSimpleExpr [e1, e2]
 
@@ -230,39 +231,49 @@ true = BConst True
 false :: Expr
 false = BConst False
 
--- | Used to represent a MiniZinc bool constant.
+-- | Used to represent a MiniZinc @bool@ constant.
 bool :: Bool -> Expr
 bool True  = true
 bool False = false
 
--- | Used to represent a MiniZinc integer constant.
+-- | Used to represent a MiniZinc @integer@ constant.
 -- Example:
 --
--- >>> constraint $ var "x" !=. int 1
+-- >>> constraint $ "x" !=. 1
 -- constraint x != 1;
 int :: Int -> Expr
 int = IConst
 
--- | Used to represent a MiniZinc float constant.
+-- | Used to represent a MiniZinc float constant. In most cases,
+-- just a Haskell @Float@ value is sufficient for the representation
+-- of the MiniZinc @float@ value. This function is provided for when
+-- it is necessary to use.
 float :: Float -> Expr
 float = FConst
 
--- | Used to represent a MiniZinc string constant.
+-- | Used to represent a MiniZinc string constant. This function is necessary for 
+-- the representation of MiniZinc string literals. Just a Haskell @String@ value 
+-- is not sufficient.
 string :: String -> Expr
 string = SConst
 
--- boolSet :: [Bool] -> Expr
--- boolSet = SetLit . (map BConst)
-
--- | Used to represent a MiniZinc set of integers.
+-- | Used to represent a MiniZinc set of integers. Its first argument is a list of
+-- the set's elements.
+--
+-- Example:
+--
+-- >>> intSet [1, 3, 5]
+-- {1, 3, 5}
 intSet :: [Int] -> Expr
 intSet = mapSet IConst
 
--- | Used to represent a MiniZinc set of floats.
+-- | Used to represent a MiniZinc set of floats. Its first argument is a list of
+-- the set's elements.
 floatSet :: [Float] -> Expr
 floatSet = mapSet FConst
 
--- | Used to represent a MiniZinc set of strings.
+-- | Used to represent a MiniZinc set of strings. Its first argument is a list of
+-- the set's elements.
 stringSet :: [String] -> Expr
 stringSet = mapSet SConst
 
@@ -272,7 +283,22 @@ stringSet = mapSet SConst
 mapSet :: (a -> Expr) -> [a] -> Expr
 mapSet f = SetLit . map f
 
--- | prop> set = SetLit
+-- | Used to represent a set of arbitrary type.
+-- 
+-- Example:
+-- 
+-- >>> set [1, 3, 5]
+-- {1, 3, 5}
+-- 
+-- haskelzinc does not check for type correctness of the represented MiniZinc set expression.
+-- The example below will compile.
+-- 
+-- Example:
+-- 
+-- >>> set [1.0, 3, string "asd"]
+-- {1.0, 3, "asd"}
+--
+-- For a safer set representation, use functions 'intSet', 'floatSet' and 'stringSet'.
 set :: [Expr] -> Expr
 set = SetLit
 
@@ -308,20 +334,23 @@ floatArray2 = mapArray2 FConst
 stringArray2 :: [[String]] -> Expr
 stringArray2 = mapArray2 SConst
 
--- | Represents a one-dimensional MiniZinc array by mapping.
+-- | Represents a 1-dimensional MiniZinc array by mapping, as in the case of
+-- 'mapSet'.
 mapArray :: (a -> Expr) -> [a] -> Expr
 mapArray f = ArrayLit . map f
 
--- | @mapArray2 f lss@ represents a two-dimensional MiniZinc array by mapping @f@ to all
+-- | @mapArray2 f lss@ represents a 2-dimensional MiniZinc array by mapping @f@ to all
 -- elements of all lists in @lss@.
 mapArray2 :: (a -> Expr) -> [[a]] -> Expr
 mapArray2 f = ArrayLit2D . (map (map f))
 
--- | prop> array = ArrayLit
+-- | Represents a 1-dimensional array of arbitrary type. Same safety remarks apply here as with
+-- function 'set'.
 array :: [Expr] -> Expr
 array = ArrayLit
 
--- | prop> array2 = ArrayLit2
+-- | Represents a 2-dimensional array of arbitrary type. Same safety remarks apply here as with
+-- function 'set'.
 array2 :: [[Expr]] -> Expr
 array2 = ArrayLit2D
 
@@ -334,7 +363,7 @@ infix 2 #/., #|.
 -- 
 -- Example: 
 -- 
--- >>> int 2 *. var "i" #/. [["i"] @@ int 0 ... int 5]
+-- >>> 2 *. "i" #/. [["i"] @@ 0 ... 5]
 -- {2 * i | i in 0 .. 5}
 (#/.) :: Expr -> [CompTail] -> Expr
 e #/. cts = SetComp e (mergeCompTails cts)
@@ -348,10 +377,10 @@ infix 9 !.
 -- 
 -- Examples:
 -- 
--- >>> "array"!.[int 1]
+-- >>> "array"!.[1]
 -- array[1]
 -- 
--- >>> "matrix"!.[var "i", var "j"]
+-- >>> "matrix"!.["i", "j"]
 -- matrix[i,j]
 (!.) :: String -- ^ Array's name
      -> [Expr] -- ^ Indexes of the desired element
@@ -382,7 +411,7 @@ infix 4 `where_`
 --
 -- Example:
 --
--- >>> var "i" *. var "j" #/. [["i", "j"] @@ int 0 ... int 5 `where_` (var "i" !=. var "j")]
+-- >>> "i" *. "j" #/. [["i", "j"] @@ 0 ... 5 `where_` ("i" !=. "j")]
 -- {i * j | i, j in 0 .. 5 where i != j}
 where_ :: CompTail -> Expr -> CompTail
 where_ (gs, _) e = (gs, Just e)
@@ -393,14 +422,13 @@ where_ (gs, _) e = (gs, Just e)
 --
 -- Examples:
 --
--- >>> forall [["i"] @@ var "S", ["j"] @@ var "S"] "sum" ("x"!.[var"i", var "j"]) =.= var "y"
--- sum(i in S, j in S) (x[i, j]) = y
+-- >>> forall [["i"] @@ "S1", ["j"] @@ "S2"] "sum" ("x"!.["i", "j"])
+-- sum(i in S1, j in S2) (x[i, j])
 --
--- >>> forall [["c"] @@ var "C"] "forall" (
--- >>>     forall [["s"] @@ var "S"] "sum" (mz_bool2int["bs"!.[var "s"] =.= var "c"])
--- >>> =.= "result"!.[var "c"])
+-- >>> forall [["c"] @@ "C"] "forall" (
+-- >>>     forall [["s"] @@ "S"] "sum" (mz_bool2int["bs"!.["s"] =.= "c"])
+-- >>> =.= "result"!.["c"])
 -- forall(c in C) (sum(s in S) (bool2int(bs[s] = c)) = result[c])
-
 forall :: [CompTail] -- ^ Generator expressions' representation
        -> String     -- ^ The name of the called operation
        -> Expr       -- ^ The head expression of the underlying array comprehension
@@ -408,29 +436,30 @@ forall :: [CompTail] -- ^ Generator expressions' representation
 forall cts name e = GenCall (Simpl name) (mergeCompTails cts) e
 
 -- Constrained types
+{-
 -- | Represents a constrained type defined by a set parameter.
 --
 -- Example:
 --
--- >>> declare $ variable Dec Int "one2three" =. intSet [1, 2, 3]
--- var int: one2three = {1, 2, 3};
+-- >>> var (Set Int) "one2three" =. set [1, 2, 3]
+-- var set of int: one2three = {1, 2, 3};
 -- 
 -- >>> declare $ variable Dec (ctvar "one2three") "x"
 -- var one2three: x;
 ctvar :: String -> Type
 ctvar = CT . Var . Simpl
-
+-}
 -- | Represents a type variable.
 ($$) :: String -> Type
 ($$) = VarType
 
--- | Used together with 'then_' and 'elseif_' \/ 'else_' to represent an if-then-else 
+-- | Used together with 'then_' and/or 'elseif_' and 'else_' to represent an if-then-else 
 -- MiniZinc expression. In case of multiple alternatives, use 'elseif_', but the last 
--- alternative should be represented with the use of 'else_'.
+-- alternative should be created with the use of 'else_'.
 -- 
 -- Example:
 --
--- >>> if_ true `then_` int 1 `else_` int 0
+-- >>> if_ true `then_` 1 `else_` 0
 -- if true then 1 else 0 endif;
 if_ :: Expr -> (Expr -> [(Expr, Expr)])
 if_ e = \e1 -> [(e, e1)]
@@ -447,8 +476,18 @@ elseif_ es e = \e1 -> es ++ [(e, e1)]
 else_ :: [(Expr, Expr)] -> Expr -> Expr
 else_ = ITE
 
--- Let expressions
--- let_ = Let
+-- | Creates a MiniZinc let-expression.
+-- 
+-- Example: 
+-- 
+-- >>> predicate "posProd"[var Int "x", var Int "y"] =. 
+-- >>> let_ [ var Int "z"
+-- >>>      , constraint $ "z" =.= "x" *. "y"]
+-- >>>      ("z" >. 0)
+-- predicate posProd(var int: x, var int: y)
+--   = let {var int: z;
+--          constraint z = x * y;}
+--     in z > 0;
 let_ :: [GItem i] -> Expr -> Expr
 let_ bs = Let (map turnToItem bs)
 
