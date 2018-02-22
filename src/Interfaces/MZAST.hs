@@ -156,6 +156,7 @@ instance Varr OK where
 instance Varr DS where
   var = Var' Dec
   par = Var' Par
+
 {-
 variable :: Inst -> Type -> String -> DeclarationSignature
 variable i t s = Variable (i, t, Simpl s)
@@ -166,9 +167,13 @@ predicate' name ps = declareOnly $ Predicate (Simpl name) ps
 predicate :: String -> [GItem 'DS] -> GItem 'DS
 predicate = Predicate'
 
+{-
 test :: String -> [Param] -> Declaration
 test name ps = declareOnly $ Test (Simpl name) ps
+-}
 
+test :: String -> [GItem 'DS] -> GItem 'DS
+test = Test'
 {-
 function' :: Inst -> Type -> String -> [Param] -> Declaration
 function' i t s ps = declareOnly $ Function (i, t, Simpl s) ps
