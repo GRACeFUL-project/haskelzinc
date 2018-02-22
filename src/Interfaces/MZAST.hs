@@ -157,43 +157,40 @@ instance Varr DS where
   var = Var' Dec
   par = Var' Par
 
-{-
-variable :: Inst -> Type -> String -> DeclarationSignature
-variable i t s = Variable (i, t, Simpl s)
+-- User defined operations
 
-predicate' :: String -> [Param] -> Declaration
-predicate' name ps = declareOnly $ Predicate (Simpl name) ps
--}
-predicate :: String -> [GItem 'DS] -> GItem 'DS
+-- | Creates a predicate declaration item. Use the (=.) operator to
+-- assign it a body.
+predicate :: String       -- ^ The name of the predicate
+          -> [GItem 'DS]  -- ^ The signature of the predicate's arguments
+          -> GItem 'DS
 predicate = Predicate'
 
-{-
-test :: String -> [Param] -> Declaration
-test name ps = declareOnly $ Test (Simpl name) ps
--}
-
-test :: String -> [GItem 'DS] -> GItem 'DS
+-- | Creates a test declaration item. Use the (=.) operator to
+-- assign it a body.
+test :: String      -- ^ The name of the test
+     -> [GItem 'DS] -- ^ The signatures of the test's arguments
+     -> GItem 'DS
 test = Test'
-{-
-function' :: Inst -> Type -> String -> [Param] -> Declaration
-function' i t s ps = declareOnly $ Function (i, t, Simpl s) ps
--}
 
-function :: Inst -> Type -> String -> [GItem 'DS] -> GItem 'DS
+-- | Creates a function declaration item. Use the (=.) operator to
+-- assign it a body.
+function :: Inst        -- ^ The inst of the function's returning value
+         -> Type        -- ^ The type of the function's returning value
+         -> String      -- ^ The name of the function
+         -> [GItem 'DS] -- ^ The signature of the function's arguments
+         -> GItem 'DS
 function = Function' 
 
-{-
-annotation :: String -> [Param] -> Declaration
-annotation i ps = declareOnly $ Annotation' i ps
--}
-
+-- | Creates an annotation declaration item. Annotations
 annotation :: String -> [GItem 'DS] -> GItem 'OK
 annotation = Annot'
 
+-- | Creates the representation of a variable of type 'ann'. Use this 
+-- function in the declaration of the arguments of a user-defined 
+-- operation.
 ann :: String -> GItem 'DS
 ann = Var' Par Ann
-
--- User defined operations
 
 -- | Used to represent a prefix call to a function, test or predicate.
 prefCall :: String  -- ^ The name of the called operation
