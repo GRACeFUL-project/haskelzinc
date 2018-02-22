@@ -17,7 +17,7 @@ module Interfaces.MZAST (
   -- * Items
   GItem(..),
   include, constraint, output, (%), solve, satisfy, minimize, maximize,
-  (=.), var, par, predicate, function, test, annotation,
+  (=.), var, par, ann, predicate, function, test, annotation,
   -- * Expressions
   -- ** Constants
   true, false, bool, int, float, string,
@@ -189,6 +189,11 @@ annotation = Annot'
 -- | Creates the representation of a variable of type 'ann'. Use this 
 -- function in the declaration of the arguments of a user-defined 
 -- operation.
+--
+-- Example:
+--  
+-- >>> annotation "int_search" [par Array[Int] Dec Int, ann "select", ann "explore"]
+-- output ["x = ", show(x)];
 ann :: String -> GItem 'DS
 ann = Var' Par Ann
 
