@@ -572,7 +572,7 @@ instance Fractional Expr where
   recip = undefined
 
 -- Auxiliary definitions
-data DSorOther = DS | OK -- | AN
+data DSorOther = DS | OK 
 
 data GItem (a :: DSorOther) where
   Include'   :: String -> GItem 'OK
