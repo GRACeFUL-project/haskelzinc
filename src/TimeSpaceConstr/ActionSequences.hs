@@ -1,5 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+{-|
+Module      : ActionSequences
+Description : Interface for constructing action sequence expressions
+License     : BSD3
+Maintainer  : Gert-Jan Bottu <gertjan.bottu@kuleuven.be>
+Stability   : experimental
+
+
+This module defines an interface for constructing action sequence expressions,
+required for the "TimeSpaceConstr.TimeSpaceConstraints" module,
+in order to construct time space constraints.
+-}
+
 module TimeSpaceConstr.ActionSequences
   ( ASExpr (..)
   , actionSeqConstraint
@@ -40,63 +53,84 @@ type State = Int
 -- -----------------------------------------------------------------
 
 -- | An action sequence expression
-data ASExpr = AtleastCells Int    -- ^ The minimum amount of cells in the sequence
-            | AtmostCells Int     -- ^ The maximum amount of cells in the sequence
-            | Atleast Int         -- ^ The action in question
-                      Int         -- ^ The min number of times this action has to be performed
-            | Atmost Int          -- ^ The action in question
-                     Int          -- ^ The max number of times this action can be performed
-            | Incompatible Int    -- ^ The first of the incompatible actions
-                           Int    -- ^ The second of the incompatible actions
-            | Implication Int     -- ^ The action that implies the second action
-                          Int     -- ^ The action that is implied
-            | ValuePrecedence Int -- ^ The action that has to precede the second action
-                              Int -- ^ The action that has to be preceded by the first action
-            | StretchMin Int      -- ^ The action in question
-                         Int      -- ^ The min number of times the action has to be performed in a row
-                                  -- once it has been performed at least once
-            | StretchMax Int      -- ^ The action in question
-                         Int      -- ^ The max number of times the action may be performed in a row
-            | Or Int              -- ^ The first of the two actions, at least one of which has to be performed
-                 Int              -- ^ The second of the two actions, at least one of which has to be performed
+data ASExpr = AtleastCells Int
+            | AtmostCells Int
+            | Atleast Int Int
+            | Atmost Int Int
+            | Incompatible Int Int
+            | Implication Int Int
+            | ValuePrecedence Int Int
+            | StretchMin Int Int
+            | StretchMax Int Int
+            | Or Int Int
   deriving (Show)
 
--- | Constructors
-atleast_cells :: Int -> ASExpr
+-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+-- Constructors
+-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+-- | Restrict the model to at least contain a given amount of locations.
+atleast_cells :: Int -- ^ The minimum amount of cells in the sequence
+              -> ASExpr
 atleast_cells = AtleastCells
 
-atmost_cells :: Int -> ASExpr
+-- | Restrict the model to at most contain a given amount of locations.
+atmost_cells :: Int -- ^ The maximum amount of cells in the sequence
+             -> ASExpr
 atmost_cells = AtmostCells
 
-atleast :: Int -> Int -> ASExpr
+-- | Require the given action to be executed at least a given amount of times, in each location.
+atleast :: Int -- ^ The action in question
+        -> Int -- ^ The min number of times this action has to be performed
+        -> ASExpr
 atleast = Atleast
 
-atmost :: Int -> Int -> ASExpr
+-- | Require the given action to be executed at most a given amount of times, in each location.
+atmost :: Int -- ^ The action in question
+       -> Int -- ^ The max number of times this action can be performed
+       -> ASExpr
 atmost = Atmost
 
-incompatible :: Int -> Int -> ASExpr
+-- | Require that the two given actions are never executed together in any location.
+incompatible :: Int -- ^ The first of the incompatible actions
+             -> Int -- ^ The second of the incompatible actions
+             -> ASExpr
 incompatible = Incompatible
 
-implication :: Int -> Int -> ASExpr
+-- | Require that if the first action is executed, the second has to be executed as well in the same location.
+implication :: Int -- ^ The action that implies the second action
+            -> Int -- ^ The action that is implied
+            -> ASExpr
 implication = Implication
 
-value_precedence :: Int -> Int -> ASExpr
+-- | Require the given action action to always precede the second given action.
+value_precedence :: Int -- ^ The action that has to precede the second action
+                 -> Int -- ^ The action that has to be preceded by the first action
+                 -> ASExpr
 value_precedence = ValuePrecedence
 
-stretch_min :: Int -> Int -> ASExpr
+-- | Require the if the given action is executed, it has to at least be executed a given number of times in a row.
+stretch_min :: Int -- ^ The action in question
+            -> Int -- ^ The min number of times the action has to be performed in a row once it has been performed at least once
+            -> ASExpr
 stretch_min = StretchMin
 
-stretch_max :: Int -> Int -> ASExpr
+-- | Require the if the given action is executed, it can at most be executed a given number of times in a row.
+stretch_max :: Int -- ^ The action in question
+            -> Int -- ^ The max number of times the action may be performed in a row
+            -> ASExpr
 stretch_max = StretchMax
 
-or_as :: Int -> Int -> ASExpr
+-- | Require each location to execute at least one of the two given actions.
+or_as :: Int -- ^ The first of the two actions, at least one of which has to be performed
+      -> Int -- ^ The second of the two actions, at least one of which has to be performed
+      -> ASExpr
 or_as = Or
 
 -- | Transform an action sequence expression into a DFA
---
--- * k = the number of actions
--- * e = the action sequence expression
-asExprToDFA :: Int -> ASExpr -> DFA
+asExprToDFA :: Int    -- ^ The number of actions
+            -> ASExpr -- ^ The action sequence expression
+            -> DFA
 asExprToDFA k e = case e of
   AtleastCells i      -> constr_atLeastCells k i
   AtmostCells i       -> constr_atMostCells k i
@@ -115,10 +149,9 @@ asExprToDFA k e = case e of
 -- -----------------------------------------------------------------
 
 -- | The sequence must contain at least i cells.
---
--- * k = the number of actions
--- * c = the minimum amount of cells in the sequence
-constr_atLeastCells :: Int -> Int -> DFA
+constr_atLeastCells :: Int -- ^ The number of actions
+                    -> Int -- ^ The minimum amount of cells in the sequence
+                    -> DFA
 constr_atLeastCells k c =
   DFA
    { alphabet         = S.fromList abc
@@ -145,10 +178,9 @@ constr_atLeastCells k c =
      padding  = i + 1
 
 -- | The sequence can contain at most i cells.
---
--- * k = the number of actions
--- * c = the maximum amount of cells in the sequence
-constr_atMostCells :: Int -> Int -> DFA
+constr_atMostCells :: Int -- ^ The number of actions
+                   -> Int -- ^ The maximum amount of cells in the sequence
+                   -> DFA
 constr_atMostCells k c =
   DFA
    { alphabet         = S.fromList abc
@@ -175,11 +207,10 @@ constr_atMostCells k c =
      padding  = i + 1
 
 -- | Action i must be performed at least p times in each cell.
---
--- * k = the number of actions
--- * i = the action that has to be repeated
--- * p = the number of times action i has to at least be repeated
-constr_atLeast :: Int -> Int -> Int -> DFA
+constr_atLeast :: Int -- ^ The number of actions
+               -> Int -- ^ The action that has to be repeated
+               -> Int -- ^ The number of times action i has to at least be repeated
+               -> DFA
 constr_atLeast k i p =
   DFA
    { alphabet         = S.fromList abc
@@ -204,11 +235,10 @@ constr_atLeast k i p =
      padding  = p + 1
 
 -- | Action i has to performed at most p times in each cell.
---
--- * k = the number of actions
--- * i = the action that has to be repeated
--- * p = the number of times action i can at most be repeated
-constr_atMost :: Int -> Int -> Int -> DFA
+constr_atMost :: Int -- ^ The number of actions
+              -> Int -- ^ The action that has to be repeated
+              -> Int -- ^ The number of times action i can at most be repeated
+              -> DFA
 constr_atMost k i p =
   DFA
    { alphabet         = S.fromList abc
@@ -225,19 +255,18 @@ constr_atMost k i p =
    }
    where
      abc = [1..k+2]
-     
+
      next = k + 1
      nop  = k + 2
-     
+
      failure  = p + 2
      padding  = p + 1
 
 -- | Actions i and j cannot be performed in the same cell.
---
--- * k = the number of actions
--- * i = the action that cannot be combined with action j
--- * j = the action that cannot be combined with action i
-constr_incompatible :: Int -> Int -> Int -> DFA
+constr_incompatible :: Int -- ^ The number of actions
+                    -> Int -- ^ The action that cannot be combined with action j
+                    -> Int -- ^ The action that cannot be combined with action i
+                    -> DFA
 constr_incompatible k i j =
   DFA
   { alphabet         = S.fromList abc
@@ -269,11 +298,10 @@ constr_incompatible k i j =
 -- | Action i implies action j.
 -- This means that if action i is performed in a cell,
 -- action j has to be performed as well.
---
--- * k = the number of actions
--- * i = the action that implies action j
--- * j = the action that is implied by action i
-constr_implication :: Int -> Int -> Int -> DFA
+constr_implication :: Int -- ^ The number of actions
+                   -> Int -- ^ The action that implies action j
+                   -> Int -- ^ The action that is implied by action i
+                   -> DFA
 constr_implication k i j =
   DFA
   { alphabet         = S.fromList abc
@@ -305,11 +333,10 @@ constr_implication k i j =
 -- | Action i has to precede action j.
 -- This means that in order for action j to be performed,
 -- action i has to be performed at least once.
---
--- * k = the number of actions
--- * i = the action that to precede action j
--- * j = the action that has to be preceded by action i
-constr_value_precedence :: Int -> Int -> Int -> DFA
+constr_value_precedence :: Int -- ^ The number of actions
+                        -> Int -- ^ The action that to precede action j
+                        -> Int -- ^ The action that has to be preceded by action i
+                        -> DFA
 constr_value_precedence k i j =
   DFA
   { alphabet         = S.fromList abc
@@ -337,12 +364,10 @@ constr_value_precedence k i j =
 
 -- | When an action i is performed at least once,
 -- it has to be performed at least s times in a row.
---
--- * k = the number of actions
--- * i = the action in question
--- * s = the number of times action i has to at least be performed in a row
---       once it is performed at least once
-constr_stretch_min :: Int -> Int -> Int -> DFA
+constr_stretch_min :: Int -- ^ The number of actions
+                   -> Int -- ^ The action in question
+                   -> Int -- ^ The number of times action i has to at least be performed in a row once it is performed at least once
+                   -> DFA
 constr_stretch_min k i s =
   DFA
   { alphabet         = S.fromList abc
@@ -372,12 +397,10 @@ constr_stretch_min k i s =
 
 -- | When an action i is performed at least once,
 -- it may be performed at most s times in a row.
---
--- * k = the number of actions
--- * i = the action in question
--- * s = the number of times action i may at most be performed in a row
---       once it is performed at least once
-constr_stretch_max :: Int -> Int -> Int -> DFA
+constr_stretch_max :: Int -- ^ The number of actions
+                   -> Int -- ^ The action in question
+                   -> Int -- ^ The number of times action i may at most be performed in a row once it is performed at least once
+                   -> DFA
 constr_stretch_max k i s =
   DFA
   { alphabet         = S.fromList abc
@@ -404,11 +427,10 @@ constr_stretch_max k i s =
 
 -- | At least one of the two action i and j must be performed,
 -- in every cell
---
--- * k = the number of actions
--- * i = the first of the pair of actions, one of which at least has to be performed
--- * j = the second of the pair of actions, one of which at least has to be performed
-constr_or :: Int -> Int -> Int -> DFA
+constr_or :: Int -- ^ The number of actions
+          -> Int -- ^ The first of the pair of actions, one of which at least has to be performed
+          -> Int -- ^ The second of the pair of actions, one of which at least has to be performed
+          -> DFA
 constr_or k i j =
   DFA
   { alphabet         = S.fromList abc
@@ -452,36 +474,46 @@ dfaToRegular atm xs =
 -- -----------------------------------------------------------------
 
 -- | An action sequence cost expression
-data ASCostExpr = UniformCost Int    -- ^ The action for which the cost is given
-                              Int    -- ^ The uniform cost for this action
-                | DiscountCost Int   -- ^ The action for which the cost is given
-                               Int   -- ^ The action which moves to the next station
-                               Int   -- ^ The initial cost
-                               Int   -- ^ The discounted cost
-                               Bool  -- ^ The local flag
-                | DependentCost Int  -- ^ The action for which the cost is given
-                                Int  -- ^ The action which influences the cost
-                                Int  -- ^ The action which moves to the next station
-                                Int  -- ^ The original cost
-                                Int  -- ^ The discounted cost
-                                Bool -- ^ The local flag
+data ASCostExpr = UniformCost Int Int
+                | DiscountCost Int Int Int Int Bool
+                | DependentCost Int Int Int Int Int Bool
 
--- | Constructors
-uniformCost :: Int -> Int -> ASCostExpr
+-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+-- Constructors
+-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+-- | Constraint the cost of the given action to uniformly be the given number.
+uniformCost :: Int -- ^ The action for which the cost is given
+            -> Int -- ^ The uniform cost for this action
+            -> ASCostExpr
 uniformCost = UniformCost
 
-discountCost :: Int -> Int -> Int -> Int -> Bool -> ASCostExpr
+-- | Constraint the cost of the given action to initially be the given full cost,
+-- and afterwards be the given discounted cost.
+discountCost :: Int  -- ^ The action for which the cost is given
+             -> Int  -- ^ The action which moves to the next station
+             -> Int  -- ^ The initial cost
+             -> Int  -- ^ The discounted cost
+             -> Bool -- ^ The local flag
+             -> ASCostExpr
 discountCost = DiscountCost
 
-dependentCost :: Int -> Int -> Int -> Int -> Int -> Bool -> ASCostExpr
+-- | Constraint the cost of the given action to be the given full cost,
+-- if the influencing is not executed, or the given discounted cost otherwise.
+dependentCost :: Int  -- ^ The action for which the cost is given
+              -> Int  -- ^ The action which influences the cost
+              -> Int  -- ^ The action which moves to the next station
+              -> Int  -- ^ The original cost
+              -> Int  -- ^ The discounted cost
+              -> Bool -- ^ The local flag
+              -> ASCostExpr
 dependentCost = DependentCost
 
 -- | Transform an action sequence cost expression into a HaskellZinc expression
---
--- * x = the action sequence variable
--- * r = the variable containing the resulting cost
--- * e = the cost expression
-asCostExprToExpr :: Expr -> Expr -> ASCostExpr -> Expr
+asCostExprToExpr :: Expr       -- ^ The action sequence variable
+                 -> Expr       -- ^ The variable containing the resulting cost
+                 -> ASCostExpr -- ^ The cost expression
+                 -> Expr
 asCostExprToExpr x r e = case e of
   UniformCost a c           -> prefCall "uniform"   [x, int a, int c, r]
   DiscountCost a n c d l    -> prefCall "discount"  [x, int a, int n, int c, int d, bool l, r]
@@ -663,28 +695,25 @@ dependent_cost_pred =
 
 -- | The main method of this module for constructing action sequence constraints.
 -- Takes the action sequence expression and produces a HaskellZinc expression.
---
--- * k = The number of actions
--- * x = The name of the action sequence variable
--- * e = The action sequence expression
-actionSeqConstraint :: Int -> String -> ASExpr -> ModelData
+actionSeqConstraint :: Int    -- ^ The number of actions
+                    -> String -- ^ The name of the action sequence variable
+                    -> ASExpr -- ^ The action sequence expression
+                    -> ModelData
 actionSeqConstraint k x e = constraint $ dfaToRegular (dfaToImplDFA (asExprToDFA k e)) $ str2var x
 
 -- | The main method of this module for constructing cost constraints.
 -- Takes the cost expression and produces a HaskellZinc expression.
---
--- * x = The name of the action sequence variable
--- * c = The name of the variable containing the resulting cost
--- * e = The cost expression
-actionSeqCost :: String -> String -> ASCostExpr -> ModelData
+actionSeqCost :: String     -- ^ The name of the action sequence variable
+              -> String     -- ^ The name of the variable containing the resulting cost
+              -> ASCostExpr -- ^ The cost expression
+              -> ModelData
 actionSeqCost x c e = constraint $ asCostExprToExpr (str2var x) (str2var c) e
 
 -- | The main method for constructing cost predicates.
 -- Takes a list of cost predicate expressions and produces a list
 -- of HaskellZinc predicates.
---
--- * l = The list of cost predicate expressions
-actionSeqCostPreds :: [ASCostPredExpr] -> [ModelData]
+actionSeqCostPreds :: [ASCostPredExpr] -- ^ The list of cost predicate expressions
+                   -> [ModelData]
 actionSeqCostPreds l = map asCostPredExprToPred l
 
 -- | Converts a string to a HaskellZinc variable

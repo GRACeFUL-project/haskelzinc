@@ -1,26 +1,36 @@
+{-|
+Module      : TimeSpaceConstraints
+Description : Interface for constructing time space constraints
+License     : BSD3
+Maintainer  : Gert-Jan Bottu <gertjan.bottu@kuleuven.be>
+Stability   : experimental
+
+
+This module defines an interface for constructing time space constraints.
+Using this module, together with "TimeSpaceConstr.ActionSequences",
+one can represent time space models in Haskell code.
+-}
+
 module TimeSpaceConstr.TimeSpaceConstr where
 
 import Interfaces.MZAST
 import TimeSpaceConstr.ActionSequences
 
 -- | Constructs an action sequence constraint
---
--- * k = The number of actions
--- * x = The name of the action sequence variable
--- * e = The action sequence expression
-actionSequence :: Int -> String -> ASExpr -> ModelData
+actionSequence :: Int    -- ^ The number of actions
+               -> String -- ^ The name of the action sequence variable
+               -> ASExpr -- ^ The action sequence expression
+               -> ModelData
 actionSequence k x e = actionSeqConstraint k x e
 
 -- | Constructs an action sequence cost constraint
---
--- * x = The name of the action sequence variable
--- * c = The name of the resulting cost variable
--- * e = The action sequence cost expression
-actionSequenceCost :: String -> String -> ASCostExpr -> ModelData
+actionSequenceCost :: String     -- ^ The name of the action sequence variable
+                   -> String     -- ^ The name of the resulting cost variable
+                   -> ASCostExpr -- ^ The action sequence cost expression
+                   -> ModelData
 actionSequenceCost x c e = actionSeqCost x c e
 
 -- | Constructs a list of action sequence cost predicates
---
--- * l = The list of action sequence cost predicate expressions
-useCostPreds :: [ASCostPredExpr] -> [ModelData]
+useCostPreds :: [ASCostPredExpr] -- ^ The list of action sequence cost predicate expressions
+             -> [ModelData]
 useCostPreds l = actionSeqCostPreds l
