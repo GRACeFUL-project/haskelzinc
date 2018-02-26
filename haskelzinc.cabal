@@ -80,12 +80,12 @@ library
                     Interfaces.MZPrinter,
                     Interfaces.FZSolutionParser
                     TimeSpaceConstr.ActionSequences
+                    TimeSpaceConstr.TimeSpaceConstr
   
   -- Modules included in this library but not exported.
   other-modules: Interfaces.MZAuxiliary
                  TimeSpaceConstr.DFA
                  TimeSpaceConstr.NFA
-                 TimeSpaceConstr.TimeSpaceConstr
   
   -- LANGUAGE extensions used by modules in this package.
   other-extensions:    FlexibleInstances,
