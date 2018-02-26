@@ -3,8 +3,6 @@ module TimeSpaceConstr.DFA
  , ImplDFA (..)
  , minimize
  , sequence
- , toString
- , toStringI
  , normalize
  , dfaToImplDFA
  , transition
@@ -19,8 +17,6 @@ import Data.Maybe (fromJust)
 import Data.List (findIndex,elemIndex,delete)
 
 import Prelude hiding (sequence)
-
-import Text.Dot
 
 type Label = Int
 type State = Int
@@ -210,47 +206,3 @@ dfaToImplDFA d = let n = normalize d in
 
     filterFailTransitions :: S.Set (State,Label,State) -> S.Set (State,Label,State)
     filterFailTransitions = S.filter (\(s,_,_) -> s /= 0)
-
-toDot :: DFA -> Dot ()
-toDot d =
-  do tuples <- mapM mkNode (S.toList $ states d)
-     let m = M.fromList tuples
-     mapM_ (\(f,l,t) -> edge (m M.! f) (m M.! t) [("label",show l)])(transitions d)
-     dummy <- node [("shape","none"),("style","invisible")]
-     edge dummy (m M.! start d) []
-     return ()
- where
-   mkNode n = 
-     do i <- node [("shape",shape)]
-        return (n,i)
-    where
-      shape 
-       | S.member n (accepting_states d)
-       = "doublecircle"
-       | otherwise 
-       = "circle"
-
-toDotI :: ImplDFA -> Dot ()
-toDotI d =
-  do tuples <- mapM mkNode (S.toList $ statesI d)
-     let m = M.fromList tuples
-     mapM_ (\(f,l,t) -> edge (m M.! f) (m M.! t) [("label",show l)])(transitionsI d)
-     dummy <- node [("shape","none"),("style","invisible")]
-     edge dummy (m M.! startI d) []
-     return ()
- where
-   mkNode n = 
-     do i <- node [("shape",shape)]
-        return (n,i)
-    where
-      shape 
-       | S.member n (accepting_statesI d)
-       = "doublecircle"
-       | otherwise 
-       = "circle"
-
-toString :: DFA -> String
-toString = showDot . toDot
-
-toStringI :: ImplDFA -> String
-toStringI = showDot . toDotI

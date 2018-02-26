@@ -27,11 +27,8 @@ import qualified Data.Set as S
 import Data.Maybe (fromJust)
 import Data.String
 
--- import Interfaces.MZinHaskell
 import Interfaces.MZAST
 import Interfaces.MZBuiltIns
--- import Interfaces.FZSolutionParser (Solution)
--- import Text.Parsec.Error
 import Interfaces.MZASTBase
 
 type Label = Int
