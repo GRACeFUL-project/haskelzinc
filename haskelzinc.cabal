@@ -38,6 +38,7 @@ license-file:        LICENSE
 
 -- The package author(s).
 author:              Klara Marntirosian,
+                     Gert-Jan Bottu,
                      Ruben Pieters
 
 -- An email address to which users can send suggestions, bug reports, and 
@@ -56,7 +57,8 @@ build-type:          Simple
 
 -- Extra files to be distributed with the package, such as examples or a 
 -- README.
-extra-source-files:  GExamples.hs
+extra-source-files:  GExamples.hs,
+                     ASExamples.hs
                      
 
 -- Constraint on the version of Cabal needed to build this package.
@@ -77,15 +79,20 @@ library
                     Interfaces.MZAST,
                     Interfaces.MZPrinter,
                     Interfaces.FZSolutionParser
+                    TimeSpaceConstr.ActionSequences
   
   -- Modules included in this library but not exported.
   other-modules: Interfaces.MZAuxiliary
+                 TimeSpaceConstr.DFA
+                 TimeSpaceConstr.NFA
+                 TimeSpaceConstr.TimeSpaceConstr
   
   -- LANGUAGE extensions used by modules in this package.
   other-extensions:    FlexibleInstances,
                        GADTs,
                        DataKinds,
                        KindSignatures
+                       OverloadedStrings
   
   -- Other library packages from which modules are imported.
   build-depends:       base >=4.8 && <5,
