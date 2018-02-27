@@ -1,3 +1,12 @@
+0.3.1.0
+ - Addition of two modules that support easy use of time-space constraints, based on the "Geometrical
+   constraints for CRUD", by N. Beldiceanu, E. Arafailova, R. Douence.
+ - MiniZinc boolean, integer and floating point literals are now represented easily with
+   Haskell literals. Functions "int", "bool" and "float" are not necessary any more.
+ - With the use of the OverloadedStrings option, a MiniZinc variable reference can be 
+   represented easily with the name of that variable as a Haskell string.
+ - Simpler declaration of variables and user-defined operations.
+
 0.3.0.0
  - Added support for annotations
  - Structural changes in the representational system of MiniZinc models
