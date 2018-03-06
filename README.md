@@ -14,11 +14,18 @@ An additional module gives the possibility to directly get the solutions of a Mi
 Option for interactive interface is provided, as well as choice between two solvers: the G12/FD built-in 
 solver of FlatZinc and choco3.
 
-# Requirements
- * GHC 7.10.3 or 8
+# Documentation
+API documentation is provided in [hackage](https://hackage.haskell.org/package/haskelzinc). Additionally, a 
+user manual comes together with the installation of the package.
+
+# Installation
+This library is [available](https://hackage.haskell.org/package/haskelzinc) on hackage. Use `cabal install`.
+
+## Requirements
+ * GHC 7.10.3+ or 8
  * MiniZinc 2.0 or 2.1
 
-## Optional
+## Optional requirements
 To use choco solver, also required:
 
    - JDK 8+
@@ -27,13 +34,10 @@ To use choco solver, also required:
      - choco_parser [https://oss.sonatype.org/content/repositories/releases/org/choco-solver/choco-parsers/3.3.3/]
      - ANTLR >4.5.2 java runtime binaries [http://www.antlr.org/download.html]
 
-# Installation
-This library is [available](https://hackage.haskell.org/package/haskelzinc) on hackage. Use `cabal install`.
-
 # Configuration
   1. Create a file `HZconf/conf.txt` in the same directory level where you want to run your code.
   2. Fill in the corresponding paths by adding the equal sign (=) and the correct path.
-    * MINIZINC_DIR: the directory where mzn2fzn and flatzinc executables are located
+    * MINIZINC_DIR: the directory where `mzn2fzn` and `flatzinc` executables are located
     * CHOCO_PARSER: the path of the choco parser java library
     * CHOCO_SOLVER: the path of the choco solver java library
     * ANTLR: the path of the antlr java library
