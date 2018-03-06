@@ -1,3 +1,6 @@
+0.3.1.1
+ - User manual added.
+
 0.3.1.0
  - Addition of two modules that support easy use of time-space constraints, based on the "Geometrical
    constraints for CRUD", by N. Beldiceanu, E. Arafailova, R. Douence.
