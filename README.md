@@ -16,7 +16,8 @@ solver of FlatZinc and choco3.
 
 # Documentation
 API documentation is provided in [hackage](https://hackage.haskell.org/package/haskelzinc). Additionally, a 
-user manual comes together with the installation of the package.
+[user manual](https://hackage.haskell.org/package/haskelzinc-0.3.1.0/src/haskelzinc_User_Guide.pdf) comes 
+together with the installation of the package.
 
 # Installation
 This library is [available](https://hackage.haskell.org/package/haskelzinc) on hackage. Use `cabal install`.
