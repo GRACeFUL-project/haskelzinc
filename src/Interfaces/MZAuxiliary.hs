@@ -33,19 +33,20 @@ data Configuration
            }
   deriving Show
 
+instance Semigroup Configuration where
+  a <> b =
+    Config { minizinc    = dropEmpty (minizinc a) (minizinc b)
+           , chocosolver = dropEmpty (chocosolver a) (chocosolver b)
+           , chocoparser = dropEmpty (chocoparser a) (chocoparser b)
+           , antlr_path  = dropEmpty (antlr_path a) (antlr_path b)
+           }
+
 instance Monoid Configuration where
   mempty = Config { minizinc = ""
                   , chocosolver = ""
                   , chocoparser = ""
                   , antlr_path = ""
                   }
-   
-  mappend a b = 
-    Config { minizinc    = dropEmpty (minizinc a) (minizinc b)
-           , chocosolver = dropEmpty (chocosolver a) (chocosolver b)
-           , chocoparser = dropEmpty (chocoparser a) (chocoparser b)
-           , antlr_path  = dropEmpty (antlr_path a) (antlr_path b)
-           }
 
 dropEmpty :: String -> String -> String
 dropEmpty "" "" = ""
