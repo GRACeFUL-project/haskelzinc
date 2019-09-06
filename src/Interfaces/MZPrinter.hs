@@ -18,6 +18,7 @@ module Interfaces.MZPrinter(
   layoutModel
 ) where
 
+import Prelude hiding ((<>))
 import Text.PrettyPrint
 import Data.List
 import Interfaces.MZASTBase
